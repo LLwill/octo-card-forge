@@ -19,6 +19,8 @@ Do not infer backend domain fields from visual labels. Treat `contract/data.sche
 
 ## Modify a card package
 
+For a new card, start with `pnpm cli init <card-id> --name "<name>"`. Use `--view` or `--host-profile` only when the defaults are unsuitable. Never copy an existing business card as scaffolding.
+
 - Put backend-provided display data in the JSON Schema and document every field with `description` and useful examples.
 - Put template expressions only in `templates/*.template.json`.
 - Put realistic, non-sensitive preview data in `samples/*.json`.

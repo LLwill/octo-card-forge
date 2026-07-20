@@ -3,6 +3,7 @@ import path from "node:path";
 import { checkCards } from "./check.js";
 import { compileCard, compileSample } from "./compiler.js";
 import { readJson } from "./fs.js";
+import { initCard } from "./init.js";
 import { getCard, listCards } from "./registry.js";
 import { startServer } from "./server.js";
 import type { JsonObject } from "./types.js";
@@ -17,6 +18,7 @@ function flag(name: string): string | undefined {
 
 function usage(): void {
   console.log(`octo-card commands:
+  init <card-id> --name <name> [--view default] [--host-profile octo-web@1.0.0] [--format json]
   list
   contract <card-id>
   render <card-id> --sample <name>
@@ -26,7 +28,25 @@ function usage(): void {
 }
 
 try {
-  if (command === "list") {
+  if (command === "init") {
+    const cardId = args[0];
+    if (!cardId) throw new Error("card-id is required");
+    const name = flag("--name");
+    if (!name) throw new Error("--name is required");
+    const result = await initCard({
+      cardId,
+      name,
+      view: flag("--view"),
+      hostProfile: flag("--host-profile"),
+    });
+    if (flag("--format") === "json") {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      console.log(`Created ${result.cardId} (${result.name})`);
+      for (const file of result.files) console.log(`  ${file}`);
+      console.log(`Next: pnpm cli check ${result.cardId}`);
+    }
+  } else if (command === "list") {
     const cards = await listCards();
     console.log(
       cards

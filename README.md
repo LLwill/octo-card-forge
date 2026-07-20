@@ -17,6 +17,7 @@ Card Package + 示例业务数据
 
 ```bash
 pnpm install
+pnpm cli init docs.share-notification --name "文档分享通知"
 pnpm cli list
 pnpm cli check docs.access-request
 pnpm cli render docs.access-request --sample pending
@@ -36,6 +37,7 @@ pnpm dev
 
 ```text
 octo-card list
+octo-card init docs.share-notification --name "文档分享通知"
 octo-card contract docs.access-request
 octo-card render docs.access-request --sample pending
 octo-card check [docs.access-request] [--format json]
