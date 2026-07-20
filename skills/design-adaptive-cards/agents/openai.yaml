@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design Adaptive Cards"
+  short_description: "Design and validate Octo Adaptive Card packages"
+  default_prompt: "Use $design-adaptive-cards to update an Octo card package and verify its samples."

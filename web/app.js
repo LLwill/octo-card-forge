@@ -1,0 +1,92 @@
+const cardSelect = document.querySelector("#cardSelect");
+const sampleSelect = document.querySelector("#sampleSelect");
+const dataEditor = document.querySelector("#dataEditor");
+const preview = document.querySelector("#preview");
+const payload = document.querySelector("#payload");
+const status = document.querySelector("#status");
+const contract = document.querySelector("#contract");
+const version = document.querySelector("#version");
+let cards = [];
+let currentContext;
+let hostStyle;
+
+AdaptiveCards.AdaptiveCard.onProcessMarkdown = (text, result) => {
+  result.outputHtml = text
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+  result.didProcess = true;
+};
+
+async function json(url, init) {
+  const response = await fetch(url, init);
+  const body = await response.json();
+  if (!response.ok) throw new Error(body.message || JSON.stringify(body.errors || body));
+  return body;
+}
+
+async function chooseCard() {
+  const selected = cards.find((card) => card.id === cardSelect.value);
+  currentContext = await json(`/api/cards/${encodeURIComponent(selected.id)}/context`);
+  const contractData = await json(`/api/cards/${encodeURIComponent(selected.id)}/contract`);
+  contract.textContent = JSON.stringify(contractData, null, 2);
+  version.textContent = `${selected.id}@${selected.version} · ${selected.hostProfile}`;
+  if (hostStyle) hostStyle.remove();
+  hostStyle = document.createElement("link");
+  hostStyle.rel = "stylesheet";
+  hostStyle.href = currentContext.stylesheetUrl;
+  document.head.append(hostStyle);
+  sampleSelect.replaceChildren();
+  for (const names of Object.values(selected.samples)) {
+    for (const name of names) sampleSelect.add(new Option(name, name));
+  }
+  await chooseSample();
+}
+
+async function chooseSample() {
+  const result = await json(
+    `/api/cards/${encodeURIComponent(cardSelect.value)}/samples/${encodeURIComponent(sampleSelect.value)}`
+  );
+  dataEditor.value = JSON.stringify(result.data, null, 2);
+  await render(result.view);
+}
+
+async function render(view) {
+  status.textContent = "组装中…";
+  try {
+    const data = JSON.parse(dataEditor.value);
+    const resolvedView = view || (data.state === "pending" ? "pending" : "result");
+    const result = await json("/api/render", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ cardId: cardSelect.value, view: resolvedView, data }),
+    });
+    const card = new AdaptiveCards.AdaptiveCard();
+    card.hostConfig = new AdaptiveCards.HostConfig(currentContext.hostConfig);
+    card.onExecuteAction = (action) => {
+      status.textContent = `${action.getJsonTypeName()} · ${action.id || action.title || "local"}`;
+    };
+    card.parse(result.payload);
+    preview.replaceChildren(card.render());
+    payload.textContent = JSON.stringify(result.payload, null, 2);
+    status.textContent = `校验通过 · ${result.cardVersion}`;
+  } catch (error) {
+    status.textContent = error.message;
+  }
+}
+
+cards = await json("/api/cards");
+for (const card of cards) cardSelect.add(new Option(card.name, card.id));
+cardSelect.addEventListener("change", chooseCard);
+sampleSelect.addEventListener("change", chooseSample);
+document.querySelector("#renderButton").addEventListener("click", () => render());
+for (const button of document.querySelectorAll(".width")) {
+  button.addEventListener("click", () => {
+    document.querySelector(".width.active")?.classList.remove("active");
+    button.classList.add("active");
+    preview.style.width = `${button.dataset.width}px`;
+  });
+}
+await chooseCard();

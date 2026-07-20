@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Octo Card Forge</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <strong>Octo Card Forge</strong>
+        <span>Card Package · Contract · Host Profile</span>
+      </div>
+      <span id="version"></span>
+    </header>
+    <main class="workspace">
+      <aside class="sidebar">
+        <label>卡片<select id="cardSelect"></select></label>
+        <label>示例状态<select id="sampleSelect"></select></label>
+        <label>业务数据<textarea id="dataEditor" spellcheck="false"></textarea></label>
+        <button id="renderButton" type="button">重新组装</button>
+        <details>
+          <summary>数据契约</summary>
+          <pre id="contract"></pre>
+        </details>
+      </aside>
+      <section class="content">
+        <div class="toolbar">
+          <div><button class="width active" data-width="640">桌面</button><button class="width" data-width="390">移动</button></div>
+          <span id="status"></span>
+        </div>
+        <div class="preview-shell"><div id="preview"></div></div>
+        <details open>
+          <summary>最终 Adaptive Card JSON</summary>
+          <pre id="payload"></pre>
+        </details>
+      </section>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/adaptivecards@3.0.6/dist/adaptivecards.min.js"></script>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

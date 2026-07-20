@@ -1,0 +1,171 @@
+import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import path from "node:path";
+import { compileCard, compileSample } from "./compiler.js";
+import { readJson, readText, resolveInProject } from "./fs.js";
+import { getCard, getHostProfile, listCards } from "./registry.js";
+import type { JsonObject } from "./types.js";
+
+function sendJson(res: ServerResponse, status: number, value: unknown): void {
+  res.writeHead(status, {
+    "content-type": "application/json; charset=utf-8",
+    "cache-control": "no-store",
+  });
+  res.end(JSON.stringify(value, null, 2));
+}
+
+function sendText(
+  res: ServerResponse,
+  status: number,
+  contentType: string,
+  value: string
+): void {
+  res.writeHead(status, { "content-type": `${contentType}; charset=utf-8` });
+  res.end(value);
+}
+
+async function readBody(req: IncomingMessage): Promise<JsonObject> {
+  const chunks: Buffer[] = [];
+  let size = 0;
+  for await (const chunk of req) {
+    const buffer = Buffer.from(chunk);
+    size += buffer.length;
+    if (size > 256 * 1024) throw new Error("Request body exceeds 256 KiB");
+    chunks.push(buffer);
+  }
+  return JSON.parse(Buffer.concat(chunks).toString("utf8")) as JsonObject;
+}
+
+async function handleApi(
+  req: IncomingMessage,
+  res: ServerResponse,
+  url: URL
+): Promise<boolean> {
+  if (req.method === "GET" && url.pathname === "/api/cards") {
+    const cards = await listCards();
+    sendJson(
+      res,
+      200,
+      cards.map(({ manifest }) => ({
+        id: manifest.id,
+        name: manifest.name,
+        version: manifest.version,
+        contractVersion: manifest.contractVersion,
+        hostProfile: manifest.hostProfile,
+        samples: Object.fromEntries(
+          Object.entries(manifest.views).map(([view, definition]) => [
+            view,
+            definition.samples.map((sample) => path.basename(sample, ".json")),
+          ])
+        ),
+      }))
+    );
+    return true;
+  }
+
+  const cardMatch = url.pathname.match(/^\/api\/cards\/([^/]+)\/(contract|context)$/);
+  if (req.method === "GET" && cardMatch) {
+    const card = await getCard(decodeURIComponent(cardMatch[1]));
+    if (cardMatch[2] === "contract") {
+      sendJson(res, 200, {
+        cardId: card.manifest.id,
+        cardVersion: card.manifest.version,
+        contractVersion: card.manifest.contractVersion,
+        schema: await readJson(path.join(card.root, card.manifest.dataSchema)),
+        interactions: await readJson(path.join(card.root, card.manifest.interactions)),
+      });
+    } else {
+      const host = await getHostProfile(card.manifest.hostProfile);
+      sendJson(res, 200, {
+        card: card.manifest,
+        hostProfile: host.manifest,
+        hostConfig: host.hostConfig,
+        stylesheetUrl: `/api/host-styles/${encodeURIComponent(card.manifest.hostProfile)}`,
+      });
+    }
+    return true;
+  }
+
+  const sampleMatch = url.pathname.match(/^\/api\/cards\/([^/]+)\/samples\/([^/]+)$/);
+  if (req.method === "GET" && sampleMatch) {
+    const result = await compileSample({
+      cardId: decodeURIComponent(sampleMatch[1]),
+      sample: decodeURIComponent(sampleMatch[2]),
+    });
+    sendJson(res, 200, result);
+    return true;
+  }
+
+  const styleMatch = url.pathname.match(/^\/api\/host-styles\/(.+)$/);
+  if (req.method === "GET" && styleMatch) {
+    const host = await getHostProfile(decodeURIComponent(styleMatch[1]));
+    sendText(
+      res,
+      200,
+      "text/css",
+      await readText(path.join(host.root, host.manifest.stylesheet))
+    );
+    return true;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/render") {
+    const body = await readBody(req);
+    if (
+      typeof body.cardId !== "string" ||
+      typeof body.view !== "string" ||
+      typeof body.data !== "object" ||
+      body.data === null ||
+      Array.isArray(body.data)
+    ) {
+      sendJson(res, 400, {
+        code: "invalid_request",
+        message: "cardId, view and object data are required",
+      });
+      return true;
+    }
+    const result = await compileCard({
+      cardId: body.cardId,
+      view: body.view,
+      data: body.data as JsonObject,
+    });
+    const valid = !result.issues.some((issue) => issue.severity === "error");
+    sendJson(res, valid ? 200 : 422, { valid, ...result });
+    return true;
+  }
+  return false;
+}
+
+export async function startServer(options: {
+  port?: number;
+  host?: string;
+} = {}): Promise<void> {
+  const port = options.port ?? 4318;
+  const host = options.host ?? "127.0.0.1";
+  const webRoot = resolveInProject("web");
+  const server = createServer(async (req, res) => {
+    try {
+      const url = new URL(req.url ?? "/", `http://${req.headers.host ?? host}`);
+      if (await handleApi(req, res, url)) return;
+      const files: Record<string, [string, string]> = {
+        "/": ["index.html", "text/html"],
+        "/app.js": ["app.js", "text/javascript"],
+        "/styles.css": ["styles.css", "text/css"],
+      };
+      const file = files[url.pathname];
+      if (req.method === "GET" && file) {
+        sendText(res, 200, file[1], await readText(path.join(webRoot, file[0])));
+        return;
+      }
+      sendJson(res, 404, { code: "not_found" });
+    } catch (error) {
+      sendJson(res, 500, {
+        code: "internal_error",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
+  await new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(port, host, () => resolve());
+  });
+  console.log(`Octo Card Forge: http://${host}:${port}`);
+}
