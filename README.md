@@ -75,7 +75,7 @@ Content-Type: application/json
 
 ## Agent 使用
 
-仓库内置 [`design-adaptive-cards`](skills/design-adaptive-cards/SKILL.md) Skill。外部 Agent 使用该 Skill 理解 Card Package、数据契约、交互契约、Host Profile 和必跑校验；Card Forge 自身不运行 Agent。
+仓库内置 [`octo-design-cards`](skills/octo-design-cards/SKILL.md) Skill。外部 Agent 使用该 Skill 创建或修改 Card Package，并理解数据契约、交互契约、Host Profile、版本规则和必跑校验；Card Forge 自身不运行 Agent。
 
 ## 质量检查
 
