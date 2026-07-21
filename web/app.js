@@ -1,11 +1,7 @@
-import { buildComponentGallery } from "/component-gallery.js";
-
 const cardSelect = document.querySelector("#cardSelect");
 const sampleSelect = document.querySelector("#sampleSelect");
-const profileSelect = document.querySelector("#profileSelect");
 const dataEditor = document.querySelector("#dataEditor");
 const preview = document.querySelector("#preview");
-const componentPreview = document.querySelector("#componentPreview");
 const template = document.querySelector("#template");
 const payload = document.querySelector("#payload");
 const status = document.querySelector("#status");
@@ -13,7 +9,6 @@ const contract = document.querySelector("#contract");
 const version = document.querySelector("#version");
 const exportButton = document.querySelector("#exportButton");
 let cards = [];
-let renderProfiles = [];
 let currentContext;
 let currentView;
 let hostStyle;
@@ -37,38 +32,20 @@ async function json(url, init) {
 
 async function chooseCard() {
   const selected = cards.find((card) => card.id === cardSelect.value);
+  currentContext = await json(`/api/cards/${encodeURIComponent(selected.id)}/context`);
   const contractData = await json(`/api/cards/${encodeURIComponent(selected.id)}/contract`);
   contract.textContent = JSON.stringify(contractData, null, 2);
-  profileSelect.value = selected.renderProfile;
-  await applyRenderProfile(selected.renderProfile);
-  version.textContent = `${selected.id}@${selected.version} · target ${selected.renderProfile}`;
-  sampleSelect.replaceChildren();
-  for (const names of Object.values(selected.samples)) {
-    for (const name of names) sampleSelect.add(new Option(name, name));
-  }
-  await chooseSample();
-}
-
-async function applyRenderProfile(reference) {
-  currentContext = await json(
-    `/api/render-profiles/${encodeURIComponent(reference)}/context`
-  );
+  version.textContent = `${selected.id}@${selected.version} · ${selected.renderProfile}`;
   if (hostStyle) hostStyle.remove();
   hostStyle = document.createElement("link");
   hostStyle.rel = "stylesheet";
   hostStyle.href = currentContext.stylesheetUrl;
   document.head.append(hostStyle);
-  renderComponentGallery(reference);
-}
-
-function renderComponentGallery(reference) {
-  const gallery = new AdaptiveCards.AdaptiveCard();
-  gallery.hostConfig = new AdaptiveCards.HostConfig(currentContext.hostConfig);
-  gallery.onExecuteAction = (action) => {
-    status.textContent = `组件示例 · ${action.getJsonTypeName()}`;
-  };
-  gallery.parse(buildComponentGallery(currentContext.capabilities, reference));
-  componentPreview.replaceChildren(gallery.render());
+  sampleSelect.replaceChildren();
+  for (const names of Object.values(selected.samples)) {
+    for (const name of names) sampleSelect.add(new Option(name, name));
+  }
+  await chooseSample();
 }
 
 async function chooseSample() {
@@ -110,17 +87,9 @@ async function render(view) {
 }
 
 cards = await json("/api/cards");
-renderProfiles = await json("/api/render-profiles");
-for (const profile of renderProfiles) {
-  profileSelect.add(new Option(profile.reference, profile.reference));
-}
 for (const card of cards) cardSelect.add(new Option(card.name, card.id));
 cardSelect.addEventListener("change", chooseCard);
 sampleSelect.addEventListener("change", chooseSample);
-profileSelect.addEventListener("change", async () => {
-  await applyRenderProfile(profileSelect.value);
-  await render(currentView);
-});
 document.querySelector("#renderButton").addEventListener("click", () => render());
 exportButton.addEventListener("click", async () => {
   const selected = cards.find((card) => card.id === cardSelect.value);

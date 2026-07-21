@@ -25,7 +25,7 @@ pnpm cli render docs.access-request --sample pending
 pnpm dev
 ```
 
-打开 `http://127.0.0.1:4318`，可切换 Card、Sample 和 Render Profile 版本，编辑业务数据并实时查看组装结果；页面同时展示所选 HostConfig 下的原生 Adaptive Card 组件样式。
+打开 `http://127.0.0.1:4318`，可切换待处理、已允许、已拒绝示例，编辑业务数据并实时查看组装结果。
 
 ## 系统边界
 
@@ -84,8 +84,6 @@ Content-Type: application/json
 - `GET /api/cards/:id/handoff`
 - `GET /api/cards/:id/views/:view/template`
 - `GET /api/cards/:id/samples/:sample`
-- `GET /api/render-profiles`
-- `GET /api/render-profiles/:ref/context`
 - `GET /api/render-styles/:renderProfile`
 
 ## Agent 使用

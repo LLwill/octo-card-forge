@@ -65,25 +65,3 @@ export async function getRenderProfile(reference: string): Promise<{
   ]);
   return { root, manifest, capabilities, hostConfig };
 }
-
-export async function listRenderProfiles(): Promise<
-  Array<Awaited<ReturnType<typeof getRenderProfile>> & { reference: string }>
-> {
-  const profilesRoot = resolveInProject("render-profiles");
-  const ids = await readdir(profilesRoot, { withFileTypes: true });
-  const profiles = [];
-  for (const id of ids) {
-    if (!id.isDirectory()) continue;
-    const versions = await readdir(path.join(profilesRoot, id.name), {
-      withFileTypes: true,
-    });
-    for (const version of versions) {
-      if (!version.isDirectory()) continue;
-      const reference = `${id.name}@${version.name}`;
-      profiles.push({ reference, ...(await getRenderProfile(reference)) });
-    }
-  }
-  return profiles.sort((a, b) =>
-    a.reference.localeCompare(b.reference, undefined, { numeric: true })
-  );
-}

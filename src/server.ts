@@ -3,12 +3,7 @@ import path from "node:path";
 import { compileCard, compileSample } from "./compiler.js";
 import { readJson, readText, resolveInProject } from "./fs.js";
 import { buildHandoffArchive } from "./handoff.js";
-import {
-  getCard,
-  getRenderProfile,
-  listCards,
-  listRenderProfiles,
-} from "./registry.js";
+import { getCard, getRenderProfile, listCards } from "./registry.js";
 import type { JsonObject } from "./types.js";
 
 function sendJson(res: ServerResponse, status: number, value: unknown): void {
@@ -80,30 +75,6 @@ async function handleApi(
         ),
       }))
     );
-    return true;
-  }
-
-  if (req.method === "GET" && url.pathname === "/api/render-profiles") {
-    const profiles = await listRenderProfiles();
-    sendJson(
-      res,
-      200,
-      profiles.map(({ reference, manifest }) => ({ reference, ...manifest }))
-    );
-    return true;
-  }
-
-  const profileMatch = url.pathname.match(/^\/api\/render-profiles\/([^/]+)\/context$/);
-  if (req.method === "GET" && profileMatch) {
-    const reference = decodeURIComponent(profileMatch[1]);
-    const profile = await getRenderProfile(reference);
-    sendJson(res, 200, {
-      reference,
-      renderProfile: profile.manifest,
-      hostConfig: profile.hostConfig,
-      capabilities: profile.capabilities,
-      stylesheetUrl: `/api/render-styles/${encodeURIComponent(reference)}`,
-    });
     return true;
   }
 
@@ -239,7 +210,6 @@ export async function startServer(options: {
       const files: Record<string, [string, string]> = {
         "/": ["index.html", "text/html"],
         "/app.js": ["app.js", "text/javascript"],
-        "/component-gallery.js": ["component-gallery.js", "text/javascript"],
         "/styles.css": ["styles.css", "text/css"],
       };
       const file = files[url.pathname];
