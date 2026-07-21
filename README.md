@@ -41,6 +41,7 @@ octo-card list
 octo-card init docs.share-notification --name "文档分享通知"
 octo-card contract docs.access-request
 octo-card inspect docs.access-request [--sample pending]
+octo-card handoff docs.access-request [--output dist]
 octo-card render docs.access-request --sample pending
 octo-card check [docs.access-request] [--format json]
 octo-card dev [docs.access-request] [--port 4318]
@@ -53,6 +54,14 @@ octo-card dev [docs.access-request] [--port 4318]
 ```bash
 pnpm cli contract docs.access-request
 ```
+
+也可以从页面点击“导出后端交付包”，或使用 CLI 生成同一份 ZIP：
+
+```bash
+pnpm cli handoff docs.access-request --output dist
+```
+
+ZIP 解压后包含 `manifest.json`、数据契约、模板、Samples、Goldens、交互报告和接入说明。
 
 开发阶段可调用本地 Render API：
 
@@ -72,6 +81,7 @@ Content-Type: application/json
 - `GET /api/cards`
 - `GET /api/cards/:id/contract`
 - `GET /api/cards/:id/context`
+- `GET /api/cards/:id/handoff`
 - `GET /api/cards/:id/views/:view/template`
 - `GET /api/cards/:id/samples/:sample`
 - `GET /api/render-styles/:renderProfile`

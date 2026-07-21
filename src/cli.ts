@@ -3,6 +3,7 @@ import path from "node:path";
 import { checkCards } from "./check.js";
 import { compileCard, compileSample } from "./compiler.js";
 import { readJson } from "./fs.js";
+import { buildHandoffPackage, writeHandoffPackage } from "./handoff.js";
 import { initCard } from "./init.js";
 import { getCard, listCards } from "./registry.js";
 import { startServer } from "./server.js";
@@ -22,6 +23,8 @@ function usage(): void {
   list
   contract <card-id> [--format json]
   inspect <card-id> [--sample <name>] [--format json]
+  handoff <card-id> [--output dist] [--format json]
+  handoff <card-id> --output -  # print the aggregate JSON to stdout
   render <card-id> --sample <name>
   render <card-id> --view <view> --data <file>
   check [card-id] [--format json]
@@ -126,6 +129,20 @@ try {
         }
       }
       console.log(JSON.stringify({ cardId, samples }, null, 2));
+    }
+  } else if (command === "handoff") {
+    const cardId = args[0];
+    if (!cardId) throw new Error("card-id is required");
+    const output = flag("--output") ?? "dist";
+    if (output === "-") {
+      console.log(JSON.stringify(await buildHandoffPackage(cardId), null, 2));
+    } else {
+      const result = await writeHandoffPackage(cardId, output);
+      if (flag("--format") === "json") {
+        console.log(JSON.stringify({ cardId, ...result }, null, 2));
+      } else {
+        console.log(`Created backend handoff package: ${result.filePath}`);
+      }
     }
   } else if (command === "render") {
     const cardId = args[0];

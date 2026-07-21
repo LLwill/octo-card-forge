@@ -7,6 +7,7 @@ const payload = document.querySelector("#payload");
 const status = document.querySelector("#status");
 const contract = document.querySelector("#contract");
 const version = document.querySelector("#version");
+const exportButton = document.querySelector("#exportButton");
 let cards = [];
 let currentContext;
 let currentView;
@@ -90,6 +91,33 @@ for (const card of cards) cardSelect.add(new Option(card.name, card.id));
 cardSelect.addEventListener("change", chooseCard);
 sampleSelect.addEventListener("change", chooseSample);
 document.querySelector("#renderButton").addEventListener("click", () => render());
+exportButton.addEventListener("click", async () => {
+  const selected = cards.find((card) => card.id === cardSelect.value);
+  if (!selected) return;
+  status.textContent = "正在生成后端交付包…";
+  try {
+    const response = await fetch(
+      `/api/cards/${encodeURIComponent(selected.id)}/handoff`
+    );
+    if (!response.ok) {
+      const body = await response.json();
+      throw new Error(body.message || "导出失败");
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${selected.id}@${selected.version}.handoff.zip`;
+    link.hidden = true;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    status.textContent = `已导出 ${link.download}`;
+  } catch (error) {
+    status.textContent = error.message;
+  }
+});
 for (const button of document.querySelectorAll(".width")) {
   button.addEventListener("click", () => {
     document.querySelector(".width.active")?.classList.remove("active");

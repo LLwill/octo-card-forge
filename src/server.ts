@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import path from "node:path";
 import { compileCard, compileSample } from "./compiler.js";
 import { readJson, readText, resolveInProject } from "./fs.js";
+import { buildHandoffArchive } from "./handoff.js";
 import { getCard, getRenderProfile, listCards } from "./registry.js";
 import type { JsonObject } from "./types.js";
 
@@ -11,6 +12,21 @@ function sendJson(res: ServerResponse, status: number, value: unknown): void {
     "cache-control": "no-store",
   });
   res.end(JSON.stringify(value, null, 2));
+}
+
+function sendBinaryDownload(
+  res: ServerResponse,
+  fileName: string,
+  contentType: string,
+  value: Buffer
+): void {
+  res.writeHead(200, {
+    "content-type": contentType,
+    "content-disposition": `attachment; filename="${fileName}"`,
+    "content-length": value.byteLength,
+    "cache-control": "no-store",
+  });
+  res.end(value);
 }
 
 function sendText(
@@ -58,6 +74,19 @@ async function handleApi(
           ])
         ),
       }))
+    );
+    return true;
+  }
+
+  const handoffMatch = url.pathname.match(/^\/api\/cards\/([^/]+)\/handoff$/);
+  if (req.method === "GET" && handoffMatch) {
+    const cardId = decodeURIComponent(handoffMatch[1]);
+    const archive = await buildHandoffArchive(cardId);
+    sendBinaryDownload(
+      res,
+      archive.fileName,
+      "application/zip",
+      archive.buffer
     );
     return true;
   }

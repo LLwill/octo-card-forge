@@ -24,7 +24,9 @@ select, textarea { width: 100%; border: 1px solid rgba(0,0,0,.12); border-radius
 select { height: 34px; padding: 0 10px; }
 textarea { min-height: 360px; padding: 12px; resize: vertical; font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; }
 button { min-height: 32px; padding: 0 14px; border: 0; border-radius: 999px; cursor: pointer; }
+.primary-actions { display: grid; gap: 8px; }
 #renderButton { color: #fff; background: #1c1c23; }
+#exportButton { color: #1f2329; background: #eef0f2; }
 .content { min-width: 0; padding: 20px; display: grid; align-content: start; gap: 16px; }
 .toolbar { display: flex; align-items: center; justify-content: space-between; }
 .toolbar div { display: flex; gap: 6px; }

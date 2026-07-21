@@ -82,6 +82,7 @@ pnpm typecheck
 pnpm test
 pnpm cli check <card-id> --format json
 pnpm cli inspect <card-id> --format json
+pnpm cli handoff <card-id> --output dist --format json
 pnpm cli render <card-id> --sample <sample-name>
 ```
 
