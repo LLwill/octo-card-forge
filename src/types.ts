@@ -1,25 +1,27 @@
 export type JsonObject = Record<string, unknown>;
 
+export type WireProfile = "octo/v1" | "octo/v2";
+
 export interface CardViewDefinition {
+  wireProfile: WireProfile;
   template: string;
   samples: string[];
 }
 
 export interface CardManifest {
-  schemaVersion: 1;
+  schemaVersion: 2;
   id: string;
   name: string;
   version: string;
   contractVersion: string;
   adaptiveCardVersion: string;
-  hostProfile: string;
+  renderProfile: string;
   defaultLocale: string;
   views: Record<string, CardViewDefinition>;
   dataSchema: string;
-  interactions: string;
 }
 
-export interface HostProfileManifest {
+export interface RenderProfileManifest {
   id: string;
   version: string;
   adaptiveCardsSdkVersion: string;
@@ -28,7 +30,7 @@ export interface HostProfileManifest {
   capabilities: string;
 }
 
-export interface HostCapabilities {
+export interface RenderCapabilities {
   maxAdaptiveCardVersion: string;
   allowedElements: string[];
   allowedActions: string[];
@@ -39,28 +41,40 @@ export interface HostCapabilities {
   openUrlSchemes: string[];
 }
 
-export interface InteractionContract {
-  views?: string[];
-  actions: Record<
-    string,
-    {
-      type: string;
-      associatedInputs?: string;
-      requiredInputs?: string[];
-    }
-  >;
-  inputs: Record<
-    string,
-    {
-      type: "string";
-      required?: boolean;
-      maxLength?: number;
-    }
-  >;
-  localState?: {
-    mutuallyExclusive?: string[][];
-    [id: string]: unknown;
-  };
+export interface InspectedAction {
+  path: string;
+  id?: string;
+  type: string;
+  associatedInputs?: "auto" | "none";
+  inputIds?: string[];
+  dataKeys?: string[];
+}
+
+export interface InspectedInput {
+  path: string;
+  id: string;
+  type: string;
+  isRequired: boolean;
+  isVisible: boolean;
+  maxLength?: number;
+  isMultiSelect?: boolean;
+  choiceValues?: string[];
+}
+
+export interface InspectedToggleTarget {
+  elementId: string;
+  isVisible?: boolean;
+}
+
+export interface InspectedToggle {
+  path: string;
+  targets: InspectedToggleTarget[];
+}
+
+export interface CardInspection {
+  actions: InspectedAction[];
+  inputs: InspectedInput[];
+  toggles: InspectedToggle[];
 }
 
 export interface CardPackage {
@@ -79,9 +93,11 @@ export interface CompileResult {
   cardId: string;
   cardVersion: string;
   contractVersion: string;
-  hostProfile: string;
+  renderProfile: string;
+  wireProfile: WireProfile;
   view: string;
   payload: JsonObject;
+  inspection: CardInspection;
   issues: ValidationIssue[];
 }
 
@@ -93,6 +109,7 @@ export interface CheckReport {
     samples: Array<{
       name: string;
       view: string;
+      wireProfile: WireProfile;
       valid: boolean;
       issues: ValidationIssue[];
     }>;

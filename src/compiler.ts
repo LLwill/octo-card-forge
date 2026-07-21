@@ -2,14 +2,14 @@ import path from "node:path";
 import { createRequire } from "node:module";
 import * as ACData from "adaptivecards-templating";
 import { readJson } from "./fs.js";
-import { getCard, getHostProfile } from "./registry.js";
+import { inspectCard } from "./inspect.js";
+import { getCard, getRenderProfile } from "./registry.js";
 import type {
   CompileResult,
-  InteractionContract,
   JsonObject,
   ValidationIssue,
 } from "./types.js";
-import { validateCompiledCard, validateInteractions } from "./validate.js";
+import { validateCompiledCard } from "./validate.js";
 
 // Both packages publish CommonJS-shaped declarations under NodeNext. Resolve the
 // runtime defaults once here while keeping the rest of Card Forge native ESM.
@@ -60,23 +60,19 @@ export async function compileCard(options: {
     const templateJson = await readJson<JsonObject>(path.join(card.root, view.template));
     const template = new ACData.Template(templateJson);
     payload = template.expand({ $root: options.data }) as JsonObject;
-    const host = await getHostProfile(card.manifest.hostProfile);
-    issues.push(...validateCompiledCard(payload, host.capabilities));
-    const interactions = await readJson<InteractionContract>(
-      path.join(card.root, card.manifest.interactions)
-    );
-    if (!interactions.views || interactions.views.includes(options.view)) {
-      issues.push(...validateInteractions(payload, interactions));
-    }
+    const profile = await getRenderProfile(card.manifest.renderProfile);
+    issues.push(...validateCompiledCard(payload, profile.capabilities, view.wireProfile));
   }
 
   return {
     cardId: card.manifest.id,
     cardVersion: card.manifest.version,
     contractVersion: card.manifest.contractVersion,
-    hostProfile: card.manifest.hostProfile,
+    renderProfile: card.manifest.renderProfile,
+    wireProfile: view.wireProfile,
     view: options.view,
     payload,
+    inspection: inspectCard(payload),
     issues,
   };
 }

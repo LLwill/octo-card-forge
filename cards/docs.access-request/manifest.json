@@ -1,20 +1,21 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "docs.access-request",
   "name": "文档访问申请",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "contractVersion": "1.0.0",
   "adaptiveCardVersion": "1.5",
-  "hostProfile": "octo-web@1.0.0",
+  "renderProfile": "octo-chat@1.0.0",
   "defaultLocale": "zh-CN",
   "dataSchema": "contract/data.schema.json",
-  "interactions": "interactions.json",
   "views": {
     "pending": {
+      "wireProfile": "octo/v2",
       "template": "templates/pending.template.json",
       "samples": ["samples/pending.json"]
     },
     "result": {
+      "wireProfile": "octo/v1",
       "template": "templates/result.template.json",
       "samples": ["samples/approved.json", "samples/rejected.json"]
     }

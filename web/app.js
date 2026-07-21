@@ -2,12 +2,15 @@ const cardSelect = document.querySelector("#cardSelect");
 const sampleSelect = document.querySelector("#sampleSelect");
 const dataEditor = document.querySelector("#dataEditor");
 const preview = document.querySelector("#preview");
+const template = document.querySelector("#template");
 const payload = document.querySelector("#payload");
 const status = document.querySelector("#status");
 const contract = document.querySelector("#contract");
 const version = document.querySelector("#version");
+const exportButton = document.querySelector("#exportButton");
 let cards = [];
 let currentContext;
+let currentView;
 let hostStyle;
 
 AdaptiveCards.AdaptiveCard.onProcessMarkdown = (text, result) => {
@@ -32,7 +35,7 @@ async function chooseCard() {
   currentContext = await json(`/api/cards/${encodeURIComponent(selected.id)}/context`);
   const contractData = await json(`/api/cards/${encodeURIComponent(selected.id)}/contract`);
   contract.textContent = JSON.stringify(contractData, null, 2);
-  version.textContent = `${selected.id}@${selected.version} · ${selected.hostProfile}`;
+  version.textContent = `${selected.id}@${selected.version} · ${selected.renderProfile}`;
   if (hostStyle) hostStyle.remove();
   hostStyle = document.createElement("link");
   hostStyle.rel = "stylesheet";
@@ -49,15 +52,21 @@ async function chooseSample() {
   const result = await json(
     `/api/cards/${encodeURIComponent(cardSelect.value)}/samples/${encodeURIComponent(sampleSelect.value)}`
   );
+  currentView = result.view;
+  const templateResult = await json(
+    `/api/cards/${encodeURIComponent(cardSelect.value)}/views/${encodeURIComponent(currentView)}/template`
+  );
   dataEditor.value = JSON.stringify(result.data, null, 2);
-  await render(result.view);
+  template.textContent = JSON.stringify(templateResult.template, null, 2);
+  await render(currentView);
 }
 
 async function render(view) {
   status.textContent = "组装中…";
   try {
     const data = JSON.parse(dataEditor.value);
-    const resolvedView = view || (data.state === "pending" ? "pending" : "result");
+    const resolvedView = view || currentView;
+    if (!resolvedView) throw new Error("请先选择一个 View");
     const result = await json("/api/render", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -82,6 +91,33 @@ for (const card of cards) cardSelect.add(new Option(card.name, card.id));
 cardSelect.addEventListener("change", chooseCard);
 sampleSelect.addEventListener("change", chooseSample);
 document.querySelector("#renderButton").addEventListener("click", () => render());
+exportButton.addEventListener("click", async () => {
+  const selected = cards.find((card) => card.id === cardSelect.value);
+  if (!selected) return;
+  status.textContent = "正在生成后端交付包…";
+  try {
+    const response = await fetch(
+      `/api/cards/${encodeURIComponent(selected.id)}/handoff`
+    );
+    if (!response.ok) {
+      const body = await response.json();
+      throw new Error(body.message || "导出失败");
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${selected.id}@${selected.version}.handoff.zip`;
+    link.hidden = true;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    status.textContent = `已导出 ${link.download}`;
+  } catch (error) {
+    status.textContent = error.message;
+  }
+});
 for (const button of document.querySelectorAll(".width")) {
   button.addEventListener("click", () => {
     document.querySelector(".width.active")?.classList.remove("active");

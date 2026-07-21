@@ -24,7 +24,9 @@ select, textarea { width: 100%; border: 1px solid rgba(0,0,0,.12); border-radius
 select { height: 34px; padding: 0 10px; }
 textarea { min-height: 360px; padding: 12px; resize: vertical; font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; }
 button { min-height: 32px; padding: 0 14px; border: 0; border-radius: 999px; cursor: pointer; }
+.primary-actions { display: grid; gap: 8px; }
 #renderButton { color: #fff; background: #1c1c23; }
+#exportButton { color: #1f2329; background: #eef0f2; }
 .content { min-width: 0; padding: 20px; display: grid; align-content: start; gap: 16px; }
 .toolbar { display: flex; align-items: center; justify-content: space-between; }
 .toolbar div { display: flex; gap: 6px; }
@@ -33,10 +35,12 @@ button { min-height: 32px; padding: 0 14px; border: 0; border-radius: 999px; cur
 .preview-shell { min-height: 420px; padding: 40px; overflow: auto; display: grid; place-items: start center; background: #eef0f2; border-radius: 10px; }
 #preview { width: 640px; max-width: 100%; transition: width .15s ease; }
 #preview > .ac-adaptiveCard { border: 1px solid rgba(0,0,0,.08); border-radius: 8px; overflow: hidden; }
+.json-panels { min-width: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 details { min-width: 0; }
 summary { cursor: pointer; font-size: 13px; font-weight: 600; }
 pre { max-height: 520px; overflow: auto; padding: 14px; border-radius: 8px; color: #d8dee9; background: #20232a; font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; }
 @media (max-width: 900px) {
   .workspace { grid-template-columns: 1fr; }
   .sidebar { border-right: 0; border-bottom: 1px solid rgba(0,0,0,.08); }
+  .json-panels { grid-template-columns: 1fr; }
 }

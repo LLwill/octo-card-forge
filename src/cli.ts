@@ -3,6 +3,7 @@ import path from "node:path";
 import { checkCards } from "./check.js";
 import { compileCard, compileSample } from "./compiler.js";
 import { readJson } from "./fs.js";
+import { buildHandoffPackage, writeHandoffPackage } from "./handoff.js";
 import { initCard } from "./init.js";
 import { getCard, listCards } from "./registry.js";
 import { startServer } from "./server.js";
@@ -18,9 +19,12 @@ function flag(name: string): string | undefined {
 
 function usage(): void {
   console.log(`octo-card commands:
-  init <card-id> --name <name> [--view default] [--host-profile octo-web@1.0.0] [--format json]
+  init <card-id> --name <name> [--view default] [--wire-profile octo/v1] [--render-profile octo-chat@1.0.0] [--format json]
   list
-  contract <card-id>
+  contract <card-id> [--format json]
+  inspect <card-id> [--sample <name>] [--format json]
+  handoff <card-id> [--output dist] [--format json]
+  handoff <card-id> --output -  # print the aggregate JSON to stdout
   render <card-id> --sample <name>
   render <card-id> --view <view> --data <file>
   check [card-id] [--format json]
@@ -37,7 +41,8 @@ try {
       cardId,
       name,
       view: flag("--view"),
-      hostProfile: flag("--host-profile"),
+      renderProfile: flag("--render-profile"),
+      wireProfile: flag("--wire-profile") as "octo/v1" | "octo/v2" | undefined,
     });
     if (flag("--format") === "json") {
       console.log(JSON.stringify(result, null, 2));
@@ -60,19 +65,85 @@ try {
     const cardId = args[0];
     if (!cardId) throw new Error("card-id is required");
     const card = await getCard(cardId);
+    const reports = [];
+    for (const [view, definition] of Object.entries(card.manifest.views)) {
+      for (const samplePath of definition.samples) {
+        const sample = path.basename(samplePath, path.extname(samplePath));
+        const result = await compileSample({ cardId, sample });
+        reports.push({
+          sample,
+          view,
+          wireProfile: definition.wireProfile,
+          inspection: result.inspection,
+        });
+      }
+    }
     console.log(
       JSON.stringify(
         {
           card: card.manifest,
           schema: await readJson(path.join(card.root, card.manifest.dataSchema)),
-          interactions: await readJson(
-            path.join(card.root, card.manifest.interactions)
-          ),
+          interactionReports: reports,
         },
         null,
         2
       )
     );
+  } else if (command === "inspect") {
+    const cardId = args[0];
+    if (!cardId) throw new Error("card-id is required");
+    const sample = flag("--sample");
+    if (sample) {
+      const result = await compileSample({ cardId, sample });
+      if (result.issues.some((issue) => issue.severity === "error")) {
+        throw new Error(`Cannot inspect invalid sample ${sample}`);
+      }
+      console.log(
+        JSON.stringify(
+          {
+            cardId,
+            cardVersion: result.cardVersion,
+            sample,
+            view: result.view,
+            wireProfile: result.wireProfile,
+            ...result.inspection,
+          },
+          null,
+          2
+        )
+      );
+    } else {
+      const card = await getCard(cardId);
+      const samples = [];
+      for (const [view, definition] of Object.entries(card.manifest.views)) {
+        for (const samplePath of definition.samples) {
+          const sampleName = path.basename(samplePath, path.extname(samplePath));
+          const result = await compileSample({ cardId, sample: sampleName });
+          samples.push({
+            sample: sampleName,
+            view,
+            wireProfile: definition.wireProfile,
+            ...result.inspection,
+            issues: result.issues,
+          });
+        }
+      }
+      console.log(JSON.stringify({ cardId, samples }, null, 2));
+    }
+  } else if (command === "handoff") {
+    const cardId = args[0];
+    if (!cardId) throw new Error("card-id is required");
+    const output = flag("--output") ?? "dist";
+    if (output === "-") {
+      console.log(JSON.stringify(await buildHandoffPackage(cardId), null, 2));
+    } else {
+      const result = await writeHandoffPackage(cardId, output);
+      if (flag("--format") === "json") {
+        console.log(JSON.stringify({ cardId, ...result }, null, 2));
+      } else {
+        console.log(`Created backend handoff package: ${result.filePath}`);
+      }
+    }
   } else if (command === "render") {
     const cardId = args[0];
     if (!cardId) throw new Error("card-id is required");
@@ -99,7 +170,9 @@ try {
       for (const card of report.cards) {
         console.log(`${card.cardId}@${card.version}`);
         for (const sample of card.samples) {
-          console.log(`  ${sample.valid ? "✓" : "✗"} ${sample.name} (${sample.view})`);
+          console.log(
+            `  ${sample.valid ? "✓" : "✗"} ${sample.name} (${sample.view}, ${sample.wireProfile})`
+          );
           for (const issue of sample.issues) {
             console.log(`    ${issue.severity}: ${issue.code} ${issue.path} ${issue.message}`);
           }

@@ -2,7 +2,8 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import path from "node:path";
 import { compileCard, compileSample } from "./compiler.js";
 import { readJson, readText, resolveInProject } from "./fs.js";
-import { getCard, getHostProfile, listCards } from "./registry.js";
+import { buildHandoffArchive } from "./handoff.js";
+import { getCard, getRenderProfile, listCards } from "./registry.js";
 import type { JsonObject } from "./types.js";
 
 function sendJson(res: ServerResponse, status: number, value: unknown): void {
@@ -11,6 +12,21 @@ function sendJson(res: ServerResponse, status: number, value: unknown): void {
     "cache-control": "no-store",
   });
   res.end(JSON.stringify(value, null, 2));
+}
+
+function sendBinaryDownload(
+  res: ServerResponse,
+  fileName: string,
+  contentType: string,
+  value: Buffer
+): void {
+  res.writeHead(200, {
+    "content-type": contentType,
+    "content-disposition": `attachment; filename="${fileName}"`,
+    "content-length": value.byteLength,
+    "cache-control": "no-store",
+  });
+  res.end(value);
 }
 
 function sendText(
@@ -50,7 +66,7 @@ async function handleApi(
         name: manifest.name,
         version: manifest.version,
         contractVersion: manifest.contractVersion,
-        hostProfile: manifest.hostProfile,
+        renderProfile: manifest.renderProfile,
         samples: Object.fromEntries(
           Object.entries(manifest.views).map(([view, definition]) => [
             view,
@@ -62,24 +78,50 @@ async function handleApi(
     return true;
   }
 
+  const handoffMatch = url.pathname.match(/^\/api\/cards\/([^/]+)\/handoff$/);
+  if (req.method === "GET" && handoffMatch) {
+    const cardId = decodeURIComponent(handoffMatch[1]);
+    const archive = await buildHandoffArchive(cardId);
+    sendBinaryDownload(
+      res,
+      archive.fileName,
+      "application/zip",
+      archive.buffer
+    );
+    return true;
+  }
+
   const cardMatch = url.pathname.match(/^\/api\/cards\/([^/]+)\/(contract|context)$/);
   if (req.method === "GET" && cardMatch) {
     const card = await getCard(decodeURIComponent(cardMatch[1]));
     if (cardMatch[2] === "contract") {
+      const interactionReports = [];
+      for (const [view, definition] of Object.entries(card.manifest.views)) {
+        for (const samplePath of definition.samples) {
+          const sample = path.basename(samplePath, path.extname(samplePath));
+          const result = await compileSample({ cardId: card.manifest.id, sample });
+          interactionReports.push({
+            sample,
+            view,
+            wireProfile: definition.wireProfile,
+            inspection: result.inspection,
+          });
+        }
+      }
       sendJson(res, 200, {
         cardId: card.manifest.id,
         cardVersion: card.manifest.version,
         contractVersion: card.manifest.contractVersion,
         schema: await readJson(path.join(card.root, card.manifest.dataSchema)),
-        interactions: await readJson(path.join(card.root, card.manifest.interactions)),
+        interactionReports,
       });
     } else {
-      const host = await getHostProfile(card.manifest.hostProfile);
+      const profile = await getRenderProfile(card.manifest.renderProfile);
       sendJson(res, 200, {
         card: card.manifest,
-        hostProfile: host.manifest,
-        hostConfig: host.hostConfig,
-        stylesheetUrl: `/api/host-styles/${encodeURIComponent(card.manifest.hostProfile)}`,
+        renderProfile: profile.manifest,
+        hostConfig: profile.hostConfig,
+        stylesheetUrl: `/api/render-styles/${encodeURIComponent(card.manifest.renderProfile)}`,
       });
     }
     return true;
@@ -95,14 +137,34 @@ async function handleApi(
     return true;
   }
 
-  const styleMatch = url.pathname.match(/^\/api\/host-styles\/(.+)$/);
+  const templateMatch = url.pathname.match(
+    /^\/api\/cards\/([^/]+)\/views\/([^/]+)\/template$/
+  );
+  if (req.method === "GET" && templateMatch) {
+    const card = await getCard(decodeURIComponent(templateMatch[1]));
+    const viewName = decodeURIComponent(templateMatch[2]);
+    const view = card.manifest.views[viewName];
+    if (!view) {
+      sendJson(res, 404, { code: "view_not_found", message: `Unknown view: ${viewName}` });
+      return true;
+    }
+    sendJson(res, 200, {
+      cardId: card.manifest.id,
+      view: viewName,
+      wireProfile: view.wireProfile,
+      template: await readJson(path.join(card.root, view.template)),
+    });
+    return true;
+  }
+
+  const styleMatch = url.pathname.match(/^\/api\/render-styles\/(.+)$/);
   if (req.method === "GET" && styleMatch) {
-    const host = await getHostProfile(decodeURIComponent(styleMatch[1]));
+    const profile = await getRenderProfile(decodeURIComponent(styleMatch[1]));
     sendText(
       res,
       200,
       "text/css",
-      await readText(path.join(host.root, host.manifest.stylesheet))
+      await readText(path.join(profile.root, profile.manifest.stylesheet))
     );
     return true;
   }

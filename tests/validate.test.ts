@@ -1,12 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { validateCompiledCard, validateInteractions } from "../src/validate.js";
-import type {
-  HostCapabilities,
-  InteractionContract,
-  JsonObject,
-} from "../src/types.js";
+import { inspectCard } from "../src/inspect.js";
+import { validateCompiledCard } from "../src/validate.js";
+import type { JsonObject, RenderCapabilities } from "../src/types.js";
 
-const capabilities: HostCapabilities = {
+const capabilities: RenderCapabilities = {
   maxAdaptiveCardVersion: "1.5",
   allowedElements: ["TextBlock", "Container", "ActionSet", "Input.Text"],
   allowedActions: ["Action.Submit", "Action.ToggleVisibility"],
@@ -17,7 +14,7 @@ const capabilities: HostCapabilities = {
   openUrlSchemes: ["https"],
 };
 
-describe("host validation", () => {
+describe("render and wire profile validation", () => {
   it("detects unsupported elements and actions", () => {
     const payload: JsonObject = {
       type: "AdaptiveCard",
@@ -27,7 +24,9 @@ describe("host validation", () => {
         { type: "ActionSet", actions: [{ type: "Action.Execute" }] },
       ],
     };
-    const codes = validateCompiledCard(payload, capabilities).map((issue) => issue.code);
+    const codes = validateCompiledCard(payload, capabilities, "octo/v2").map(
+      (issue) => issue.code
+    );
     expect(codes).toContain("host.element_unsupported");
     expect(codes).toContain("host.action_unsupported");
   });
@@ -45,45 +44,91 @@ describe("host validation", () => {
         },
       ],
     };
-    expect(validateCompiledCard(payload, capabilities)).toEqual(
+    expect(validateCompiledCard(payload, capabilities, "octo/v2")).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ code: "interaction.toggle_target_missing" }),
       ])
     );
   });
-});
 
-describe("interaction contract validation", () => {
-  const contract: InteractionContract = {
-    actions: {
-      approve: { type: "Action.Submit", associatedInputs: "none" },
-      deny: { type: "Action.Submit", requiredInputs: ["deny_reason"] },
-    },
-    inputs: {
-      deny_reason: { type: "string", required: true, maxLength: 200 },
-    },
-    localState: {
-      mutuallyExclusive: [["deny_panel", "primary_actions"]],
-    },
-  };
-
-  it("detects broken submit and input guarantees", () => {
+  it("enforces octo/v1 interaction boundaries and standard properties", () => {
     const payload: JsonObject = {
       type: "AdaptiveCard",
       version: "1.5",
       body: [
-        { type: "Container", id: "deny_panel", items: [] },
-        { type: "ActionSet", id: "primary_actions", actions: [] },
-        { type: "Action.Submit", id: "approve" },
-        { type: "Action.Submit", id: "deny" },
-        { type: "Input.Text", id: "deny_reason", isRequired: false, maxLength: 100 },
+        { type: "Input.Text", id: "reason", isRequired: true },
+        {
+          type: "ActionSet",
+          actions: [
+            {
+              type: "Action.Submit",
+              title: "Submit",
+              associatedInputs: "invalid",
+              data: "invalid",
+            },
+          ],
+        },
       ],
     };
-    const codes = validateInteractions(payload, contract).map((issue) => issue.code);
-    expect(codes).toContain("contract.associated_inputs");
-    expect(codes).toContain("contract.required_input_optional");
-    expect(codes).toContain("contract.input_required");
-    expect(codes).toContain("contract.input_max_length");
-    expect(codes).toContain("contract.mutual_exclusion");
+    const codes = validateCompiledCard(payload, capabilities, "octo/v1").map(
+      (issue) => issue.code
+    );
+    expect(codes).toContain("wire_profile.input_unsupported");
+    expect(codes).toContain("wire_profile.action_unsupported");
+    expect(codes).toContain("interaction.submit_id");
+    expect(codes).toContain("interaction.associated_inputs");
+    expect(codes).toContain("interaction.submit_data");
+  });
+});
+
+describe("standard interaction inspection", () => {
+  it("derives actions and inputs from compiled card JSON", () => {
+    const payload: JsonObject = {
+      type: "AdaptiveCard",
+      version: "1.5",
+      body: [
+        {
+          type: "Input.Text",
+          id: "deny_reason",
+          isRequired: true,
+          isVisible: false,
+          maxLength: 200,
+        },
+      ],
+      actions: [
+        {
+          type: "Action.Submit",
+          id: "approve",
+          associatedInputs: "none",
+          data: { decision: "approve", request_id: "REQ-1" },
+        },
+        { type: "Action.Submit", id: "deny", data: { decision: "deny" } },
+      ],
+    };
+
+    expect(inspectCard(payload)).toMatchObject({
+      actions: [
+        {
+          id: "approve",
+          associatedInputs: "none",
+          inputIds: [],
+          dataKeys: ["decision", "request_id"],
+        },
+        {
+          id: "deny",
+          associatedInputs: "auto",
+          inputIds: ["deny_reason"],
+          dataKeys: ["decision"],
+        },
+      ],
+      inputs: [
+        {
+          id: "deny_reason",
+          isRequired: true,
+          isVisible: false,
+          maxLength: 200,
+        },
+      ],
+    });
   });
 });

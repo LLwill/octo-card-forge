@@ -28,6 +28,8 @@ describe("docs.access-request compiler", () => {
       expect(result.issues).toEqual([]);
       expect(result.payload).toMatchObject({ type: "AdaptiveCard", version: "1.5" });
       expect(JSON.stringify(result.payload)).not.toContain("${");
+      expect(result.renderProfile).toBe("octo-chat@1.0.0");
+      expect(result.wireProfile).toBe(sample === "pending" ? "octo/v2" : "octo/v1");
     }
   );
 
@@ -42,6 +44,25 @@ describe("docs.access-request compiler", () => {
       isRequired: true,
       maxLength: 200,
     });
+    const result = await compileSample({
+      cardId: "docs.access-request",
+      sample: "pending",
+    });
+    expect(result.inspection.actions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "approve", associatedInputs: "none", inputIds: [] }),
+        expect.objectContaining({
+          id: "deny",
+          associatedInputs: "auto",
+          inputIds: ["deny_reason"],
+        }),
+      ])
+    );
+    expect(result.inspection.inputs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "deny_reason", isVisible: false }),
+      ])
+    );
   });
 
   it("renders rejection reason only for the rejected result", async () => {

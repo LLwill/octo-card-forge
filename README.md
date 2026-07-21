@@ -8,7 +8,7 @@
 Card Package + 示例业务数据
   → 数据契约校验
   → Adaptive Cards 官方模板编译
-  → Octo Host 能力与安全策略校验
+  → Octo Wire Profile 与渲染能力校验
   → 完整标准 Adaptive Card JSON
   → 本地 Catalog / Render API
 ```
@@ -20,6 +20,7 @@ pnpm install
 pnpm cli init docs.share-notification --name "文档分享通知"
 pnpm cli list
 pnpm cli check docs.access-request
+pnpm cli inspect docs.access-request --sample pending
 pnpm cli render docs.access-request --sample pending
 pnpm dev
 ```
@@ -30,7 +31,7 @@ pnpm dev
 
 - 业务后端负责：领域模型 → Card ViewModel。
 - Card Forge 负责：Card ViewModel → 标准 Adaptive Card JSON。
-- Octo Web 负责：标准 JSON + 固定 Host Profile → 最终 UI。
+- Octo Web 负责：标准 JSON + 固定 Render Profile → 最终 UI。
 - 外部 Agent 通过 Skill/CLI 修改 Card Package；平台自身不运行 Agent。
 
 ## 当前命令
@@ -39,6 +40,8 @@ pnpm dev
 octo-card list
 octo-card init docs.share-notification --name "文档分享通知"
 octo-card contract docs.access-request
+octo-card inspect docs.access-request [--sample pending]
+octo-card handoff docs.access-request [--output dist]
 octo-card render docs.access-request --sample pending
 octo-card check [docs.access-request] [--format json]
 octo-card dev [docs.access-request] [--port 4318]
@@ -51,6 +54,14 @@ octo-card dev [docs.access-request] [--port 4318]
 ```bash
 pnpm cli contract docs.access-request
 ```
+
+也可以从页面点击“导出后端交付包”，或使用 CLI 生成同一份 ZIP：
+
+```bash
+pnpm cli handoff docs.access-request --output dist
+```
+
+ZIP 解压后包含 `manifest.json`、数据契约、模板、Samples、Goldens、交互报告和接入说明。
 
 开发阶段可调用本地 Render API：
 
@@ -65,17 +76,19 @@ Content-Type: application/json
 }
 ```
 
-返回值中的 `payload` 是可直接发送的完整标准 Adaptive Card JSON；契约不满足时返回 422 和具体字段错误。Catalog 还提供：
+返回值中的 `payload` 是完整标准 Adaptive Card JSON，`wireProfile` 指明发送时使用的 Octo 协议档位；契约不满足时返回 422 和具体字段错误。Catalog 还提供：
 
 - `GET /api/cards`
 - `GET /api/cards/:id/contract`
 - `GET /api/cards/:id/context`
+- `GET /api/cards/:id/handoff`
+- `GET /api/cards/:id/views/:view/template`
 - `GET /api/cards/:id/samples/:sample`
-- `GET /api/host-styles/:hostProfile`
+- `GET /api/render-styles/:renderProfile`
 
 ## Agent 使用
 
-仓库内置 [`octo-design-cards`](skills/octo-design-cards/SKILL.md) Skill。外部 Agent 使用该 Skill 创建或修改 Card Package，并理解数据契约、交互契约、Host Profile、版本规则和必跑校验；Card Forge 自身不运行 Agent。
+仓库内置 [`octo-design-cards`](skills/octo-design-cards/SKILL.md) Skill。外部 Agent 使用该 Skill 创建或修改 Card Package，并理解数据契约、标准 Action/Input、Render Profile、版本规则和必跑校验；Card Forge 自身不运行 Agent。
 
 ## 质量检查
 
@@ -87,4 +100,4 @@ pnpm cli check --format json
 
 ## 版本说明
 
-MVP 阶段 Card/Contract/Host Profile 版本记录在 manifest 中并由 Git 评审。后续发布系统将在不改变 Card Package 格式的前提下增加不可变制品、环境指针和回滚。
+Card Package 使用 Manifest v2：每个 View 显式声明 `wireProfile`，Action/Input/Toggle 只在标准 Adaptive Card JSON 中定义，不再维护 `interactions.json`。MVP 阶段 Card/Contract/Render Profile 版本由 Git 评审。

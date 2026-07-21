@@ -1,8 +1,8 @@
 import type {
-  HostCapabilities,
-  InteractionContract,
   JsonObject,
+  RenderCapabilities,
   ValidationIssue,
+  WireProfile,
 } from "./types.js";
 
 const ACTION_PREFIX = "Action.";
@@ -20,7 +20,8 @@ function compareVersion(a: string, b: string): number {
 
 export function validateCompiledCard(
   payload: JsonObject,
-  capabilities: HostCapabilities
+  capabilities: RenderCapabilities,
+  wireProfile: WireProfile
 ): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   const ids = new Set<string>();
@@ -61,17 +62,58 @@ export function validateCompiledCard(
         if (!capabilities.allowedActions.includes(type)) {
           error("host.action_unsupported", `${path}.type`, `${type} is not allowed`);
         }
+        if (wireProfile === "octo/v1" && type === "Action.Submit") {
+          error(
+            "wire_profile.action_unsupported",
+            `${path}.type`,
+            "Action.Submit requires octo/v2"
+          );
+        }
       } else if (type !== "AdaptiveCard" && type !== "TextRun") {
         if (!capabilities.allowedElements.includes(type)) {
           error("host.element_unsupported", `${path}.type`, `${type} is not allowed`);
         }
+        if (wireProfile === "octo/v1" && type.startsWith(INPUT_PREFIX)) {
+          error(
+            "wire_profile.input_unsupported",
+            `${path}.type`,
+            `${type} requires octo/v2`
+          );
+        }
       }
 
-      if (typeof value.id === "string" && value.id) {
-        if (ids.has(value.id)) {
+      if (value.id !== undefined) {
+        if (typeof value.id !== "string" || value.id.trim() === "") {
+          error("schema.invalid_id", `${path}.id`, "id must be a non-empty string");
+        } else if (ids.has(value.id)) {
           error("schema.duplicate_id", `${path}.id`, `Duplicate id: ${value.id}`);
+        } else {
+          ids.add(value.id);
         }
-        ids.add(value.id);
+      }
+
+      if (value.isVisible !== undefined && typeof value.isVisible !== "boolean") {
+        error("schema.is_visible", `${path}.isVisible`, "isVisible must be boolean");
+      }
+
+      if (type === "Action.Submit") {
+        if (typeof value.id !== "string" || value.id.trim() === "") {
+          error("interaction.submit_id", `${path}.id`, "Action.Submit requires an id");
+        }
+        if (
+          value.associatedInputs !== undefined &&
+          value.associatedInputs !== "auto" &&
+          value.associatedInputs !== "none"
+        ) {
+          error(
+            "interaction.associated_inputs",
+            `${path}.associatedInputs`,
+            'associatedInputs must be "auto" or "none"'
+          );
+        }
+        if (value.data !== undefined && !isObject(value.data)) {
+          error("interaction.submit_data", `${path}.data`, "Action.Submit.data must be an object");
+        }
       }
 
       if (type === "Action.ToggleVisibility") {
@@ -101,6 +143,17 @@ export function validateCompiledCard(
           } else {
             toggleTargets.push({ path: `${path}.targetElements[${index}]`, id });
           }
+          if (
+            isObject(target) &&
+            target.isVisible !== undefined &&
+            typeof target.isVisible !== "boolean"
+          ) {
+            error(
+              "interaction.toggle_target_visibility",
+              `${path}.targetElements[${index}].isVisible`,
+              "Toggle target isVisible must be boolean"
+            );
+          }
         });
       }
 
@@ -123,8 +176,60 @@ export function validateCompiledCard(
       if (type === "Action.OpenUrl") {
         checkUrl("url", capabilities.openUrlSchemes);
       }
-      if (type.startsWith(INPUT_PREFIX) && typeof value.id !== "string") {
-        error("interaction.input_id", `${path}.id`, `${type} requires an id`);
+      if (type.startsWith(INPUT_PREFIX)) {
+        if (typeof value.id !== "string" || value.id.trim() === "") {
+          error("interaction.input_id", `${path}.id`, `${type} requires an id`);
+        }
+        if (value.isRequired !== undefined && typeof value.isRequired !== "boolean") {
+          error(
+            "interaction.input_required",
+            `${path}.isRequired`,
+            "isRequired must be boolean"
+          );
+        }
+        if (
+          value.maxLength !== undefined &&
+          (!Number.isInteger(value.maxLength) || (value.maxLength as number) < 0)
+        ) {
+          error(
+            "interaction.input_max_length",
+            `${path}.maxLength`,
+            "maxLength must be a non-negative integer"
+          );
+        }
+      }
+
+      if (type === "Input.ChoiceSet") {
+        if (!Array.isArray(value.choices) || value.choices.length === 0) {
+          error(
+            "interaction.choice_set_choices",
+            `${path}.choices`,
+            "Input.ChoiceSet requires at least one choice"
+          );
+        } else {
+          const values = new Set<string>();
+          value.choices.forEach((choice, index) => {
+            if (
+              !isObject(choice) ||
+              typeof choice.title !== "string" ||
+              typeof choice.value !== "string"
+            ) {
+              error(
+                "interaction.choice_invalid",
+                `${path}.choices[${index}]`,
+                "Choice requires string title and value"
+              );
+            } else if (values.has(choice.value)) {
+              error(
+                "interaction.choice_duplicate",
+                `${path}.choices[${index}].value`,
+                `Duplicate choice value: ${choice.value}`
+              );
+            } else {
+              values.add(choice.value);
+            }
+          });
+        }
       }
     }
 
@@ -161,144 +266,5 @@ export function validateCompiledCard(
   if (JSON.stringify(payload).includes("${")) {
     error("compiler.unexpanded_expression", "$", "Payload contains template expressions");
   }
-  return issues;
-}
-
-function collectTypedNodes(payload: JsonObject): Map<string, JsonObject> {
-  const nodes = new Map<string, JsonObject>();
-  const walk = (value: unknown): void => {
-    if (Array.isArray(value)) {
-      value.forEach(walk);
-      return;
-    }
-    if (!isObject(value)) return;
-    if (typeof value.id === "string" && typeof value.type === "string") {
-      nodes.set(value.id, value);
-    }
-    for (const [key, child] of Object.entries(value)) {
-      if (key !== "data") walk(child);
-    }
-  };
-  walk(payload);
-  return nodes;
-}
-
-export function validateInteractions(
-  payload: JsonObject,
-  contract: InteractionContract
-): ValidationIssue[] {
-  const issues: ValidationIssue[] = [];
-  const nodes = collectTypedNodes(payload);
-  const error = (code: string, path: string, message: string) =>
-    issues.push({ severity: "error", code, path, message });
-
-  for (const [id, expected] of Object.entries(contract.actions ?? {})) {
-    const action = nodes.get(id);
-    if (!action) {
-      error("contract.action_missing", `$.actions.${id}`, `Action is missing: ${id}`);
-      continue;
-    }
-    if (action.type !== expected.type) {
-      error(
-        "contract.action_type",
-        `$.actions.${id}.type`,
-        `${id} must be ${expected.type}`
-      );
-    }
-    if (
-      expected.associatedInputs !== undefined &&
-      action.associatedInputs !== expected.associatedInputs
-    ) {
-      error(
-        "contract.associated_inputs",
-        `$.actions.${id}.associatedInputs`,
-        `${id} must use associatedInputs=${expected.associatedInputs}`
-      );
-    }
-    for (const inputId of expected.requiredInputs ?? []) {
-      const input = nodes.get(inputId);
-      if (!input || !String(input.type).startsWith(INPUT_PREFIX)) {
-        error(
-          "contract.required_input_missing",
-          `$.actions.${id}.requiredInputs`,
-          `${id} requires input ${inputId}`
-        );
-      } else if (input.isRequired !== true) {
-        error(
-          "contract.required_input_optional",
-          `$.inputs.${inputId}.isRequired`,
-          `${inputId} must be required`
-        );
-      }
-    }
-  }
-
-  for (const [id, expected] of Object.entries(contract.inputs ?? {})) {
-    const input = nodes.get(id);
-    if (!input) {
-      error("contract.input_missing", `$.inputs.${id}`, `Input is missing: ${id}`);
-      continue;
-    }
-    if (expected.type === "string" && input.type !== "Input.Text") {
-      error("contract.input_type", `$.inputs.${id}.type`, `${id} must be Input.Text`);
-    }
-    if (expected.required !== undefined && input.isRequired !== expected.required) {
-      error(
-        "contract.input_required",
-        `$.inputs.${id}.isRequired`,
-        `${id} isRequired must be ${expected.required}`
-      );
-    }
-    if (expected.maxLength !== undefined && input.maxLength !== expected.maxLength) {
-      error(
-        "contract.input_max_length",
-        `$.inputs.${id}.maxLength`,
-        `${id} maxLength must be ${expected.maxLength}`
-      );
-    }
-  }
-
-  for (const group of contract.localState?.mutuallyExclusive ?? []) {
-    for (const id of group) {
-      if (!nodes.has(id)) {
-        error(
-          "contract.local_state_missing",
-          "$.localState.mutuallyExclusive",
-          `Local state element is missing: ${id}`
-        );
-      }
-    }
-    if (group.length !== 2) continue;
-    const [first, second] = group;
-    let forward = false;
-    let reverse = false;
-    const walk = (value: unknown): void => {
-      if (Array.isArray(value)) {
-        value.forEach(walk);
-        return;
-      }
-      if (!isObject(value)) return;
-      if (value.type === "Action.ToggleVisibility" && Array.isArray(value.targetElements)) {
-        const targets = new Map<string, unknown>();
-        for (const target of value.targetElements) {
-          if (isObject(target) && typeof target.elementId === "string") {
-            targets.set(target.elementId, target.isVisible);
-          }
-        }
-        forward ||= targets.get(first) === true && targets.get(second) === false;
-        reverse ||= targets.get(first) === false && targets.get(second) === true;
-      }
-      Object.entries(value).forEach(([key, child]) => key !== "data" && walk(child));
-    };
-    walk(payload);
-    if (!forward || !reverse) {
-      error(
-        "contract.mutual_exclusion",
-        "$.localState.mutuallyExclusive",
-        `${first} and ${second} require explicit enter and cancel toggles`
-      );
-    }
-  }
-
   return issues;
 }
