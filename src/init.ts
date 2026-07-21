@@ -1,17 +1,22 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { projectRoot, readJson } from "./fs.js";
-import type { HostCapabilities, HostProfileManifest } from "./types.js";
+import type {
+  RenderCapabilities,
+  RenderProfileManifest,
+  WireProfile,
+} from "./types.js";
 
 const CARD_ID = /^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$/;
 const VIEW_ID = /^[a-z][a-z0-9_-]*$/;
-const HOST_PROFILE = /^[a-z][a-z0-9.-]*@\d+\.\d+\.\d+$/;
+const RENDER_PROFILE = /^[a-z][a-z0-9.-]*@\d+\.\d+\.\d+$/;
 
 export interface InitCardOptions {
   cardId: string;
   name: string;
   view?: string;
-  hostProfile?: string;
+  renderProfile?: string;
+  wireProfile?: WireProfile;
   root?: string;
 }
 
@@ -30,7 +35,8 @@ export async function initCard(options: InitCardOptions): Promise<InitCardResult
   const cardId = options.cardId.trim();
   const name = options.name.trim();
   const view = options.view?.trim() || "default";
-  const hostProfile = options.hostProfile?.trim() || "octo-web@1.0.0";
+  const renderProfile = options.renderProfile?.trim() || "octo-chat@1.0.0";
+  const wireProfile = options.wireProfile ?? "octo/v1";
 
   if (!CARD_ID.test(cardId)) {
     throw new Error(
@@ -41,29 +47,32 @@ export async function initCard(options: InitCardOptions): Promise<InitCardResult
   if (!VIEW_ID.test(view)) {
     throw new Error("view must start with a lowercase letter and contain letters, numbers, _ or -");
   }
-  if (!HOST_PROFILE.test(hostProfile)) {
-    throw new Error("host profile must look like octo-web@1.0.0");
+  if (!RENDER_PROFILE.test(renderProfile)) {
+    throw new Error("render profile must look like octo-chat@1.0.0");
+  }
+  if (wireProfile !== "octo/v1" && wireProfile !== "octo/v2") {
+    throw new Error("wire profile must be octo/v1 or octo/v2");
   }
 
   const root = path.resolve(options.root ?? projectRoot());
-  const at = hostProfile.lastIndexOf("@");
-  const hostRoot = path.join(
+  const at = renderProfile.lastIndexOf("@");
+  const profileRoot = path.join(
     root,
-    "host-profiles",
-    hostProfile.slice(0, at),
-    hostProfile.slice(at + 1)
+    "render-profiles",
+    renderProfile.slice(0, at),
+    renderProfile.slice(at + 1)
   );
   let adaptiveCardVersion: string;
   try {
-    const hostManifest = await readJson<HostProfileManifest>(
-      path.join(hostRoot, "manifest.json")
+    const profileManifest = await readJson<RenderProfileManifest>(
+      path.join(profileRoot, "manifest.json")
     );
-    const capabilities = await readJson<HostCapabilities>(
-      path.join(hostRoot, hostManifest.capabilities)
+    const capabilities = await readJson<RenderCapabilities>(
+      path.join(profileRoot, profileManifest.capabilities)
     );
     adaptiveCardVersion = capabilities.maxAdaptiveCardVersion;
   } catch {
-    throw new Error(`Unknown host profile: ${hostProfile}`);
+    throw new Error(`Unknown render profile: ${renderProfile}`);
   }
   const cardsRoot = path.join(root, "cards");
   const cardRoot = path.join(cardsRoot, cardId);
@@ -79,18 +88,18 @@ export async function initCard(options: InitCardOptions): Promise<InitCardResult
 
   const files: Record<string, unknown> = {
     "manifest.json": {
-      schemaVersion: 1,
+      schemaVersion: 2,
       id: cardId,
       name,
       version: "0.1.0",
       contractVersion: "1.0.0",
       adaptiveCardVersion,
-      hostProfile,
+      renderProfile,
       defaultLocale: "zh-CN",
       dataSchema: "contract/data.schema.json",
-      interactions: "interactions.json",
       views: {
         [view]: {
+          wireProfile,
           template: `templates/${view}.template.json`,
           samples: [`samples/${view}.json`],
         },
@@ -115,11 +124,6 @@ export async function initCard(options: InitCardOptions): Promise<InitCardResult
           examples: [`这是${name}的示例内容。`],
         },
       },
-    },
-    "interactions.json": {
-      views: [view],
-      actions: {},
-      inputs: {},
     },
     [`samples/${view}.json`]: {
       title: name,

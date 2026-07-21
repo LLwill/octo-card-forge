@@ -2,12 +2,14 @@ const cardSelect = document.querySelector("#cardSelect");
 const sampleSelect = document.querySelector("#sampleSelect");
 const dataEditor = document.querySelector("#dataEditor");
 const preview = document.querySelector("#preview");
+const template = document.querySelector("#template");
 const payload = document.querySelector("#payload");
 const status = document.querySelector("#status");
 const contract = document.querySelector("#contract");
 const version = document.querySelector("#version");
 let cards = [];
 let currentContext;
+let currentView;
 let hostStyle;
 
 AdaptiveCards.AdaptiveCard.onProcessMarkdown = (text, result) => {
@@ -32,7 +34,7 @@ async function chooseCard() {
   currentContext = await json(`/api/cards/${encodeURIComponent(selected.id)}/context`);
   const contractData = await json(`/api/cards/${encodeURIComponent(selected.id)}/contract`);
   contract.textContent = JSON.stringify(contractData, null, 2);
-  version.textContent = `${selected.id}@${selected.version} · ${selected.hostProfile}`;
+  version.textContent = `${selected.id}@${selected.version} · ${selected.renderProfile}`;
   if (hostStyle) hostStyle.remove();
   hostStyle = document.createElement("link");
   hostStyle.rel = "stylesheet";
@@ -49,15 +51,21 @@ async function chooseSample() {
   const result = await json(
     `/api/cards/${encodeURIComponent(cardSelect.value)}/samples/${encodeURIComponent(sampleSelect.value)}`
   );
+  currentView = result.view;
+  const templateResult = await json(
+    `/api/cards/${encodeURIComponent(cardSelect.value)}/views/${encodeURIComponent(currentView)}/template`
+  );
   dataEditor.value = JSON.stringify(result.data, null, 2);
-  await render(result.view);
+  template.textContent = JSON.stringify(templateResult.template, null, 2);
+  await render(currentView);
 }
 
 async function render(view) {
   status.textContent = "组装中…";
   try {
     const data = JSON.parse(dataEditor.value);
-    const resolvedView = view || (data.state === "pending" ? "pending" : "result");
+    const resolvedView = view || currentView;
+    if (!resolvedView) throw new Error("请先选择一个 View");
     const result = await json("/api/render", {
       method: "POST",
       headers: { "content-type": "application/json" },

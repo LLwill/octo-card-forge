@@ -11,7 +11,7 @@ const temporaryRoots: string[] = [];
 async function temporaryRoot(): Promise<string> {
   const root = await mkdtemp(path.join(os.tmpdir(), "octo-card-forge-"));
   temporaryRoots.push(root);
-  await cp(resolveInProject("host-profiles"), path.join(root, "host-profiles"), {
+  await cp(resolveInProject("render-profiles"), path.join(root, "render-profiles"), {
     recursive: true,
   });
   return root;
@@ -33,7 +33,6 @@ describe("initCard", () => {
 
     expect(result.files).toEqual([
       "contract/data.schema.json",
-      "interactions.json",
       "manifest.json",
       "samples/default.json",
       "templates/default.template.json",
@@ -45,7 +44,11 @@ describe("initCard", () => {
       id: "docs.share-notification",
       name: "文档分享通知",
       version: "0.1.0",
-      hostProfile: "octo-web@1.0.0",
+      schemaVersion: 2,
+      renderProfile: "octo-chat@1.0.0",
+      views: {
+        default: expect.objectContaining({ wireProfile: "octo/v1" }),
+      },
     });
 
     process.env.OCTO_CARD_FORGE_ROOT = root;
@@ -61,16 +64,16 @@ describe("initCard", () => {
     await expect(initCard(options)).rejects.toThrow("Card already exists: docs.notice");
   });
 
-  it("rejects an unknown host profile before creating files", async () => {
+  it("rejects an unknown render profile before creating files", async () => {
     const root = await temporaryRoot();
     await expect(
       initCard({
         cardId: "docs.notice",
         name: "通知",
-        hostProfile: "unknown-host@1.0.0",
+        renderProfile: "unknown-profile@1.0.0",
         root,
       })
-    ).rejects.toThrow("Unknown host profile: unknown-host@1.0.0");
+    ).rejects.toThrow("Unknown render profile: unknown-profile@1.0.0");
   });
 
   it.each(["../escape", "Docs.Notice", "docs_notice", "docs/"])(

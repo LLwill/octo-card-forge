@@ -10,7 +10,7 @@
     <header class="topbar">
       <div>
         <strong>Octo Card Forge</strong>
-        <span>Card Package · Contract · Host Profile</span>
+        <span>Card Package · Contract · Render Profile</span>
       </div>
       <span id="version"></span>
     </header>
@@ -31,10 +31,16 @@
           <span id="status"></span>
         </div>
         <div class="preview-shell"><div id="preview"></div></div>
-        <details open>
-          <summary>最终 Adaptive Card JSON</summary>
-          <pre id="payload"></pre>
-        </details>
+        <div class="json-panels">
+          <details open>
+            <summary>Adaptive Card 模板</summary>
+            <pre id="template"></pre>
+          </details>
+          <details open>
+            <summary>最终 Adaptive Card JSON</summary>
+            <pre id="payload"></pre>
+          </details>
+        </div>
       </section>
     </main>
     <script src="https://cdn.jsdelivr.net/npm/adaptivecards@3.0.6/dist/adaptivecards.min.js"></script>

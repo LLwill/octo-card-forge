@@ -1,8 +1,8 @@
 {
-  "id": "octo-web",
-  "version": "1.0.0",
+  "id": "octo-chat",
+  "version": "1.1.0",
   "adaptiveCardsSdkVersion": "3.0.6",
   "hostConfig": "host-config.json",
-  "stylesheet": "adaptive-card.css",
+  "stylesheet": "styles.css",
   "capabilities": "capabilities.json"
 }

@@ -18,13 +18,20 @@ export async function checkCards(cardId?: string): Promise<CheckReport> {
         try {
           const result = await compileSample({ cardId: card.manifest.id, sample });
           const valid = !result.issues.some((issue) => issue.severity === "error");
-          item.samples.push({ name: sample, view, valid, issues: result.issues });
+          item.samples.push({
+            name: sample,
+            view,
+            wireProfile: definition.wireProfile,
+            valid,
+            issues: result.issues,
+          });
           report.valid &&= valid;
         } catch (error) {
           report.valid = false;
           item.samples.push({
             name: sample,
             view,
+            wireProfile: definition.wireProfile,
             valid: false,
             issues: [
               {
