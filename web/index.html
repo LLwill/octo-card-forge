@@ -30,10 +30,21 @@
       </aside>
       <section class="content">
         <div class="toolbar">
-          <div><button class="width active" data-width="640">桌面</button><button class="width" data-width="390">移动</button></div>
+          <div class="preview-controls">
+            <button class="width active" data-width="640">桌面</button>
+            <button class="width" data-width="390">移动</button>
+            <label class="profile-control">Render Profile<select id="profileSelect"></select></label>
+          </div>
           <span id="status"></span>
         </div>
         <div class="preview-shell"><div id="preview"></div></div>
+        <section class="component-gallery">
+          <div>
+            <h2>原生组件样式</h2>
+            <p>使用上方选择的 Render Profile / HostConfig，由官方 Adaptive Cards SDK 实际渲染。</p>
+          </div>
+          <div class="component-preview-shell"><div id="componentPreview"></div></div>
+        </section>
         <div class="json-panels">
           <details open>
             <summary>Adaptive Card 模板</summary>
