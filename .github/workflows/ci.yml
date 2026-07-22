@@ -1,0 +1,117 @@
+name: forge-ci
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: forge-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22"
+  PNPM_VERSION: "10.32.0"
+  PROFILE_REF: octo-chat@1.2.0-rc.1
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type-check
+        run: pnpm typecheck
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Compile and validate every Card sample
+        run: pnpm check
+
+      - name: Validate current Render Profile
+        run: pnpm cli profile validate "$PROFILE_REF"
+
+      - name: Protect existing Render Profile versions
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          while IFS= read -r file; do
+            if git cat-file -e "$BASE_SHA:$file" 2>/dev/null; then
+              echo "Existing Render Profile files are immutable: $file" >&2
+              exit 1
+            fi
+          done < <(git diff --name-only "$BASE_SHA"...HEAD -- render-profiles)
+
+  package:
+    name: package
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build immutable package
+        run: pnpm cli profile pack "$PROFILE_REF" --output .release
+
+      - name: Inspect package contents
+        run: |
+          set -euo pipefail
+          package_dir=.release/octo-chat-1.2.0-rc.1/package
+          tarball=.release/mlt-org-octo-card-profile-octo-chat-1.2.0-rc.1.tgz
+          test -f "$tarball"
+          test "$(node -p "require('./$package_dir/package.json').name")" = "@mlt-org/octo-card-profile-octo-chat"
+          test "$(node -p "require('./$package_dir/package.json').version")" = "1.2.0-rc.1"
+          tar -tzf "$tarball" | sort
+          sha256sum "$tarball"
+          (cd "$package_dir" && npm pack --dry-run)
+
+      - name: Upload candidate artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: octo-chat-1.2.0-rc.1
+          path: |
+            .release/mlt-org-octo-card-profile-octo-chat-1.2.0-rc.1.tgz
+            .release/octo-chat-1.2.0-rc.1/package/dist/bundle-manifest.json
+          if-no-files-found: error
+          retention-days: 30
