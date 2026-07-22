@@ -7,6 +7,7 @@ import type {
 
 const ACTION_PREFIX = "Action.";
 const INPUT_PREFIX = "Input.";
+const STRUCTURAL_TYPES = new Set(["TextRun", "TableRow", "TableCell"]);
 
 function isObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -69,7 +70,7 @@ export function validateCompiledCard(
             "Action.Submit requires octo/v2"
           );
         }
-      } else if (type !== "AdaptiveCard" && type !== "TextRun") {
+      } else if (type !== "AdaptiveCard" && !STRUCTURAL_TYPES.has(type)) {
         if (!capabilities.allowedElements.includes(type)) {
           error("host.element_unsupported", `${path}.type`, `${type} is not allowed`);
         }

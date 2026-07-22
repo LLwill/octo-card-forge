@@ -103,3 +103,72 @@ describe("docs.access-request compiler", () => {
     expect(result.issues.some((issue) => issue.code === "contract.pattern")).toBe(true);
   });
 });
+
+describe("new Card Package versions", () => {
+  it("compiles the AI decision 0.2 choice without changing 0.1", async () => {
+    const legacy = await compileSample({
+      cardId: "ai.decision-action",
+      sample: "choose",
+    });
+    const next = await compileSample({
+      cardId: "ai.decision-action@0.2.0",
+      sample: "choose",
+    });
+
+    expect(legacy.cardVersion).toBe("0.1.0");
+    expect(next.cardVersion).toBe("0.2.0");
+    expect(next.renderProfile).toBe("octo-chat@1.2.0-rc.1");
+    expect(next.issues).toEqual([]);
+    expect(findById(next.payload, "decision_choice")).toMatchObject({
+      type: "Input.ChoiceSet",
+      value: "interaction",
+    });
+    expect(findById(next.payload, "decision_send")?.data).toMatchObject({
+      effect: "append_user_message",
+      reply_target_uid: "octo-assistant",
+    });
+    expect(findById(next.payload, "octo-surface-accent-header")).toMatchObject({
+      type: "Container",
+      style: "accent",
+    });
+    expect(findById(next.payload, "octo-surface-default-footer")).toMatchObject({
+      type: "Container",
+      style: "emphasis",
+      bleed: true,
+      separator: true,
+    });
+  });
+
+  it("compiles the docs 0.3 pending card with a white semantic body", async () => {
+    const legacy = await compileSample({
+      cardId: "docs.access-request",
+      sample: "pending",
+    });
+    const next = await compileSample({
+      cardId: "docs.access-request@0.3.0",
+      sample: "pending",
+    });
+
+    expect(legacy.cardVersion).toBe("0.2.0");
+    expect(next.cardVersion).toBe("0.3.0");
+    expect(next.renderProfile).toBe("octo-chat@1.2.0-rc.1");
+    expect(next.issues).toEqual([]);
+    expect(next.payload.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: "Container", style: "accent" }),
+      ])
+    );
+    expect(findById(next.payload, "octo-badge-warning-request-state")).toMatchObject({
+      type: "TextBlock",
+      color: "Warning",
+    });
+    expect(findById(next.payload, "rejection_form")).toMatchObject({
+      style: "attention",
+      isVisible: false,
+    });
+    expect(findById(next.payload, "rejection_reason")).toMatchObject({
+      type: "Input.Text",
+      isRequired: true,
+    });
+  });
+});

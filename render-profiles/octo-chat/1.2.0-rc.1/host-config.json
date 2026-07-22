@@ -1,0 +1,194 @@
+{
+  "fontFamily": "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif",
+  "fontSizes": {
+    "small": 12,
+    "default": 13,
+    "medium": 14,
+    "large": 17,
+    "extraLarge": 18
+  },
+  "fontWeights": {
+    "lighter": 200,
+    "default": 400,
+    "bolder": 600
+  },
+  "spacing": {
+    "none": 0,
+    "small": 4,
+    "default": 8,
+    "medium": 12,
+    "large": 16,
+    "extraLarge": 20,
+    "padding": 16
+  },
+  "separator": {
+    "lineThickness": 1,
+    "lineColor": "#eeeeee"
+  },
+  "supportsInteractivity": true,
+  "actions": {
+    "buttonSpacing": 8,
+    "spacing": "default",
+    "actionsOrientation": "horizontal",
+    "actionAlignment": "right",
+    "iconPlacement": "leftOfTitle",
+    "iconSize": 14
+  },
+  "containerStyles": {
+    "default": {
+      "backgroundColor": "#ffffff",
+      "foregroundColors": {
+        "default": {
+          "default": "#1f2329",
+          "subtle": "#6b7075"
+        },
+        "accent": {
+          "default": "#7f3bf5",
+          "subtle": "#7f3bf5"
+        },
+        "good": {
+          "default": "#41cd59",
+          "subtle": "#41cd59"
+        },
+        "warning": {
+          "default": "#fc8800",
+          "subtle": "#fc8800"
+        },
+        "attention": {
+          "default": "#f54a45",
+          "subtle": "#f54a45"
+        }
+      }
+    },
+    "emphasis": {
+      "backgroundColor": "#f7f8f9",
+      "foregroundColors": {
+        "default": {
+          "default": "#1f2329",
+          "subtle": "#6b7075"
+        },
+        "accent": {
+          "default": "#7f3bf5",
+          "subtle": "#7f3bf5"
+        },
+        "good": {
+          "default": "#41cd59",
+          "subtle": "#41cd59"
+        },
+        "warning": {
+          "default": "#fc8800",
+          "subtle": "#fc8800"
+        },
+        "attention": {
+          "default": "#f54a45",
+          "subtle": "#f54a45"
+        }
+      }
+    },
+    "accent": {
+      "backgroundColor": "#ffffff",
+      "foregroundColors": {
+        "default": {
+          "default": "#1f2329",
+          "subtle": "#6b7075"
+        },
+        "accent": {
+          "default": "#7f3bf5",
+          "subtle": "#7f3bf5"
+        },
+        "good": {
+          "default": "#41cd59",
+          "subtle": "#41cd59"
+        },
+        "warning": {
+          "default": "#fc8800",
+          "subtle": "#fc8800"
+        },
+        "attention": {
+          "default": "#f54a45",
+          "subtle": "#f54a45"
+        }
+      }
+    },
+    "good": {
+      "backgroundColor": "#f2fbf4",
+      "foregroundColors": {
+        "default": {
+          "default": "#1f2329",
+          "subtle": "#6b7075"
+        },
+        "accent": {
+          "default": "#7f3bf5",
+          "subtle": "#7f3bf5"
+        },
+        "good": {
+          "default": "#41cd59",
+          "subtle": "#41cd59"
+        },
+        "warning": {
+          "default": "#fc8800",
+          "subtle": "#fc8800"
+        },
+        "attention": {
+          "default": "#f54a45",
+          "subtle": "#f54a45"
+        }
+      }
+    },
+    "warning": {
+      "backgroundColor": "#fff7ec",
+      "foregroundColors": {
+        "default": {
+          "default": "#1f2329",
+          "subtle": "#6b7075"
+        },
+        "accent": {
+          "default": "#7f3bf5",
+          "subtle": "#7f3bf5"
+        },
+        "good": {
+          "default": "#41cd59",
+          "subtle": "#41cd59"
+        },
+        "warning": {
+          "default": "#fc8800",
+          "subtle": "#fc8800"
+        },
+        "attention": {
+          "default": "#f54a45",
+          "subtle": "#f54a45"
+        }
+      }
+    },
+    "attention": {
+      "backgroundColor": "#fff2f1",
+      "foregroundColors": {
+        "default": {
+          "default": "#1f2329",
+          "subtle": "#6b7075"
+        },
+        "accent": {
+          "default": "#7f3bf5",
+          "subtle": "#7f3bf5"
+        },
+        "good": {
+          "default": "#41cd59",
+          "subtle": "#41cd59"
+        },
+        "warning": {
+          "default": "#fc8800",
+          "subtle": "#fc8800"
+        },
+        "attention": {
+          "default": "#f54a45",
+          "subtle": "#f54a45"
+        }
+      }
+    }
+  },
+  "imageSizes": {
+    "small": 24,
+    "medium": 40,
+    "large": 64
+  }
+}

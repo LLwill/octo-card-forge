@@ -24,9 +24,13 @@ export interface CardManifest {
 export interface RenderProfileManifest {
   id: string;
   version: string;
+  compatibility?: string;
+  packageName?: string;
   adaptiveCardsSdkVersion: string;
   hostConfig: string;
+  theme?: string;
   stylesheet: string;
+  tokens?: string;
   capabilities: string;
 }
 
@@ -78,6 +82,8 @@ export interface CardInspection {
 }
 
 export interface CardPackage {
+  /** Stable lookup key. Base packages use id; additional versions use id@version. */
+  reference: string;
   root: string;
   manifest: CardManifest;
 }

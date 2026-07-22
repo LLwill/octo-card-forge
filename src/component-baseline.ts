@@ -1,0 +1,484 @@
+import type { JsonObject, RenderCapabilities } from "./types.js";
+
+export interface ComponentBaselineSection {
+  id: string;
+  title: string;
+  description: string;
+  card: JsonObject;
+}
+
+function adaptiveCard(body: JsonObject[], actions?: JsonObject[]): JsonObject {
+  return {
+    type: "AdaptiveCard",
+    version: "1.5",
+    body,
+    ...(actions && actions.length > 0 ? { actions } : {}),
+  };
+}
+
+function supportsElement(capabilities: RenderCapabilities, type: string): boolean {
+  return capabilities.allowedElements.includes(type);
+}
+
+function supportsAction(capabilities: RenderCapabilities, type: string): boolean {
+  return capabilities.allowedActions.includes(type);
+}
+
+export function buildComponentBaseline(
+  capabilities: RenderCapabilities
+): ComponentBaselineSection[] {
+  const sections: ComponentBaselineSection[] = [];
+
+  sections.push({
+    id: "typography",
+    title: "文字与语义色",
+    description: "TextBlock、RichTextBlock、字号、字重以及标准前景语义。",
+    card: adaptiveCard([
+      ...(["Small", "Default", "Medium", "Large", "ExtraLarge"] as const).map(
+        (size) => ({
+          type: "TextBlock",
+          text: `${size} · Octo Card 组件基线`,
+          size,
+          wrap: true,
+          spacing: size === "Small" ? "None" : "Small",
+        })
+      ),
+      {
+        type: "TextBlock",
+        text: "Bolder · 用于标题和关键数据",
+        weight: "Bolder",
+        wrap: true,
+      },
+      ...(supportsElement(capabilities, "RichTextBlock")
+        ? [
+            {
+              type: "RichTextBlock",
+              inlines: [
+                { type: "TextRun", text: "Default  " },
+                { type: "TextRun", text: "Accent  ", color: "Accent" },
+                { type: "TextRun", text: "Good  ", color: "Good" },
+                { type: "TextRun", text: "Warning  ", color: "Warning" },
+                { type: "TextRun", text: "Attention", color: "Attention" },
+              ],
+            },
+          ]
+        : []),
+    ]),
+  });
+
+  sections.push({
+    id: "containers",
+    title: "容器语义",
+    description: "六种标准 Container.style。颜色由 HostConfig 统一提供。",
+    card: adaptiveCard(
+      ["default", "emphasis", "accent", "good", "warning", "attention"].map(
+        (style) => ({
+          type: "Container",
+          style,
+          spacing: style === "default" ? "None" : "Medium",
+          items: [
+            {
+              type: "TextBlock",
+              text: style,
+              weight: "Bolder",
+              wrap: true,
+            },
+            {
+              type: "TextBlock",
+              text: "默认文字 / subtle 辅助文字",
+              isSubtle: true,
+              spacing: "Small",
+              wrap: true,
+            },
+          ],
+        })
+      )
+    ),
+  });
+
+  sections.push({
+    id: "semantic-primitives",
+    title: "显式视觉语义",
+    description: "卡片通过公开的 octo-surface / octo-badge ID 前缀显式选择背景和紧凑标签，不依赖元素位置推断。",
+    card: adaptiveCard([
+      {
+        type: "Container",
+        id: "octo-surface-accent-header-baseline",
+        style: "accent",
+        items: [
+          {
+            type: "TextBlock",
+            text: "Accent surface",
+            weight: "Bolder",
+            wrap: true,
+          },
+        ],
+      },
+      {
+        type: "Container",
+        id: "octo-surface-default-footer-baseline",
+        style: "emphasis",
+        bleed: true,
+        separator: true,
+        spacing: "Large",
+        items: [
+          {
+            type: "TextBlock",
+            text: "Full-width footer separator",
+            isSubtle: true,
+            wrap: true,
+          },
+        ],
+      },
+      {
+        type: "ColumnSet",
+        spacing: "Large",
+        columns: [
+          {
+            type: "Column",
+            width: "auto",
+            items: [
+              {
+                type: "TextBlock",
+                id: "octo-badge-warning-baseline",
+                text: "Warning badge",
+                color: "Warning",
+                weight: "Bolder",
+                size: "Small",
+              },
+            ],
+          },
+          {
+            type: "Column",
+            width: "auto",
+            spacing: "Small",
+            items: [
+              {
+                type: "TextBlock",
+                id: "octo-badge-neutral-baseline",
+                text: "Neutral badge",
+                isSubtle: true,
+                weight: "Bolder",
+                size: "Small",
+              },
+            ],
+          },
+        ],
+      },
+    ]),
+  });
+
+  sections.push({
+    id: "layout",
+    title: "布局、间距与分隔",
+    description: "ColumnSet、固定/自适应列、Spacing 与 Separator 的组合基线。",
+    card: adaptiveCard([
+      {
+        type: "ColumnSet",
+        columns: [
+          {
+            type: "Column",
+            width: "auto",
+            style: "emphasis",
+            items: [{ type: "TextBlock", text: "auto", wrap: true }],
+          },
+          {
+            type: "Column",
+            width: "stretch",
+            style: "accent",
+            spacing: "Medium",
+            items: [{ type: "TextBlock", text: "stretch", wrap: true }],
+          },
+          {
+            type: "Column",
+            width: 1,
+            style: "good",
+            spacing: "Medium",
+            items: [{ type: "TextBlock", text: "weight 1", wrap: true }],
+          },
+        ],
+      },
+      {
+        type: "TextBlock",
+        text: "Separator + Large spacing",
+        separator: true,
+        spacing: "Large",
+        wrap: true,
+      },
+      {
+        type: "Container",
+        style: "emphasis",
+        bleed: true,
+        spacing: "Large",
+        items: [
+          {
+            type: "TextBlock",
+            text: "Bleed container",
+            horizontalAlignment: "Center",
+            wrap: true,
+          },
+        ],
+      },
+    ]),
+  });
+
+  const mediaBody: JsonObject[] = [];
+  if (
+    supportsElement(capabilities, "Image") &&
+    supportsElement(capabilities, "ImageSet")
+  ) {
+    mediaBody.push({
+      type: "ImageSet",
+      imageSize: "Medium",
+      images: [
+        {
+          type: "Image",
+          url: "https://api.iconify.design/lucide/image.svg?color=%236b7075",
+          altText: "默认图片",
+        },
+        {
+          type: "Image",
+          url: "https://api.iconify.design/lucide/user-round.svg?color=%237f3bf5",
+          altText: "圆形人物图片",
+          style: "Person",
+        },
+      ],
+    });
+  }
+  if (supportsElement(capabilities, "FactSet")) {
+    mediaBody.push({
+      type: "FactSet",
+      spacing: "Large",
+      facts: [
+        { title: "HostConfig", value: "当前仓库基线" },
+        { title: "SDK", value: "3.0.6" },
+        { title: "宽度", value: "320 / 480 / 640" },
+      ],
+    });
+  }
+  sections.push({
+    id: "media-facts",
+    title: "图片与事实列表",
+    description: "Image、ImageSet、Person 样式和 FactSet。",
+    card: adaptiveCard(mediaBody),
+  });
+
+  if (supportsElement(capabilities, "Table")) {
+    sections.push({
+      id: "table",
+      title: "表格",
+      description: "表头、网格线、列宽和长文本换行。",
+      card: adaptiveCard([
+        {
+          type: "Table",
+          firstRowAsHeaders: true,
+          showGridLines: true,
+          columns: [{ width: 1 }, { width: 2 }, { width: 1 }],
+          rows: [
+            ["组件", "用途", "状态"],
+            ["Input.Text", "接收单行或多行文本", "支持"],
+            ["Action.Submit", "提交标准卡片动作", "支持"],
+          ].map((row) => ({
+            type: "TableRow",
+            cells: row.map((text) => ({
+              type: "TableCell",
+              items: [{ type: "TextBlock", text, size: "Small", wrap: true }],
+            })),
+          })),
+        },
+      ]),
+    });
+  }
+
+  const basicInputs: JsonObject[] = [];
+  if (supportsElement(capabilities, "Input.Text")) {
+    basicInputs.push(
+      {
+        type: "Input.Text",
+        id: "baseline_text",
+        label: "单行文本",
+        placeholder: "请输入内容",
+      },
+      {
+        type: "Input.Text",
+        id: "baseline_multiline",
+        label: "多行文本",
+        placeholder: "请输入补充说明",
+        isMultiline: true,
+      }
+    );
+  }
+  if (supportsElement(capabilities, "Input.Number")) {
+    basicInputs.push({
+      type: "Input.Number",
+      id: "baseline_number",
+      label: "数字",
+      value: 8,
+    });
+  }
+  if (supportsElement(capabilities, "Input.Date")) {
+    basicInputs.push({
+      type: "Input.Date",
+      id: "baseline_date",
+      label: "日期",
+    });
+  }
+  if (supportsElement(capabilities, "Input.Time")) {
+    basicInputs.push({
+      type: "Input.Time",
+      id: "baseline_time",
+      label: "时间",
+    });
+  }
+  if (supportsElement(capabilities, "Input.Toggle")) {
+    basicInputs.push({
+      type: "Input.Toggle",
+      id: "baseline_toggle",
+      title: "我已阅读并确认",
+      valueOn: "yes",
+      valueOff: "no",
+    });
+  }
+  sections.push({
+    id: "inputs-basic",
+    title: "基础输入控件",
+    description: "Text、Number、Date、Time 与 Toggle 的默认状态。",
+    card: adaptiveCard(basicInputs),
+  });
+
+  if (supportsElement(capabilities, "Input.ChoiceSet")) {
+    sections.push({
+      id: "inputs-choice",
+      title: "选择控件",
+      description: "Compact、Expanded 单选和 Expanded 多选。",
+      card: adaptiveCard([
+        {
+          type: "Input.ChoiceSet",
+          id: "baseline_choice_compact",
+          label: "Compact",
+          style: "compact",
+          value: "one",
+          choices: [
+            { title: "选项一", value: "one" },
+            { title: "选项二", value: "two" },
+          ],
+        },
+        {
+          type: "Input.ChoiceSet",
+          id: "baseline_choice_expanded",
+          label: "Expanded 单选",
+          style: "expanded",
+          value: "one",
+          choices: [
+            { title: "首选方案", value: "one" },
+            { title: "备选方案", value: "two" },
+          ],
+        },
+        {
+          type: "Input.ChoiceSet",
+          id: "baseline_choice_multi",
+          label: "Expanded 多选",
+          style: "expanded",
+          isMultiSelect: true,
+          value: "one,two",
+          choices: [
+            { title: "能力一", value: "one" },
+            { title: "能力二", value: "two" },
+          ],
+        },
+      ]),
+    });
+  }
+
+  const submitActions: JsonObject[] = [];
+  if (supportsAction(capabilities, "Action.Submit")) {
+    submitActions.push(
+      {
+        type: "Action.Submit",
+        id: "baseline_submit_default",
+        title: "默认操作",
+        associatedInputs: "none",
+      },
+      {
+        type: "Action.Submit",
+        id: "baseline_submit_positive",
+        title: "确认",
+        style: "positive",
+        associatedInputs: "none",
+      },
+      {
+        type: "Action.Submit",
+        id: "baseline_submit_destructive",
+        title: "删除",
+        style: "destructive",
+        associatedInputs: "none",
+      }
+    );
+  }
+  const utilityActions: JsonObject[] = [];
+  if (supportsAction(capabilities, "Action.OpenUrl")) {
+    utilityActions.push({
+      type: "Action.OpenUrl",
+      title: "打开链接",
+      url: "https://adaptivecards.io",
+    });
+  }
+  if (supportsAction(capabilities, "Action.ToggleVisibility")) {
+    utilityActions.push({
+      type: "Action.ToggleVisibility",
+      title: "展开内容",
+      targetElements: ["baseline_toggle_target"],
+    });
+  }
+  sections.push({
+    id: "actions",
+    title: "操作按钮",
+    description: "Submit 的默认/正向/危险样式，以及 OpenUrl、ToggleVisibility。",
+    card: adaptiveCard([
+      ...(submitActions.length > 0
+        ? [
+            {
+              type: "TextBlock",
+              text: "Submit styles",
+              size: "Small",
+              isSubtle: true,
+              wrap: true,
+            },
+            { type: "ActionSet", actions: submitActions },
+          ]
+        : []),
+      ...(utilityActions.length > 0
+        ? [
+            {
+              type: "TextBlock",
+              text: "Navigation / visibility",
+              size: "Small",
+              isSubtle: true,
+              spacing: "Large",
+              wrap: true,
+            },
+            { type: "ActionSet", actions: utilityActions },
+          ]
+        : []),
+      ...(supportsAction(capabilities, "Action.ToggleVisibility")
+        ? [
+        {
+          type: "Container",
+          id: "baseline_toggle_target",
+          style: "emphasis",
+          isVisible: false,
+          items: [
+            {
+              type: "TextBlock",
+              text: "ToggleVisibility 展开的标准内容",
+              wrap: true,
+            },
+          ],
+        },
+          ]
+        : []),
+    ]),
+  });
+
+  return sections;
+}

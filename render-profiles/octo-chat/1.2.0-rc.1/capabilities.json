@@ -1,0 +1,31 @@
+{
+  "maxAdaptiveCardVersion": "1.5",
+  "allowedElements": [
+    "TextBlock",
+    "RichTextBlock",
+    "Image",
+    "ImageSet",
+    "Container",
+    "ColumnSet",
+    "Column",
+    "FactSet",
+    "Table",
+    "ActionSet",
+    "Input.Text",
+    "Input.Toggle",
+    "Input.ChoiceSet",
+    "Input.Number",
+    "Input.Date",
+    "Input.Time"
+  ],
+  "allowedActions": [
+    "Action.OpenUrl",
+    "Action.Submit",
+    "Action.ToggleVisibility"
+  ],
+  "maxNodes": 200,
+  "maxDepth": 24,
+  "maxPayloadBytes": 65536,
+  "imageUrlSchemes": ["https"],
+  "openUrlSchemes": ["https"]
+}

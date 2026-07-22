@@ -31,11 +31,15 @@ async function json(url, init) {
 }
 
 async function chooseCard() {
-  const selected = cards.find((card) => card.id === cardSelect.value);
-  currentContext = await json(`/api/cards/${encodeURIComponent(selected.id)}/context`);
-  const contractData = await json(`/api/cards/${encodeURIComponent(selected.id)}/contract`);
+  const selected = cards.find((card) => card.reference === cardSelect.value);
+  currentContext = await json(`/api/cards/${encodeURIComponent(selected.reference)}/context`);
+  const contractData = await json(`/api/cards/${encodeURIComponent(selected.reference)}/contract`);
   contract.textContent = JSON.stringify(contractData, null, 2);
   version.textContent = `${selected.id}@${selected.version} · ${selected.renderProfile}`;
+  preview.classList.toggle(
+    "octo-card-profile",
+    currentContext.renderProfile.version === "1.2.0-rc.1"
+  );
   if (hostStyle) hostStyle.remove();
   hostStyle = document.createElement("link");
   hostStyle.rel = "stylesheet";
@@ -87,17 +91,19 @@ async function render(view) {
 }
 
 cards = await json("/api/cards");
-for (const card of cards) cardSelect.add(new Option(card.name, card.id));
+for (const card of cards) {
+  cardSelect.add(new Option(`${card.name} · ${card.version}`, card.reference));
+}
 cardSelect.addEventListener("change", chooseCard);
 sampleSelect.addEventListener("change", chooseSample);
 document.querySelector("#renderButton").addEventListener("click", () => render());
 exportButton.addEventListener("click", async () => {
-  const selected = cards.find((card) => card.id === cardSelect.value);
+  const selected = cards.find((card) => card.reference === cardSelect.value);
   if (!selected) return;
   status.textContent = "正在生成后端交付包…";
   try {
     const response = await fetch(
-      `/api/cards/${encodeURIComponent(selected.id)}/handoff`
+      `/api/cards/${encodeURIComponent(selected.reference)}/handoff`
     );
     if (!response.ok) {
       const body = await response.json();
