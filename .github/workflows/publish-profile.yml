@@ -119,18 +119,23 @@ jobs:
           VERSION: ${{ steps.metadata.outputs.version }}
         run: |
           set -euo pipefail
-          set +e
-          output="$(npm view "$PACKAGE_NAME@$VERSION" version --registry "$NPM_REGISTRY_URL" 2>&1)"
-          status=$?
-          set -e
-          if [[ $status -eq 0 ]]; then
-            echo "$PACKAGE_NAME@$VERSION is already published." >&2
-            exit 1
-          fi
-          if [[ "$output" != *"E404"* ]]; then
-            echo "$output" >&2
-            exit 1
-          fi
+          version_url="$(node -e '
+            const [registry, name, version] = process.argv.slice(1);
+            console.log(`${registry.replace(/\/$/, "")}/${encodeURIComponent(name)}/${encodeURIComponent(version)}`);
+          ' "$NPM_REGISTRY_URL" "$PACKAGE_NAME" "$VERSION")"
+          status="$(curl --silent --show-error --output npm-version.json --write-out '%{http_code}' "$version_url")"
+          case "$status" in
+            404) ;;
+            200)
+              echo "$PACKAGE_NAME@$VERSION is already published." >&2
+              exit 1
+              ;;
+            *)
+              cat npm-version.json >&2
+              echo "Unexpected npm registry response: HTTP $status" >&2
+              exit 1
+              ;;
+          esac
 
       - name: Record artifact checksum
         env:
@@ -171,18 +176,23 @@ jobs:
           VERSION: ${{ needs.build.outputs.version }}
         run: |
           set -euo pipefail
-          set +e
-          output="$(npm view "$PACKAGE_NAME@$VERSION" version --registry "$NPM_REGISTRY_URL" 2>&1)"
-          status=$?
-          set -e
-          if [[ $status -eq 0 ]]; then
-            echo "$PACKAGE_NAME@$VERSION is already published." >&2
-            exit 1
-          fi
-          if [[ "$output" != *"E404"* ]]; then
-            echo "$output" >&2
-            exit 1
-          fi
+          version_url="$(node -e '
+            const [registry, name, version] = process.argv.slice(1);
+            console.log(`${registry.replace(/\/$/, "")}/${encodeURIComponent(name)}/${encodeURIComponent(version)}`);
+          ' "$NPM_REGISTRY_URL" "$PACKAGE_NAME" "$VERSION")"
+          status="$(curl --silent --show-error --output npm-version.json --write-out '%{http_code}' "$version_url")"
+          case "$status" in
+            404) ;;
+            200)
+              echo "$PACKAGE_NAME@$VERSION is already published." >&2
+              exit 1
+              ;;
+            *)
+              cat npm-version.json >&2
+              echo "Unexpected npm registry response: HTTP $status" >&2
+              exit 1
+              ;;
+          esac
 
       - name: Publish RC with provenance
         env:
@@ -196,13 +206,21 @@ jobs:
           VERSION: ${{ needs.build.outputs.version }}
         run: |
           set -euo pipefail
+          version_url="$(node -e '
+            const [registry, name, version] = process.argv.slice(1);
+            console.log(`${registry.replace(/\/$/, "")}/${encodeURIComponent(name)}/${encodeURIComponent(version)}`);
+          ' "$NPM_REGISTRY_URL" "$PACKAGE_NAME" "$VERSION")"
           for attempt in 1 2 3 4 5 6; do
-            published="$(npm view "$PACKAGE_NAME@$VERSION" version --registry "$NPM_REGISTRY_URL" 2>/dev/null || true)"
-            if [[ "$published" = "$VERSION" ]]; then
-              echo "$PACKAGE_NAME@$VERSION published successfully."
-              exit 0
+            status="$(curl --silent --show-error --output npm-version.json --write-out '%{http_code}' "$version_url")"
+            if [[ "$status" = 200 ]]; then
+              published="$(node -p "JSON.parse(require('fs').readFileSync('npm-version.json', 'utf8')).version")"
+              if [[ "$published" = "$VERSION" ]]; then
+                echo "$PACKAGE_NAME@$VERSION published successfully."
+                exit 0
+              fi
             fi
             sleep 10
           done
-          echo "Package was published but registry verification did not converge." >&2
+          cat npm-version.json >&2
+          echo "Package was published but exact-version verification did not converge (HTTP $status)." >&2
           exit 1
