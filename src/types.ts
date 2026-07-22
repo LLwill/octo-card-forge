@@ -78,6 +78,8 @@ export interface CardInspection {
 }
 
 export interface CardPackage {
+  /** Stable lookup key. Base packages use id; additional versions use id@version. */
+  reference: string;
   root: string;
   manifest: CardManifest;
 }

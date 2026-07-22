@@ -1,9 +1,16 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import path from "node:path";
 import { compileCard, compileSample } from "./compiler.js";
+import { buildComponentBaseline } from "./component-baseline.js";
 import { readJson, readText, resolveInProject } from "./fs.js";
 import { buildHandoffArchive } from "./handoff.js";
-import { getCard, getRenderProfile, listCards } from "./registry.js";
+import {
+  CURRENT_RENDER_PROFILE,
+  getCard,
+  getCurrentRenderProfile,
+  getRenderProfile,
+  listCards,
+} from "./registry.js";
 import type { JsonObject } from "./types.js";
 
 function sendJson(res: ServerResponse, status: number, value: unknown): void {
@@ -61,7 +68,8 @@ async function handleApi(
     sendJson(
       res,
       200,
-      cards.map(({ manifest }) => ({
+      cards.map(({ reference, manifest }) => ({
+        reference,
         id: manifest.id,
         name: manifest.name,
         version: manifest.version,
@@ -75,6 +83,19 @@ async function handleApi(
         ),
       }))
     );
+    return true;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/component-baseline") {
+    const profile = await getCurrentRenderProfile();
+    sendJson(res, 200, {
+      reference: CURRENT_RENDER_PROFILE,
+      renderProfile: profile.manifest,
+      hostConfig: profile.hostConfig,
+      capabilities: profile.capabilities,
+      stylesheetUrl: `/api/render-styles/${encodeURIComponent(CURRENT_RENDER_PROFILE)}`,
+      sections: buildComponentBaseline(profile.capabilities),
+    });
     return true;
   }
 
@@ -93,13 +114,14 @@ async function handleApi(
 
   const cardMatch = url.pathname.match(/^\/api\/cards\/([^/]+)\/(contract|context)$/);
   if (req.method === "GET" && cardMatch) {
-    const card = await getCard(decodeURIComponent(cardMatch[1]));
+    const cardReference = decodeURIComponent(cardMatch[1]);
+    const card = await getCard(cardReference);
     if (cardMatch[2] === "contract") {
       const interactionReports = [];
       for (const [view, definition] of Object.entries(card.manifest.views)) {
         for (const samplePath of definition.samples) {
           const sample = path.basename(samplePath, path.extname(samplePath));
-          const result = await compileSample({ cardId: card.manifest.id, sample });
+          const result = await compileSample({ cardId: card.reference, sample });
           interactionReports.push({
             sample,
             view,
@@ -110,6 +132,7 @@ async function handleApi(
       }
       sendJson(res, 200, {
         cardId: card.manifest.id,
+        cardReference: card.reference,
         cardVersion: card.manifest.version,
         contractVersion: card.manifest.contractVersion,
         schema: await readJson(path.join(card.root, card.manifest.dataSchema)),
@@ -150,6 +173,7 @@ async function handleApi(
     }
     sendJson(res, 200, {
       cardId: card.manifest.id,
+      cardReference: card.reference,
       view: viewName,
       wireProfile: view.wireProfile,
       template: await readJson(path.join(card.root, view.template)),
@@ -209,7 +233,10 @@ export async function startServer(options: {
       if (await handleApi(req, res, url)) return;
       const files: Record<string, [string, string]> = {
         "/": ["index.html", "text/html"],
+        "/components": ["components.html", "text/html"],
+        "/components/": ["components.html", "text/html"],
         "/app.js": ["app.js", "text/javascript"],
+        "/components.js": ["components.js", "text/javascript"],
         "/styles.css": ["styles.css", "text/css"],
       };
       const file = files[url.pathname];

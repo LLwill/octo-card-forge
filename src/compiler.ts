@@ -88,7 +88,10 @@ export async function compileSample(options: {
     );
     if (!match) continue;
     const data = await readJson<JsonObject>(path.join(card.root, match));
-    return { ...(await compileCard({ cardId: options.cardId, view: viewName, data })), data };
+    return {
+      ...(await compileCard({ cardId: card.reference, view: viewName, data })),
+      data,
+    };
   }
   throw new Error(`Unknown sample ${options.sample} for ${options.cardId}`);
 }

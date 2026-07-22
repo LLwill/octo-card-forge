@@ -79,6 +79,36 @@ describe("render and wire profile validation", () => {
     expect(codes).toContain("interaction.associated_inputs");
     expect(codes).toContain("interaction.submit_data");
   });
+
+  it("treats TableRow and TableCell as structural children of an allowed Table", () => {
+    const tableCapabilities: RenderCapabilities = {
+      ...capabilities,
+      allowedElements: [...capabilities.allowedElements, "Table"],
+    };
+    const payload: JsonObject = {
+      type: "AdaptiveCard",
+      version: "1.5",
+      body: [
+        {
+          type: "Table",
+          columns: [{ width: 1 }],
+          rows: [
+            {
+              type: "TableRow",
+              cells: [
+                {
+                  type: "TableCell",
+                  items: [{ type: "TextBlock", text: "Cell" }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    expect(validateCompiledCard(payload, tableCapabilities, "octo/v2")).toEqual([]);
+  });
 });
 
 describe("standard interaction inspection", () => {

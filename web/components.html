@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>组件基线 · Octo Card Forge</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="baseline-page">
+    <header class="topbar">
+      <div>
+        <strong>Octo Card Forge</strong>
+        <span>组件基线</span>
+      </div>
+      <div class="topbar-actions">
+        <a href="/">返回 Card Preview</a>
+        <span id="baselineVersion"></span>
+      </div>
+    </header>
+    <main class="baseline-workspace">
+      <aside class="baseline-sidebar">
+        <div>
+          <span class="eyebrow">CURRENT BASELINE</span>
+          <h1>Adaptive Cards 组件</h1>
+          <p>固定使用仓库当前唯一 HostConfig，作为升级前后的视觉与结构验收入口。</p>
+        </div>
+        <nav id="baselineNav" aria-label="组件类别"></nav>
+        <dl class="baseline-meta">
+          <div><dt>Render Profile</dt><dd id="profileReference">—</dd></div>
+          <div><dt>Adaptive Cards SDK</dt><dd id="sdkVersion">—</dd></div>
+          <div><dt>最大 Card 版本</dt><dd id="cardVersion">—</dd></div>
+        </dl>
+      </aside>
+      <section class="baseline-content">
+        <div class="baseline-toolbar">
+          <div>
+            <strong>预览宽度</strong>
+            <span>所有组件使用同一 HostConfig 与 Profile CSS</span>
+          </div>
+          <div class="baseline-widths" aria-label="预览宽度">
+            <button type="button" data-baseline-width="640" class="active">640</button>
+            <button type="button" data-baseline-width="480">480</button>
+            <button type="button" data-baseline-width="320">320</button>
+          </div>
+        </div>
+        <div id="baselineStatus" class="baseline-status">正在加载组件基线…</div>
+        <div id="baselineSections" class="baseline-sections"></div>
+      </section>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/adaptivecards@3.0.6/dist/adaptivecards.min.js"></script>
+    <script src="/components.js" type="module"></script>
+  </body>
+</html>

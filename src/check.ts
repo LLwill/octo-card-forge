@@ -16,7 +16,7 @@ export async function checkCards(cardId?: string): Promise<CheckReport> {
       for (const samplePath of definition.samples) {
         const sample = path.basename(samplePath, path.extname(samplePath));
         try {
-          const result = await compileSample({ cardId: card.manifest.id, sample });
+          const result = await compileSample({ cardId: card.reference, sample });
           const valid = !result.issues.some((issue) => issue.severity === "error");
           item.samples.push({
             name: sample,
