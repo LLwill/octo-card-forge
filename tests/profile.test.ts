@@ -14,7 +14,7 @@ describe("render profile bundle", () => {
   it("validates a profile without creating a bundle", async () => {
     await expect(validateRenderProfile(REFERENCE)).resolves.toMatchObject({
       reference: REFERENCE,
-      packageName: "@dmwork/octo-card-profile-octo-chat",
+      packageName: "@mlt-org/octo-card-profile-octo-chat",
       version: "1.2.0-rc.1",
       compatibility: "octo-chat/v1",
     });
@@ -25,7 +25,13 @@ describe("render profile bundle", () => {
     const result = await bundleRenderProfile(REFERENCE, output);
     const packageJson = JSON.parse(
       await readFile(path.join(result.packageRoot, "package.json"), "utf8")
-    ) as { name: string; version: string; exports: Record<string, string> };
+    ) as {
+      name: string;
+      version: string;
+      exports: Record<string, string>;
+      publishConfig: { access: string; registry: string };
+      repository: { type: string; url: string; directory: string };
+    };
     const stylesheet = await readFile(
       path.join(result.packageRoot, "dist/styles.css"),
       "utf8"
@@ -35,8 +41,17 @@ describe("render profile bundle", () => {
     ) as { profile: string; compatibility: string; files: Record<string, string> };
 
     expect(packageJson).toMatchObject({
-      name: "@dmwork/octo-card-profile-octo-chat",
+      name: "@mlt-org/octo-card-profile-octo-chat",
       version: "1.2.0-rc.1",
+      publishConfig: {
+        access: "public",
+        registry: "https://registry.npmjs.org/",
+      },
+      repository: {
+        type: "git",
+        url: "git+https://github.com/LLwill/octo-card-forge.git",
+        directory: "render-profiles/octo-chat/1.2.0-rc.1",
+      },
     });
     expect(packageJson.exports["./host-config.json"]).toBe("./dist/host-config.json");
     expect(stylesheet).toContain(".octo-card-profile .ac-adaptiveCard");

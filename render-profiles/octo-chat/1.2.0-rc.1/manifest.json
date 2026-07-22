@@ -2,7 +2,7 @@
   "id": "octo-chat",
   "version": "1.2.0-rc.1",
   "compatibility": "octo-chat/v1",
-  "packageName": "@dmwork/octo-card-profile-octo-chat",
+  "packageName": "@mlt-org/octo-card-profile-octo-chat",
   "adaptiveCardsSdkVersion": "3.0.6",
   "hostConfig": "host-config.json",
   "theme": "theme.css",

@@ -47,7 +47,7 @@ pnpm cli profile bundle octo-chat@1.2.0-rc.1 --output .release
 pnpm cli profile pack octo-chat@1.2.0-rc.1 --output .release
 ```
 
-打包结果为 `.release/dmwork-octo-card-profile-octo-chat-1.2.0-rc.1.tgz`。
+打包结果为 `.release/mlt-org-octo-card-profile-octo-chat-1.2.0-rc.1.tgz`。
 历史 `1.1.0` 保持不变，组件基线与新 Card Package 显式使用 RC 版本。
 
 ## 系统边界

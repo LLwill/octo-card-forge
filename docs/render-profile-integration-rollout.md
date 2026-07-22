@@ -109,7 +109,7 @@ render-profiles/octo-chat/1.2.0/
 包名：
 
 ```text
-@dmwork/octo-card-profile-octo-chat@1.2.0
+@mlt-org/octo-card-profile-octo-chat@1.2.0
 ```
 
 包内容：
@@ -331,7 +331,7 @@ CI 顺序：
 安装：
 
 ```bash
-pnpm add @dmwork/octo-card-profile-octo-chat@1.2.0-rc.1 --save-exact
+pnpm add @mlt-org/octo-card-profile-octo-chat@1.2.0-rc.1 --save-exact
 ```
 
 修改内容：

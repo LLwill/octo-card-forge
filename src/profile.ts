@@ -136,6 +136,15 @@ export async function bundleRenderProfile(
     version: validation.version,
     description: `Octo Adaptive Cards Render Profile ${reference}`,
     private: false,
+    repository: {
+      type: "git",
+      url: "git+https://github.com/LLwill/octo-card-forge.git",
+      directory: `render-profiles/${manifest.id}/${manifest.version}`,
+    },
+    publishConfig: {
+      access: "public",
+      registry: "https://registry.npmjs.org/",
+    },
     files: ["dist"],
     sideEffects: ["*.css", "dist/*.css"],
     exports: {
