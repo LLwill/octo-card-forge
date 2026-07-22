@@ -1,56 +1,33 @@
-.ac-adaptiveCard,
-#preview > .ac-adaptiveCard {
+.ac-adaptiveCard {
   width: 100%;
   overflow: hidden;
-  border-radius: 12px !important;
-  background: #ffffff !important;
-  border: 1px solid rgba(127, 59, 245, 0.28) !important;
-  box-shadow: none;
+  border-radius: inherit;
 }
-
-/* Header band: square bottom edge, full bleed */
-.ac-adaptiveCard > .ac-container:first-child {
-  background: #f3eeff !important;
-  border-radius: 0 !important;
-  border-bottom: 1px solid rgba(127, 59, 245, 0.10);
-  /* host padding = 16; reinforce bleed to card edges */
-  margin-left: -16px !important;
-  margin-right: -16px !important;
-  margin-top: -16px !important;
-  width: auto !important;
-  max-width: none !important;
-  padding: 16px !important;
-  box-sizing: border-box !important;
-}
-
-/* Footer full-width divider: single line to card edges + gap above */
-.ac-adaptiveCard > .ac-container:last-child {
-  border-radius: 0 !important;
-  border-top: 1px solid #ebe6f5 !important;
-  margin-left: -16px !important;
-  margin-right: -16px !important;
-  margin-top: 16px !important;
-  margin-bottom: -16px !important;
-  width: auto !important;
-  max-width: none !important;
-  padding: 12px 16px 16px !important;
-  box-sizing: border-box !important;
-  background: #ffffff !important;
-}
-.ac-adaptiveCard > .ac-container:last-child .ac-actionSet {
-  justify-content: flex-end !important;
-}
-
-/* Hide Adaptive Cards native separator nodes if any remain */
-.ac-adaptiveCard > .ac-separator,
-.ac-adaptiveCard > div.ac-separator {
-  display: none !important;
-}
-
 .ac-columnSet { min-width: 0; }
-.ac-container { min-width: 0; border-radius: 8px; }
+.ac-container { min-width: 0; border-radius: 6px; }
 
-
+/* Public semantic primitives selected explicitly by Card JSON element IDs. */
+[id^="octo-surface-accent-"] {
+  background: #f3eeff !important;
+}
+[id^="octo-surface-accent-header"] {
+  border-radius: 0 !important;
+}
+[id^="octo-surface-default-footer"] {
+  background: #ffffff !important;
+  border-radius: 0 !important;
+  padding: 0 16px 16px !important;
+}
+[id^="octo-badge-"] {
+  box-sizing: border-box;
+  width: fit-content !important;
+  padding: 2px 8px !important;
+  border-radius: 999px;
+  background: rgba(28, 28, 35, .06);
+}
+[id^="octo-badge-warning-"] {
+  background: #fff7ec;
+}
 
 .ac-pushButton {
   min-height: 32px;
@@ -167,18 +144,3 @@
 .ac-textInput.ac-input-validation-failed {
   border-color: #f54a45;
 }
-
-#deny_panel { padding: 16px !important; border: 1px solid rgba(245, 74, 69, .16); border-radius: 6px; }
-#deny_panel .ac-textInput {
-  width: 100%;
-  min-height: 96px;
-  padding: 10px 12px;
-  resize: vertical;
-  color: #1f2329;
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, .12);
-  border-radius: 6px;
-  font: 13px/20px inherit;
-}
-#deny_panel .ac-textInput:focus { outline: none; border-color: #1c1c23; box-shadow: 0 0 0 2px rgba(28,28,35,.12); }
-#deny_panel .ac-textInput::placeholder { color: #8b9095; }
