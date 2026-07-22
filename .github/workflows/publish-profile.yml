@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - render-profile/*/v*
+  workflow_dispatch:
+    inputs:
+      profile_ref:
+        description: Render Profile reference, for example octo-chat@1.2.0-rc.1
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -29,11 +35,12 @@ jobs:
       version: ${{ steps.metadata.outputs.version }}
     steps:
       - name: Check out tagged commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Require tag to point to main
+        if: github.event_name == 'push'
         run: |
           set -euo pipefail
           git fetch origin main
@@ -44,15 +51,26 @@ jobs:
 
       - name: Resolve and verify release metadata
         id: metadata
+        env:
+          REQUESTED_PROFILE_REF: ${{ inputs.profile_ref }}
         run: |
           set -euo pipefail
-          tag="$GITHUB_REF_NAME"
-          if [[ ! "$tag" =~ ^render-profile/([^/]+)/v(.+)$ ]]; then
-            echo "Invalid Render Profile tag: $tag" >&2
-            exit 1
+          if [[ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]]; then
+            if [[ ! "$REQUESTED_PROFILE_REF" =~ ^([^@/]+)@(.+)$ ]]; then
+              echo "Invalid Render Profile reference: $REQUESTED_PROFILE_REF" >&2
+              exit 1
+            fi
+            profile_id="${BASH_REMATCH[1]}"
+            version="${BASH_REMATCH[2]}"
+          else
+            tag="$GITHUB_REF_NAME"
+            if [[ ! "$tag" =~ ^render-profile/([^/]+)/v(.+)$ ]]; then
+              echo "Invalid Render Profile tag: $tag" >&2
+              exit 1
+            fi
+            profile_id="${BASH_REMATCH[1]}"
+            version="${BASH_REMATCH[2]}"
           fi
-          profile_id="${BASH_REMATCH[1]}"
-          version="${BASH_REMATCH[2]}"
           profile_ref="$profile_id@$version"
           manifest="render-profiles/$profile_id/$version/manifest.json"
           test -f "$manifest"
@@ -76,7 +94,7 @@ jobs:
           run_install: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -136,13 +154,13 @@ jobs:
     environment: npm-publish
     steps:
       - name: Download validated package
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: render-profile-package
           path: release-artifact
 
       - name: Set up Node.js and npm authentication
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           registry-url: ${{ env.NPM_REGISTRY_URL }}
@@ -170,7 +188,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           TARBALL: ${{ needs.build.outputs.tarball }}
-        run: npm publish "release-artifact/$TARBALL" --tag next --access public --provenance
+        run: npm publish "./release-artifact/$TARBALL" --tag next --access public --provenance
 
       - name: Verify published package
         env:
