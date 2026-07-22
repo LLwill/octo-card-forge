@@ -15,6 +15,14 @@ export interface ProfileBundleResult {
   files: string[];
 }
 
+export interface ProfileValidationResult {
+  reference: string;
+  packageName: string;
+  version: string;
+  compatibility: string;
+  files: [string, string, string, string, string];
+}
+
 function sha256(content: Buffer | string): string {
   return createHash("sha256").update(content).digest("hex");
 }
@@ -31,11 +39,10 @@ function assertScopedCss(css: string, filePath: string): void {
   }
 }
 
-export async function bundleRenderProfile(
+async function validateLoadedRenderProfile(
   reference: string,
-  outputRoot: string
-): Promise<ProfileBundleResult> {
-  const profile = await getRenderProfile(reference);
+  profile: Awaited<ReturnType<typeof getRenderProfile>>
+): Promise<ProfileValidationResult> {
   const { manifest } = profile;
   if (!manifest.compatibility || !manifest.packageName || !manifest.theme || !manifest.tokens) {
     throw new Error(
@@ -43,21 +50,45 @@ export async function bundleRenderProfile(
     );
   }
 
-  const sourceFiles = [
+  const files: ProfileValidationResult["files"] = [
     manifest.hostConfig,
     manifest.theme,
     manifest.stylesheet,
     manifest.tokens,
     manifest.capabilities,
   ];
-  const sourceContents = await Promise.all(
-    sourceFiles.map((file) => readFile(path.join(profile.root, file)))
+  const contents = await Promise.all(
+    files.map((file) => readFile(path.join(profile.root, file)))
   );
   assertScopedCss(
-    sourceContents[sourceFiles.indexOf(manifest.stylesheet)].toString("utf8"),
+    contents[files.indexOf(manifest.stylesheet)].toString("utf8"),
     path.join(profile.root, manifest.stylesheet)
   );
 
+  return {
+    reference,
+    packageName: manifest.packageName,
+    version: manifest.version,
+    compatibility: manifest.compatibility,
+    files,
+  };
+}
+
+export async function validateRenderProfile(
+  reference: string
+): Promise<ProfileValidationResult> {
+  return validateLoadedRenderProfile(reference, await getRenderProfile(reference));
+}
+
+export async function bundleRenderProfile(
+  reference: string,
+  outputRoot: string
+): Promise<ProfileBundleResult> {
+  const profile = await getRenderProfile(reference);
+  const { manifest } = profile;
+  const validation = await validateLoadedRenderProfile(reference, profile);
+  const sourceFiles = validation.files;
+  const [hostConfig, theme, stylesheet, tokens, capabilities] = sourceFiles;
   const packageRoot = path.resolve(
     outputRoot,
     `${manifest.id}-${manifest.version}`,
@@ -73,11 +104,11 @@ export async function bundleRenderProfile(
 
   const publishedManifest = {
     ...manifest,
-    hostConfig: `dist/${manifest.hostConfig}`,
-    theme: `dist/${manifest.theme}`,
-    stylesheet: `dist/${manifest.stylesheet}`,
-    tokens: `dist/${manifest.tokens}`,
-    capabilities: `dist/${manifest.capabilities}`,
+    hostConfig: `dist/${hostConfig}`,
+    theme: `dist/${theme}`,
+    stylesheet: `dist/${stylesheet}`,
+    tokens: `dist/${tokens}`,
+    capabilities: `dist/${capabilities}`,
   };
   await writeFile(
     path.join(distRoot, "manifest.json"),
@@ -91,7 +122,7 @@ export async function bundleRenderProfile(
   }
   const bundleManifest = {
     profile: reference,
-    compatibility: manifest.compatibility,
+    compatibility: validation.compatibility,
     adaptiveCardsSdkVersion: manifest.adaptiveCardsSdkVersion,
     files: hashes,
   };
@@ -101,19 +132,19 @@ export async function bundleRenderProfile(
   );
 
   const packageJson = {
-    name: manifest.packageName,
-    version: manifest.version,
+    name: validation.packageName,
+    version: validation.version,
     description: `Octo Adaptive Cards Render Profile ${reference}`,
     private: false,
     files: ["dist"],
     sideEffects: ["*.css", "dist/*.css"],
     exports: {
       "./manifest.json": "./dist/manifest.json",
-      "./host-config.json": `./dist/${manifest.hostConfig}`,
-      "./theme.css": `./dist/${manifest.theme}`,
-      "./styles.css": `./dist/${manifest.stylesheet}`,
-      "./tokens.json": `./dist/${manifest.tokens}`,
-      "./capabilities.json": `./dist/${manifest.capabilities}`,
+      "./host-config.json": `./dist/${hostConfig}`,
+      "./theme.css": `./dist/${theme}`,
+      "./styles.css": `./dist/${stylesheet}`,
+      "./tokens.json": `./dist/${tokens}`,
+      "./capabilities.json": `./dist/${capabilities}`,
       "./bundle-manifest.json": "./dist/bundle-manifest.json",
     },
   };
@@ -125,8 +156,8 @@ export async function bundleRenderProfile(
   return {
     reference,
     packageRoot,
-    packageName: manifest.packageName,
-    version: manifest.version,
+    packageName: validation.packageName,
+    version: validation.version,
     files: ["package.json", ...hashedFiles.map((file) => `dist/${file}`), "dist/bundle-manifest.json"],
   };
 }

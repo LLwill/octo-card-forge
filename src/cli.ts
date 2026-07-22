@@ -5,7 +5,11 @@ import { compileCard, compileSample } from "./compiler.js";
 import { readJson } from "./fs.js";
 import { buildHandoffPackage, writeHandoffPackage } from "./handoff.js";
 import { initCard } from "./init.js";
-import { bundleRenderProfile, packRenderProfile } from "./profile.js";
+import {
+  bundleRenderProfile,
+  packRenderProfile,
+  validateRenderProfile,
+} from "./profile.js";
 import { getCard, listCards } from "./registry.js";
 import { startServer } from "./server.js";
 import type { JsonObject } from "./types.js";
@@ -29,6 +33,7 @@ function usage(): void {
   render <card-id> --sample <name>
   render <card-id> --view <view> --data <file>
   check [card-id] [--format json]
+  profile validate <profile@version>
   profile bundle <profile@version> [--output .release]
   profile pack <profile@version> [--output .release]
   dev [card-id] [--port 4318]`);
@@ -186,15 +191,16 @@ try {
   } else if (command === "profile") {
     const action = args[0];
     const reference = args[1];
-    if (action !== "bundle" && action !== "pack") {
-      throw new Error("profile action must be bundle or pack");
+    if (action !== "validate" && action !== "bundle" && action !== "pack") {
+      throw new Error("profile action must be validate, bundle or pack");
     }
     if (!reference) throw new Error("profile reference is required");
-    const output = flag("--output") ?? ".release";
     const result =
-      action === "bundle"
-        ? await bundleRenderProfile(reference, output)
-        : await packRenderProfile(reference, output);
+      action === "validate"
+        ? await validateRenderProfile(reference)
+        : action === "bundle"
+          ? await bundleRenderProfile(reference, flag("--output") ?? ".release")
+          : await packRenderProfile(reference, flag("--output") ?? ".release");
     console.log(JSON.stringify(result, null, 2));
   } else if (command === "dev") {
     const port = Number(flag("--port") ?? "4318");

@@ -2,11 +2,24 @@ import { mkdtemp, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { bundleRenderProfile, packRenderProfile } from "../src/profile.js";
+import {
+  bundleRenderProfile,
+  packRenderProfile,
+  validateRenderProfile,
+} from "../src/profile.js";
 
 const REFERENCE = "octo-chat@1.2.0-rc.1";
 
 describe("render profile bundle", () => {
+  it("validates a profile without creating a bundle", async () => {
+    await expect(validateRenderProfile(REFERENCE)).resolves.toMatchObject({
+      reference: REFERENCE,
+      packageName: "@dmwork/octo-card-profile-octo-chat",
+      version: "1.2.0-rc.1",
+      compatibility: "octo-chat/v1",
+    });
+  });
+
   it("creates a scoped, immutable package layout", async () => {
     const output = await mkdtemp(path.join(os.tmpdir(), "octo-profile-bundle-"));
     const result = await bundleRenderProfile(REFERENCE, output);
