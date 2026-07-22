@@ -9,7 +9,7 @@ import type {
 } from "./types.js";
 
 /** 仓库当前唯一的组件基线。历史 Profile 仅用于已发布 Card Package 的复现。 */
-export const CURRENT_RENDER_PROFILE = "octo-chat@1.1.0";
+export const CURRENT_RENDER_PROFILE = "octo-chat@1.2.0-rc.1";
 
 function assertCardManifest(value: CardManifest, filePath: string): void {
   if (value.schemaVersion !== 2) {

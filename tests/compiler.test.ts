@@ -117,7 +117,7 @@ describe("new Card Package versions", () => {
 
     expect(legacy.cardVersion).toBe("0.1.0");
     expect(next.cardVersion).toBe("0.2.0");
-    expect(next.renderProfile).toBe("octo-chat@1.1.0");
+    expect(next.renderProfile).toBe("octo-chat@1.2.0-rc.1");
     expect(next.issues).toEqual([]);
     expect(findById(next.payload, "decision_choice")).toMatchObject({
       type: "Input.ChoiceSet",
@@ -151,7 +151,7 @@ describe("new Card Package versions", () => {
 
     expect(legacy.cardVersion).toBe("0.2.0");
     expect(next.cardVersion).toBe("0.3.0");
-    expect(next.renderProfile).toBe("octo-chat@1.1.0");
+    expect(next.renderProfile).toBe("octo-chat@1.2.0-rc.1");
     expect(next.issues).toEqual([]);
     expect(next.payload.body).toEqual(
       expect.arrayContaining([

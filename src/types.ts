@@ -24,9 +24,13 @@ export interface CardManifest {
 export interface RenderProfileManifest {
   id: string;
   version: string;
+  compatibility?: string;
+  packageName?: string;
   adaptiveCardsSdkVersion: string;
   hostConfig: string;
+  theme?: string;
   stylesheet: string;
+  tokens?: string;
   capabilities: string;
 }
 

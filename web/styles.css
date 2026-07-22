@@ -37,7 +37,7 @@ button { min-height: 32px; padding: 0 14px; border: 0; border-radius: 999px; cur
 #status { color: #6b7075; font-size: 12px; }
 .preview-shell { min-height: 420px; padding: 40px; overflow: auto; display: grid; place-items: start center; background: #eef0f2; border-radius: 10px; }
 #preview { width: 640px; max-width: 100%; transition: width .15s ease; }
-#preview > .ac-adaptiveCard { border: 1px solid rgba(0,0,0,.08); border-radius: 8px; overflow: hidden; }
+#preview:not(.octo-card-profile) > .ac-adaptiveCard { border: 1px solid rgba(0,0,0,.08); border-radius: 8px; overflow: hidden; }
 .json-panels { min-width: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 details { min-width: 0; }
 summary { cursor: pointer; font-size: 13px; font-weight: 600; }
@@ -78,7 +78,7 @@ pre { max-height: 520px; overflow: auto; padding: 14px; border-radius: 8px; colo
 .baseline-section > header p { margin: 4px 0 0; color: #6b7075; font-size: 12px; }
 .baseline-preview-shell { padding: 28px; overflow: auto; background: #e9ecef; border: 1px solid rgba(0,0,0,.05); border-radius: 10px; }
 .baseline-preview { max-width: 100%; margin: 0 auto; transition: width .15s ease; }
-.baseline-preview > .ac-adaptiveCard { border: 1px solid rgba(0,0,0,.08); border-radius: 8px; overflow: hidden; }
+.baseline-preview:not(.octo-card-profile) > .ac-adaptiveCard { border: 1px solid rgba(0,0,0,.08); border-radius: 8px; overflow: hidden; }
 .baseline-section details { margin-top: 8px; }
 .baseline-section details summary { color: #6b7075; font-size: 11px; }
 .baseline-section details pre { max-height: 360px; }

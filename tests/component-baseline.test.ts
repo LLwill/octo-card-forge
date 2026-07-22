@@ -10,7 +10,7 @@ import { validateCompiledCard } from "../src/validate.js";
 
 describe("component baseline", () => {
   it("is pinned to the repository's single current HostConfig", async () => {
-    expect(CURRENT_RENDER_PROFILE).toBe("octo-chat@1.1.0");
+    expect(CURRENT_RENDER_PROFILE).toBe("octo-chat@1.2.0-rc.1");
     const profile = await getCurrentRenderProfile();
     expect(`${profile.manifest.id}@${profile.manifest.version}`).toBe(
       CURRENT_RENDER_PROFILE

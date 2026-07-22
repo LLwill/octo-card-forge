@@ -1,0 +1,155 @@
+.octo-card-profile {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--octo-card-color-surface);
+  border: 1px solid var(--octo-card-color-border-subtle);
+  border-radius: var(--octo-card-radius-card);
+}
+
+.octo-card-profile .ac-adaptiveCard {
+  width: 100%;
+  overflow: hidden;
+  border-radius: inherit;
+}
+.octo-card-profile .ac-columnSet { min-width: 0; }
+.octo-card-profile .ac-container { min-width: 0; border-radius: 6px; }
+
+/* Public semantic primitives selected explicitly by Card JSON element IDs. */
+.octo-card-profile [id^="octo-surface-accent-"] {
+  background: #f3eeff !important;
+}
+.octo-card-profile [id^="octo-surface-accent-header"] {
+  border-radius: 0 !important;
+}
+.octo-card-profile [id^="octo-surface-default-footer"] {
+  background: #ffffff !important;
+  border-radius: 0 !important;
+  padding: 0 16px 16px !important;
+}
+.octo-card-profile [id^="octo-badge-"] {
+  box-sizing: border-box;
+  width: fit-content !important;
+  padding: 2px 8px !important;
+  border-radius: 999px;
+  background: rgba(28, 28, 35, .06);
+}
+.octo-card-profile [id^="octo-badge-warning-"] {
+  background: #fff7ec;
+}
+
+.octo-card-profile .ac-pushButton {
+  min-height: 32px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #1f2329;
+  background: rgba(28, 28, 35, .06);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  box-shadow: none;
+  font: 600 13px/20px inherit;
+  cursor: pointer;
+}
+.octo-card-profile .ac-pushButton img { width: 14px !important; height: 14px !important; object-fit: contain; }
+.octo-card-profile .ac-pushButton[role="link"] { color: #555b61; background: transparent; }
+.octo-card-profile .ac-pushButton.style-destructive { color: #f54a45; background: rgba(245, 74, 69, .10); }
+.octo-card-profile .ac-pushButton.style-positive { color: #fff; background: #1c1c23; }
+.octo-card-profile .ac-actionSet { justify-content: flex-end !important; }
+
+/* Expanded ChoiceSet → option cards */
+.octo-card-profile .ac-choiceSetInput-expanded,
+.octo-card-profile .ac-choiceSetInput-multiSelect {
+  display: flex !important;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+.octo-card-profile .ac-choiceSetInput-expanded > div,
+.octo-card-profile .ac-choiceSetInput-multiSelect > div {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 56px;
+  margin: 0 !important;
+  padding: 12px 14px !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 10px;
+  border: 1px solid rgba(28, 28, 35, .10);
+  border-radius: 10px;
+  background: #fff;
+  transition: border-color .15s ease, background-color .15s ease, box-shadow .15s ease;
+  cursor: pointer;
+}
+.octo-card-profile .ac-choiceSetInput-expanded > div:hover,
+.octo-card-profile .ac-choiceSetInput-multiSelect > div:hover {
+  border-color: rgba(127, 59, 245, .35);
+  background: #fbfaff;
+}
+.octo-card-profile .ac-choiceSetInput-expanded > div:has(input:checked),
+.octo-card-profile .ac-choiceSetInput-multiSelect > div:has(input:checked) {
+  border-color: #7f3bf5;
+  background: #f5f0ff;
+  box-shadow: 0 0 0 1px rgba(127, 59, 245, .18);
+}
+.octo-card-profile .ac-choiceSetInput-expanded input[type="radio"],
+.octo-card-profile .ac-choiceSetInput-multiSelect input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0 !important;
+  flex: 0 0 auto;
+  accent-color: #7f3bf5;
+  cursor: pointer;
+}
+.octo-card-profile .ac-choiceSetInput-expanded > div > div:not(.ac-textBlock),
+.octo-card-profile .ac-choiceSetInput-multiSelect > div > div:not(.ac-textBlock) {
+  display: none; /* hide 6px spacer; use gap instead */
+}
+.octo-card-profile .ac-choiceSetInput-expanded .ac-textBlock,
+.octo-card-profile .ac-choiceSetInput-multiSelect .ac-textBlock {
+  display: block !important;
+  flex: 1 1 auto !important;
+  margin: 0 !important;
+  white-space: pre-line;
+  line-height: 1.45;
+  color: #1f2329;
+  cursor: pointer;
+}
+
+/* Compact text inputs */
+.octo-card-profile .ac-input-container {
+  width: 100%;
+}
+.octo-card-profile .ac-textInput {
+  box-sizing: border-box;
+  width: 100% !important;
+  min-height: 36px;
+  max-height: 96px;
+  padding: 8px 12px;
+  resize: vertical;
+  color: #1f2329;
+  background: #fff;
+  border: 1px solid rgba(28, 28, 35, .12);
+  border-radius: 8px;
+  font: 13px/20px inherit;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.octo-card-profile .ac-textInput.ac-multiline {
+  min-height: 72px;
+}
+.octo-card-profile .ac-textInput:hover {
+  border-color: rgba(28, 28, 35, .22);
+}
+.octo-card-profile .ac-textInput:focus {
+  outline: none;
+  border-color: #7f3bf5;
+  box-shadow: 0 0 0 3px rgba(127, 59, 245, .12);
+}
+.octo-card-profile .ac-textInput::placeholder {
+  color: #8b9095;
+}
+.octo-card-profile .ac-input-validation-failed .ac-textInput,
+.octo-card-profile .ac-textInput.ac-input-validation-failed {
+  border-color: #f54a45;
+}

@@ -47,7 +47,7 @@ function renderSection(section) {
   const shell = document.createElement("div");
   shell.className = "baseline-preview-shell";
   const preview = document.createElement("div");
-  preview.className = "baseline-preview";
+  preview.className = "baseline-preview octo-card-profile";
   preview.dataset.baselineSection = section.id;
   preview.style.width = `${previewWidth}px`;
 

@@ -36,6 +36,10 @@ async function chooseCard() {
   const contractData = await json(`/api/cards/${encodeURIComponent(selected.reference)}/contract`);
   contract.textContent = JSON.stringify(contractData, null, 2);
   version.textContent = `${selected.id}@${selected.version} · ${selected.renderProfile}`;
+  preview.classList.toggle(
+    "octo-card-profile",
+    currentContext.renderProfile.version === "1.2.0-rc.1"
+  );
   if (hostStyle) hostStyle.remove();
   hostStyle = document.createElement("link");
   hostStyle.rel = "stylesheet";
