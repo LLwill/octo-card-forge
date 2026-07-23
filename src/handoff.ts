@@ -3,7 +3,7 @@ import path from "node:path";
 import JSZip from "jszip";
 import { compileCard } from "./compiler.js";
 import { readJson } from "./fs.js";
-import { getCard } from "./registry.js";
+import { getCard, resolveRenderProfileReference } from "./registry.js";
 import type { JsonObject } from "./types.js";
 
 /** Build a deterministic, self-contained package for manual backend handoff. */
@@ -80,13 +80,21 @@ export async function buildHandoffArchive(
     }
   }
 
+  const resolvedRenderProfile = resolveRenderProfileReference(
+    typeof manifest.renderProfile === "string" ? manifest.renderProfile : undefined
+  );
+  const renderProfileLabel =
+    manifest.renderProfile && manifest.renderProfile !== resolvedRenderProfile
+      ? `${String(manifest.renderProfile)} → ${resolvedRenderProfile}`
+      : resolvedRenderProfile;
+
   addFile(
     "README.md",
     `# ${String(manifest.name)} backend handoff\n\n` +
       `- Card: \`${packageName}\`\n` +
       `- Contract: \`${String(manifest.contractVersion)}\`\n` +
       `- Adaptive Card: \`${String(manifest.adaptiveCardVersion)}\`\n` +
-      `- Render Profile: \`${String(manifest.renderProfile)}\`\n\n` +
+      `- Render Profile: \`${renderProfileLabel}\`\n\n` +
       `Use \`contract/data.schema.json\` to map backend data. ` +
       `The \`goldens/\` directory contains expected compiled Card JSON for each sample. ` +
       `The \`reports/\` directory documents standard Action/Input/Toggle behavior.\n`

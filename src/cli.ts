@@ -24,7 +24,7 @@ function flag(name: string): string | undefined {
 
 function usage(): void {
   console.log(`octo-card commands:
-  init <card-id> --name <name> [--view default] [--wire-profile octo/v1] [--render-profile octo-chat@1.0.0] [--format json]
+  init <card-id> --name <name> [--view default] [--wire-profile octo/v1] [--render-profile octo-chat@latest] [--format json]
   list
   contract <card-id> [--format json]
   inspect <card-id> [--sample <name>] [--format json]
@@ -36,7 +36,7 @@ function usage(): void {
   profile validate <profile@version>
   profile bundle <profile@version> [--output .release]
   profile pack <profile@version> [--output .release]
-  dev [card-id] [--port 4318]`);
+  dev [card-id] [--host 127.0.0.1] [--port 4318]`);
 }
 
 try {
@@ -204,7 +204,8 @@ try {
     console.log(JSON.stringify(result, null, 2));
   } else if (command === "dev") {
     const port = Number(flag("--port") ?? "4318");
-    await startServer({ port });
+    const host = flag("--host") ?? "127.0.0.1";
+    await startServer({ host, port });
   } else {
     usage();
     if (command !== "help" && command !== "--help") process.exitCode = 1;

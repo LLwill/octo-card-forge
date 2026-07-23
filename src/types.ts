@@ -15,7 +15,8 @@ export interface CardManifest {
   version: string;
   contractVersion: string;
   adaptiveCardVersion: string;
-  renderProfile: string;
+  /** Concrete pin, `id@latest` (follows CURRENT_RENDER_PROFILE), or omit for current baseline. */
+  renderProfile?: string;
   defaultLocale: string;
   views: Record<string, CardViewDefinition>;
   dataSchema: string;

@@ -45,7 +45,7 @@ describe("initCard", () => {
       name: "文档分享通知",
       version: "0.1.0",
       schemaVersion: 2,
-      renderProfile: "octo-chat@1.0.0",
+      renderProfile: "octo-chat@latest",
       views: {
         default: expect.objectContaining({ wireProfile: "octo/v1" }),
       },

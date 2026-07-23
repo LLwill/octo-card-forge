@@ -55,7 +55,13 @@ Use a separate view when structure or available actions change materially. Use c
 
 ## Handle Render Profiles
 
-Change a Render Profile only for renderer-wide behavior shared by multiple cards. Never modify a released profile directory in place. Create a new version containing matching `host-config.json`, `styles.css`, and `capabilities.json`, then update card manifests to the new `<id>@<version>` reference.
+Change a Render Profile only for renderer-wide behavior shared by multiple cards. Never modify a released profile directory in place. Create a new version directory under `render-profiles/<id>/<version>/`, then point `CURRENT_RENDER_PROFILE` at it when it becomes the repo baseline.
+
+Card `renderProfile` references:
+- `octo-chat@latest` (or omit): follow `CURRENT_RENDER_PROFILE` — preferred for draft cards.
+- `octo-chat@x.y.z`: pin a concrete version for freeze / historical packages.
+
+Updating the baseline does not require bulk-editing cards that already use `@latest`.
 
 Keep card-specific CSS and frontend markers out of Render Profiles. Production Octo Web receives Render Profile changes through its normal source-control and release process. Prefer controlled HTTPS assets; flag third-party icon URLs as prototype dependencies.
 
@@ -71,7 +77,7 @@ Keep the scaffold's initial versions for a card's first release. After a version
   - Patch: descriptions/examples or corrections that do not change accepted data.
   - Minor: backward-compatible optional fields or accepted values.
   - Major: new required fields, removals, renames, type changes, stricter validation, or changed field meaning.
-- Version Render Profiles independently; changing a card's Render Profile reference still requires a card version increment.
+- Version Render Profiles independently; changing a card's pinned Render Profile (or switching between pin and `@latest`) still requires a card version increment.
 
 ## Validate and preview
 

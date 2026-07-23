@@ -1,15 +1,12 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { projectRoot, readJson } from "./fs.js";
-import type {
-  RenderCapabilities,
-  RenderProfileManifest,
-  WireProfile,
-} from "./types.js";
+import { projectRoot } from "./fs.js";
+import { getRenderProfile } from "./registry.js";
+import type { WireProfile } from "./types.js";
 
 const CARD_ID = /^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$/;
 const VIEW_ID = /^[a-z][a-z0-9_-]*$/;
-const RENDER_PROFILE = /^[a-z][a-z0-9.-]*@\d+\.\d+\.\d+$/;
+const RENDER_PROFILE = /^[a-z][a-z0-9.-]*@(latest|\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$/;
 
 export interface InitCardOptions {
   cardId: string;
@@ -35,7 +32,8 @@ export async function initCard(options: InitCardOptions): Promise<InitCardResult
   const cardId = options.cardId.trim();
   const name = options.name.trim();
   const view = options.view?.trim() || "default";
-  const renderProfile = options.renderProfile?.trim() || "octo-chat@1.0.0";
+  // Follow the repo baseline unless the caller pins a concrete version.
+  const renderProfile = options.renderProfile?.trim() || "octo-chat@latest";
   const wireProfile = options.wireProfile ?? "octo/v1";
 
   if (!CARD_ID.test(cardId)) {
@@ -48,31 +46,28 @@ export async function initCard(options: InitCardOptions): Promise<InitCardResult
     throw new Error("view must start with a lowercase letter and contain letters, numbers, _ or -");
   }
   if (!RENDER_PROFILE.test(renderProfile)) {
-    throw new Error("render profile must look like octo-chat@1.0.0");
+    throw new Error(
+      "render profile must look like octo-chat@1.2.0-rc.1 or octo-chat@latest"
+    );
   }
   if (wireProfile !== "octo/v1" && wireProfile !== "octo/v2") {
     throw new Error("wire profile must be octo/v1 or octo/v2");
   }
 
   const root = path.resolve(options.root ?? projectRoot());
-  const at = renderProfile.lastIndexOf("@");
-  const profileRoot = path.join(
-    root,
-    "render-profiles",
-    renderProfile.slice(0, at),
-    renderProfile.slice(at + 1)
-  );
+  const previousRoot = process.env.OCTO_CARD_FORGE_ROOT;
+  process.env.OCTO_CARD_FORGE_ROOT = root;
   let adaptiveCardVersion: string;
   try {
-    const profileManifest = await readJson<RenderProfileManifest>(
-      path.join(profileRoot, "manifest.json")
+    const profile = await getRenderProfile(renderProfile);
+    adaptiveCardVersion = profile.capabilities.maxAdaptiveCardVersion;
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : `Unknown render profile: ${renderProfile}`
     );
-    const capabilities = await readJson<RenderCapabilities>(
-      path.join(profileRoot, profileManifest.capabilities)
-    );
-    adaptiveCardVersion = capabilities.maxAdaptiveCardVersion;
-  } catch {
-    throw new Error(`Unknown render profile: ${renderProfile}`);
+  } finally {
+    if (previousRoot === undefined) delete process.env.OCTO_CARD_FORGE_ROOT;
+    else process.env.OCTO_CARD_FORGE_ROOT = previousRoot;
   }
   const cardsRoot = path.join(root, "cards");
   const cardRoot = path.join(cardsRoot, cardId);
