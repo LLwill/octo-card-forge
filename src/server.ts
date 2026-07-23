@@ -144,7 +144,7 @@ async function handleApi(
         card: card.manifest,
         renderProfile: profile.manifest,
         hostConfig: profile.hostConfig,
-        stylesheetUrl: `/api/render-styles/${encodeURIComponent(card.manifest.renderProfile)}`,
+        stylesheetUrl: `/api/render-styles/${encodeURIComponent(profile.reference)}`,
       });
     }
     return true;

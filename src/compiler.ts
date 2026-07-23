@@ -3,7 +3,7 @@ import { createRequire } from "node:module";
 import * as ACData from "adaptivecards-templating";
 import { readJson } from "./fs.js";
 import { inspectCard } from "./inspect.js";
-import { getCard, getRenderProfile } from "./registry.js";
+import { getCard, getRenderProfile, resolveRenderProfileReference } from "./registry.js";
 import type {
   CompileResult,
   JsonObject,
@@ -55,12 +55,13 @@ export async function compileCard(options: {
     }
   }
 
+  const renderProfile = resolveRenderProfileReference(card.manifest.renderProfile);
   let payload: JsonObject = {};
   if (!issues.some((issue) => issue.severity === "error")) {
     const templateJson = await readJson<JsonObject>(path.join(card.root, view.template));
     const template = new ACData.Template(templateJson);
     payload = template.expand({ $root: options.data }) as JsonObject;
-    const profile = await getRenderProfile(card.manifest.renderProfile);
+    const profile = await getRenderProfile(renderProfile);
     issues.push(...validateCompiledCard(payload, profile.capabilities, view.wireProfile));
   }
 
@@ -68,7 +69,7 @@ export async function compileCard(options: {
     cardId: card.manifest.id,
     cardVersion: card.manifest.version,
     contractVersion: card.manifest.contractVersion,
-    renderProfile: card.manifest.renderProfile,
+    renderProfile,
     wireProfile: view.wireProfile,
     view: options.view,
     payload,

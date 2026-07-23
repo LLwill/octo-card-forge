@@ -67,8 +67,16 @@ octo-card inspect docs.access-request [--sample pending]
 octo-card handoff docs.access-request [--output dist]
 octo-card render docs.access-request --sample pending
 octo-card check [docs.access-request] [--format json]
-octo-card dev [docs.access-request] [--port 4318]
+octo-card dev [docs.access-request] [--host 127.0.0.1] [--port 4318]
 ```
+
+需要让同一局域网设备访问 Catalog 时，显式监听全部网卡：
+
+```bash
+pnpm dev -- --host 0.0.0.0
+```
+
+然后通过 `http://<本机局域网IP>:4318/` 访问。Catalog/Render API 当前没有认证，只应在可信局域网临时开放。
 
 ## 后端接入
 
@@ -120,6 +128,16 @@ pnpm typecheck
 pnpm test
 pnpm cli check --format json
 ```
+
+## Render Profile
+
+卡片 `manifest.renderProfile` 支持：
+
+- 具体版本（如 `octo-chat@1.0.0` / `octo-chat@1.2.0-rc.1`）：钉死，用于历史复现
+- `octo-chat@latest`：跟随仓库当前基线 `CURRENT_RENDER_PROFILE`
+- 省略字段：等价于 `@latest`
+
+`octo-card init` 默认写入 `octo-chat@latest`。升级基线时只需更新 `src/registry.ts` 中的 `CURRENT_RENDER_PROFILE`（并新增对应 profile 目录），跟随 latest 的卡无需批量改 manifest。编译结果中的 `renderProfile` 会解析成具体版本。
 
 ## 版本说明
 
