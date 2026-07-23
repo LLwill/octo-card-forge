@@ -1,11 +1,17 @@
-# Octo Card Forge 单主题 Render Profile 接入实施方案
+# Octo Card Forge 单主题 Web Render Profile 接入实施方案
 
 ## 1. 文档状态
 
-- 状态：实施基线，待按 PR 顺序执行
+- 状态：专项实施基线；Forge 已具备版本化 Profile、校验、Bundle/Pack 和候选发布
+  workflow，但“Token 生成 HostConfig”“Preview 直接消费发布包”等验收项尚未全部完成；
+  Web、Server 与 producer 的完成状态以各自仓库为准
 - 范围：`octo-card-forge`、`octo-web`、`octo-server`、首个业务卡片 producer
 - 当前阶段：只支持一份默认主题；明暗主题不在本轮范围
 - 核心目标：Card Forge 成为新卡片视觉标准来源，同时保证线上历史卡片和未迁移模板完全不变
+
+术语说明：本文的 **Web Renderer** 指“Adaptive Card JSON → DOM/CSS”。它不负责
+Template 展开。Template + Data 的同源 Go/WASM 方案见
+[`shared-go-renderer-design.md`](./shared-go-renderer-design.md)。
 
 ## 2. 不可破坏的线上前提
 
@@ -19,7 +25,7 @@
 
 ## 3. 最终决策
 
-### 3.1 单一 renderer，两个显式渲染档位
+### 3.1 单一 Web Renderer，两个显式视觉档位
 
 Web 继续只保留现有 `renderOctoCard()`，内部选择渲染档位：
 
@@ -82,7 +88,7 @@ Web 不把 Forge Token 映射成 `--wk-*`，只负责选择 legacy 或 Forge。
 
 ### 4.1 Forge 源目录
 
-推荐源目录：
+目标源目录：
 
 ```text
 render-profiles/octo-chat/1.2.0/
@@ -103,6 +109,9 @@ render-profiles/octo-chat/1.2.0/
   "color.accent": "#7f3bf5"
 }
 ```
+
+当前 `1.2.0-rc.1` 仍直接保存具体值 `host-config.json`、`theme.css` 和 `tokens.json`；
+把 HostConfig 改为由 Token 生成是本实施方案中的剩余工作，不能标记为已完成。
 
 ### 4.2 编译后 npm 包
 
@@ -204,6 +213,10 @@ Forge 根节点禁止同时携带 `.wk-interactive-card-sdk`，否则现有 lega
 ## 6. 修改顺序与 PR 划分
 
 必须按以下顺序实施。后一个阶段不得在前一个阶段验收通过前启用。
+
+本仓可确认的状态：版本化 Profile、Bundle/Pack、checksum 和候选发布 workflow 已存在；
+PR 1 的 Token 单一来源、PR 2 的 HostConfig Token 展开、PR 3 的 Preview 直接消费发布包
+仍需按验收项完成。PR 5 以后涉及其它仓库，本文件不代替对应仓库的实施记录。
 
 ### PR 1：收敛 Card Forge 单主题 Profile 源
 
@@ -416,7 +429,7 @@ if card.RenderProfile != "" {
 
 步骤：
 
-1. 用已发布 Forge 包和 Sample 编译标准 Card JSON；
+1. 用已发布 Card Bundle、Sample 和当时已启用的 Template Renderer 生成标准 Card JSON；
 2. 通过测试 producer 发送：
 
 ```json
@@ -446,7 +459,7 @@ if card.RenderProfile != "" {
 
 1. 创建新的 Card Package 版本，不修改已发布版本；
 2. 后端领域模型映射到 Forge ViewModel；
-3. 使用 Forge 编译或已批准的运行时编译服务生成 Card JSON；
+3. 使用 Server 进程内的原生 Shared Go Template Renderer 生成 Card JSON；迁移期可保留旧 Go Builder 作为 feature-gate 回退；
 4. 仅此 producer 设置 `RenderProfile: "octo-chat/v1"`；
 5. 灰度到内部账号或测试 Space；
 6. 观察后再逐步扩大。
@@ -525,28 +538,28 @@ Forge Profile 源
 
 - Web：按 `legacy`、`octo-chat/v1`、`unsupported` 统计渲染次数和失败率；
 - Server：按 producer 统计 `render_profile` 发送量和拒绝量；
-- 业务 producer：记录 Forge 编译失败和旧模板回退次数。
+- 业务 producer：记录 Template Renderer 失败和旧 Go Builder 回退次数。
 
 回滚优先级：
 
 1. producer 停止发送 `render_profile`；
 2. producer 回退旧 Card JSON；
 3. Server 保留字段兼容能力；
-4. Web 保留 dormant Forge renderer，不需要紧急回滚；
+4. Web 保留 dormant Forge 视觉档位，不需要紧急回滚；
 5. npm 包版本永不覆盖或删除。
 
-## 11. 当前原型的处理清单
+## 11. 剩余对齐清单
 
-当前未合并原型中可以保留：
+已经采用并应继续保留：
 
 - Profile Bundle 完整性哈希思路；
 - Adaptive Cards SDK 版本检查；
 - CSS scope；
 - Web legacy 默认策略；
 - 显式 opt-in render gate；
-- 现有 renderer 复用。
+- 现有 Web Renderer 复用。
 
-必须修改或删除：
+仍需按各仓实际状态确认或完成：
 
 - 删除 Web `adapter.css`；
 - 删除 `WEB_RENDER_PROFILE_TOKEN_BINDINGS`；

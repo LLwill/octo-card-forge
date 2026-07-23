@@ -1,8 +1,41 @@
 # Octo Card Forge 架构与开发设计
 
-> 状态：Proposal
-> 日期：2026-07-21
+> 状态：目标架构（部分已实现）
+> 初版日期：2026-07-21
+> 最近整理：2026-07-23
 > 适用范围：Octo Adaptive Cards 的设计、数据契约、编译、校验、预览、发布与后端接入
+
+## 0. 阅读方式与文档地图
+
+本文是总体架构入口，同时明确区分当前实现和目标架构。
+
+| 文档 | 主题 | 状态 |
+| --- | --- | --- |
+| 本文 | Forge/Card/Server/Web 的总体边界 | 目标架构，部分已实现 |
+| [`shared-go-renderer-design.md`](./shared-go-renderer-design.md) | Template + Data → Card JSON 的同源 Go/WASM Template Renderer | Proposal，尚未实现 |
+| [`render-profile-integration-rollout.md`](./render-profile-integration-rollout.md) | Card JSON → DOM/CSS 的 Web Render Profile | 专项实施基线，Forge 制品能力已部分落地 |
+
+两个 Renderer 概念不得混用：
+
+```text
+Template Renderer：Template + ViewModel → Adaptive Card JSON
+Web Renderer：Adaptive Card JSON + Render Profile → DOM
+```
+
+当前实现（As-Is）：
+
+- Forge 使用 TypeScript `adaptivecards-templating` 展开 Template；
+- Catalog 通过本地 `/api/render` 预览，CLI/check/handoff 复用同一 TypeScript 编译链路；
+- Server 仍使用现有 Go Builder 生成生产卡片；
+- Render Profile 的版本目录、校验、Bundle/Pack 和发布工作流已在 Forge 存在。
+
+目标架构（Target）：
+
+- Card Template 只维护一份；
+- Server 使用原生 Shared Go Template Renderer；
+- Forge Preview 使用由同一份 Go 源码编译出的 WASM；
+- 本地 Render API 只服务开发，不成为生产依赖；
+- Server 继续拥有 Action/Input 运行时绑定、metadata、最终校验、发送、回调和更新。
 
 ## 1. 背景
 
@@ -12,17 +45,18 @@ Octo 已经具备完整的 Adaptive Cards 基础链路：
 - `octo-web` 使用官方 Adaptive Cards SDK 和产品 HostConfig 渲染卡片，收集输入并提交动作。
 - 业务后端负责产生卡片需要的业务数据，消费卡片动作，并在状态变化后更新整张卡片。
 
-Card Forge 的目标不是再实现一种卡片协议，而是为上述链路提供统一的卡片设计、编译、验证和版本管理能力。
+Card Forge 的目标不是再实现一种消息协议，而是为上述链路提供统一的卡片设计、
+Template、ViewModel、验证、预览和版本管理能力。
 
 ## 2. 核心决策
 
 ### 2.1 Card Forge 的定位
 
-Card Forge 是 Octo 的卡片设计与编译平台，负责：
+Card Forge 是 Octo 的卡片设计与交付平台，负责：
 
 1. 管理标准 Adaptive Cards 模板。
 2. 定义后端需要提供的 Card ViewModel JSON Schema。
-3. 使用示例数据编译完整 Adaptive Card JSON。
+3. 使用示例数据预览并验证 Template 输出。
 4. 按 Octo Server 能力和平台渲染规范执行预校验。
 5. 提供本地预览、交互模拟和视觉回归。
 6. 管理卡片版本和不可变发布制品。
@@ -37,6 +71,7 @@ Card Forge 不负责：
 - 引入卡片私有渲染标记。
 - 在平台内部运行 AI Agent。
 - 再定义一套 Action/Input 交互协议。
+- 决定业务 Action/Input ID、callback payload 或权限规则。
 
 ### 2.2 取消 `interactions.json`
 
@@ -46,7 +81,10 @@ Card Forge 不负责：
 - Input 类型、ID、必填规则、长度限制和 ChoiceSet 选项。
 - `Action.ToggleVisibility` 的目标和显隐状态。
 
-因此 Card Package 不再维护 `interactions.json`。Action、Input 和显隐关系由 Card Forge 从编译后的标准 JSON 自动提取，仅用于检查和生成交付文档。
+因此 Card Package 不再人工维护 `interactions.json`。Action、Input 和显隐关系可以从
+最终标准 JSON 自动提取，但 Forge 输出只用于 Preview、诊断和交付说明，不是业务回调
+协议的权威来源。真实 Action/Input ID、Submit data 和最终校验由 Server 的 Runtime
+Binding 与安全边界决定。
 
 ### 2.3 平台 Render Profile 是渲染标准
 
@@ -77,7 +115,7 @@ GET /v1/bot/card/profile
 
 Card Forge 只在开发或 CI 校验时读取该接口。能力数据不写入卡片 Manifest，不随卡片发送，也不要求 Server 调用 Card Forge。
 
-## 3. 系统架构
+## 3. 目标系统架构
 
 ```text
 外部 Agent / 开发者
@@ -85,31 +123,36 @@ Card Forge 只在开发或 CI 校验时读取该接口。能力数据不写入�
         ▼
 ┌──────────────────────────────┐
 │ Octo Card Forge              │
-│                              │
-│ Card Package                 │
-│ ViewModel Schema             │
-│ Adaptive Card Template       │
-│ Samples                      │
-│ Render Profile               │
-│ Compiler / Validator         │
-│ Preview / Catalog / Registry │
+│ Template / Schema / Samples  │
+│ Render Profile / Catalog     │
 └──────────────┬───────────────┘
-               │ 标准 Adaptive Card JSON
+               │ Card Bundle
                ▼
-业务后端 ──发送/更新──▶ octo-server ──消息同步──▶ octo-web
-   ▲                         │                         │
-   └──── card_action ────────┘                         │
-                                                     │
-              Render Profile 制品 ◀──────────────────┘
+┌──────────────────────────────┐
+│ Shared Go Template Renderer  │
+│ Native Go ─────── Go WASM    │
+└───────┬──────────────┬───────┘
+        │              │
+        ▼              ▼
+octo-server       Forge Preview
+  │ Runtime Binding    │ Mock Runtime Binding
+  │ metadata/校验      │ Adaptive Cards SDK
+  ▼
+octo-web ◀── 消息同步
+  │
+  └── card_action ──▶ octo-server/业务处理
+
+Render Profile 制品 ──▶ Forge Preview + octo-web
 ```
 
 ### 3.1 各组件职责
 
 | 组件 | 职责 |
 | --- | --- |
-| Card Forge | 模板、数据契约、编译、校验、预览、版本与发布 |
-| 业务后端 | 领域模型映射、调用 Render API、业务动作处理、整卡更新 |
-| octo-server | 最终校验、消息存储、动作防伪、输入校验、事件分发 |
+| Card Forge | Template、ViewModel Schema、Samples、Mock Runtime Binding、WASM Preview、校验、版本与发布 |
+| Shared Go Template Renderer | Template + ViewModel + Runtime Binding → 标准 Adaptive Card JSON |
+| 业务后端 | 领域模型映射、真实 Runtime Binding、业务动作处理、整卡更新 |
+| octo-server | 原生 Go 渲染、metadata、最终校验、消息存储、动作防伪、输入校验、事件分发 |
 | octo-web | 使用官方 SDK 和平台 Render Profile 渲染及执行通用交互 |
 | 外部 Agent | 通过 Skill/CLI 修改 Card Package 并提交代码变更 |
 
@@ -119,14 +162,16 @@ Card Forge 只在开发或 CI 校验时读取该接口。能力数据不写入�
 | --- | --- |
 | 卡片布局 | Adaptive Card Template |
 | 后端渲染输入 | `contract/data.schema.json` |
-| Action/Input 定义 | 编译后的标准 Adaptive Card JSON |
+| Action/Input 业务语义与运行时 ID | octo-server/业务 Adapter 的 Runtime Binding |
+| 最终发送的 Action/Input 结构 | Server 装配并验证后的标准 Adaptive Card JSON |
 | Octo 协议档位 | View 的 `wireProfile` |
 | Server 最终接受能力 | `octo-server` 校验器和 `/v1/bot/card/profile` |
 | 平台视觉规范 | Card Forge Render Profile |
 | 生产卡片版本 | Card Registry 不可变发布制品 |
 | 业务字段来源 | 业务后端领域映射代码 |
 
-不得在两个文件中手工维护同一份 Action、Input、组件白名单或样式规则。
+不得在 Forge Template 和 Server Go Builder 中重复维护 UI 布局。组件白名单和安全规则
+以 Server 最终校验为准；Forge 只做同规则的开发期预校验。
 
 ## 5. Card Package 设计
 
@@ -149,6 +194,10 @@ cards/docs.access-request/
 不再包含 `interactions.json`。
 
 ### 5.2 Manifest v2
+
+以下是当前仓库已经使用的 Manifest v2。目标 Go/WASM Renderer 所需的
+`templateEngine`、`rendererVersion`、`renderProfileCompatibility`、Runtime Binding 与
+checksum 属于后续扩展，见专项设计与 Render Profile 实施方案，不应误认为已经实现。
 
 ```json
 {
@@ -229,15 +278,19 @@ Schema 描述展示就绪的数据，不直接暴露后端领域模型：
 
 ## 6. Render Profile 设计
 
+本节只概括当前单主题方向；完整制品、CSS 隔离、兼容代际和跨仓发布顺序以
+[`render-profile-integration-rollout.md`](./render-profile-integration-rollout.md) 为准。
+
 ### 6.1 目录结构
 
 ```text
-render-profiles/octo-chat/1.0.0/
+render-profiles/octo-chat/1.2.0-rc.1/
 ├── manifest.json
 ├── host-config.json
+├── theme.css
 ├── styles.css
-├── light.tokens.json
-└── dark.tokens.json
+├── tokens.json
+└── capabilities.json
 ```
 
 Render Profile 负责：
@@ -246,7 +299,7 @@ Render Profile 负责：
 - 间距、分割线和容器 Padding。
 - Action 排列、对齐和按钮间距。
 - Container Style。
-- 明暗主题语义色。
+- 当前单主题语义色。
 - Adaptive Cards SDK 版本。
 - 所有卡片共享的通用补充样式。
 
@@ -256,24 +309,21 @@ Render Profile 负责：
 - 业务 ID 或业务状态判断。
 - Card-specific renderer marker。
 
-### 6.2 语义 Token
+### 6.2 Token 与发布制品
 
-Render Profile 可以使用平台语义 Token：
+Forge 源可以使用 Profile 自有 Token，但 Bundle 必须生成 Web 可直接消费的具体值
+HostConfig、`theme.css` 和带作用域的 `styles.css`。Web 不实现 `--wk-*` Token Adapter。
 
-```json
-{
-  "containerStyles": {
-    "default": {
-      "backgroundColor": "{color.surface}"
-    },
-    "attention": {
-      "backgroundColor": "{color.danger.background}"
-    }
-  }
-}
+```text
+Forge Profile 源
+  → validate
+  → bundle/pack
+  → 具体值 HostConfig + theme.css + styles.css
+  → 不可变 npm 制品
 ```
 
-Card Forge Preview 使用主题 Token 文件解析；`octo-web` 使用适配器将相同语义 Token 映射为现有 `--wk-*` CSS Variable。
+所有 Profile CSS 选择器必须受 `.octo-card-profile` 限定，不得依赖 Web 私有 Token、
+业务 ID 或 Preview DOM。
 
 ### 6.3 消费方式
 
@@ -288,28 +338,32 @@ Card Forge 修改 Profile
   → octo-web 正常发版
 ```
 
-生产 `octo-web` 当前使用一份全局 Render Profile。卡片 Manifest 中的 `renderProfile` 表示该卡片设计和发布时验证过的目标规范，不随消息发送给 Web。
+Card Manifest 的 `renderProfile` 固定 Forge 设计与验证使用的精确制品版本，例如
+`octo-chat@1.2.0-rc.1`。消息信封只发送稳定兼容代际，例如 `octo-chat/v1`；无该字段
+永久走 legacy，未知非空值进入升级提示。Web 将稳定代际映射到一个审核通过的精确包。
 
 ### 6.4 Profile CLI
 
 ```bash
-octo-card profile validate octo-chat@1.0.0
-octo-card profile bundle octo-chat@1.0.0
-octo-card profile diff octo-chat@1.0.0 octo-chat@1.1.0
-octo-card profile publish octo-chat@1.1.0
+octo-card profile bundle octo-chat@1.2.0-rc.1 --output .release
+octo-card profile pack octo-chat@1.2.0-rc.1 --output .release
 ```
+
+`validate`、`diff`、`publish` 是目标 CLI 能力；当前发布由 Bundle/Pack 与 CI workflow
+完成。
 
 ## 7. 编译与校验
 
 ### 7.1 编译链路
 
+目标链路使用 Shared Go Template Renderer；当前 TypeScript 编译器在迁移期作为参考实现：
+
 ```text
 Card ViewModel
   → JSON Schema 校验
-  → Adaptive Cards Template Expand
+  → Shared Go Template Renderer（Server 原生 Go / Forge WASM）
   → 标准 Adaptive Card JSON
-  → Adaptive Cards Schema 校验
-  → Octo Server 能力预校验
+  → Forge 开发期预校验 / Server 运行时最终校验
   → Render Profile / Web 兼容性校验
   → 安全与资源限制校验
 ```
@@ -337,7 +391,7 @@ Card Forge 必须理解 Adaptive Cards 的结构上下文。例如 `Column`、`T
 - Adaptive Cards 官方 Schema。
 - `octo/v1`、`octo/v2` 能力边界。
 - Element、Input 和 Action 支持情况。
-- Input 和 Action ID 必填、唯一。
+- Preview Runtime Binding 提供的 Input/Action 结构合法性；真实业务 ID 由 Server 决定。
 - `Action.ToggleVisibility` 目标存在。
 - URL scheme 和远程资源安全。
 - 节点数、深度和 Payload 大小。
@@ -349,9 +403,13 @@ Card Forge 必须理解 Adaptive Cards 的结构上下文。例如 `Column`、`T
 
 ## 8. 标准交互模型
 
+本节描述最终 Adaptive Card JSON 与 Web/Server 的通用交互方式，不表示 Forge 拥有业务
+Action 协议。Forge 可以用 Mock Runtime Binding 展示按钮与输入布局；Server 在发送前
+提供真实 ID、Submit data、callback 路由并执行最终校验。
+
 ### 8.1 Action.Submit
 
-业务路由信息直接放在标准 `Action.Submit.data`：
+Server Runtime Binding 将业务路由信息放在标准 `Action.Submit.data`：
 
 ```json
 {
@@ -386,7 +444,7 @@ Web 不上传 `Action.Submit.data`。Server 从当前生效卡片中根据 `acti
 
 ### 8.2 自动生成交互说明
 
-Card Forge 提供：
+当前 Card Forge 可以提供：
 
 ```bash
 octo-card inspect docs.access-request --sample pending
@@ -415,7 +473,8 @@ octo-card inspect docs.access-request --sample pending
 }
 ```
 
-该输出是自动生成的文档，不是新的交互协议。
+该输出是从某次完整 Preview JSON 自动生成的诊断文档，不是新的交互协议，也不能替代
+Server Runtime Binding 的业务定义。
 
 ### 8.3 文档拒绝交互
 
@@ -445,7 +504,8 @@ octo-card inspect docs.access-request --sample pending
 - 通用提交逻辑遵循 `associatedInputs`。
 - 通用提交逻辑执行标准必填校验。
 
-业务后端仅在 `decision=deny` 时校验 `deny_reason`。Card Forge 不记录旧弹窗兼容逻辑，直接面向标准方案。
+业务后端仅在 `decision=deny` 时校验真实拒绝字段。示例中的具体 ID 只是说明标准交互
+流程，最终名称和限制由 Server Runtime Binding 决定。
 
 ### 8.4 卡片更新
 
@@ -477,68 +537,57 @@ Contract 输出包含：
 - View 列表及其 `wireProfile`。
 - JSON Schema。
 - 字段说明、示例和状态条件。
-- 从标准 JSON 自动提取的 Action/Input 清单。
-- Render API 请求示例。
+- 从 Preview JSON 自动提取的 Action/Input 诊断清单。
+- 本地 Render API 请求示例。
 - `card_action` 事件示例。
 - 整卡更新示例。
 
 后端显式编写领域模型到 ViewModel 的映射，避免 Card Forge 依赖业务代码。
 
-### 9.2 Render API
+### 9.2 本地 Render API
 
-开发接口可以使用当前 Draft：
-
-```http
-POST /dev/cards/docs.access-request/render
-```
-
-生产接口必须固定版本：
+当前 Forge 的 Render API 服务 Catalog、CLI 调试和本地联调：
 
 ```http
-POST /v1/cards/docs.access-request/versions/0.2.0/render
-Content-Type: application/json
-
-{
-  "view": "pending",
-  "locale": "zh-CN",
-  "data": {
-    "requestId": "REQ-001"
-  }
-}
+POST /api/render
 ```
 
-响应：
+它不是生产消息链路依赖，不承诺生产 SLA。目标生产链路在 `octo-server` 进程内执行：
 
-```json
-{
-  "cardId": "docs.access-request",
-  "cardVersion": "0.2.0",
-  "contractVersion": "1.0.0",
-  "view": "pending",
-  "wireProfile": "octo/v2",
-  "adaptiveCardVersion": "1.5",
-  "card": {
-    "type": "AdaptiveCard",
-    "version": "1.5"
-  }
-}
+```text
+Registry.Lookup(id@version)
+  → BusinessAdapter 构造 ViewModel + Runtime Binding
+  → Native Go Program.Render
+  → Server 注入 metadata
+  → cardmsg.Validate
+  → 发送/更新
 ```
 
-业务后端将返回的 `card` 和 `wireProfile` 交给现有 Octo 发送链路。`octo-server` 不需要知道 Card Forge Card ID 或 Card Version。
+Forge Preview 使用同源 WASM：
+
+```text
+Template + Sample + Preview Runtime Binding
+  → Go Renderer WASM
+  → Adaptive Card JSON
+  → Adaptive Cards SDK
+```
+
+详细 API、Template Engine、WASM adapter 和迁移方案见
+[`shared-go-renderer-design.md`](./shared-go-renderer-design.md)。
 
 ### 9.3 运行时要求
 
-正式部署 Render API 时必须具备：
+生产 Template Renderer 必须具备：
 
 - 仅加载已发布的不可变版本。
-- 模板和 JSON Schema 预编译缓存。
-- 请求大小和超时限制。
+- Registry 启动期预编译 Template 和 JSON Schema。
+- Program 不可变、无锁并发，Render 热路径无 IO。
+- Template、循环、深度和输出大小限制。
 - 稳定的错误码和字段级错误。
-- 认证、审计、指标和日志。
-- 灰度、回滚和健康检查。
+- 指标、日志、灰度和回滚。
 - 不允许请求方提交任意模板路径或执行任意表达式。
 
-MVP 阶段 Render API 仅用于本地开发；完成 Registry、不可变制品和运行保障后再作为生产依赖。
+Server 不依赖 Forge 服务可用性；生产热路径不运行 Node、JavaScript VM 或 WASM。
 
 ## 10. 版本与发布
 
@@ -549,12 +598,15 @@ MVP 阶段 Render API 仅用于本地开发；完成 Registry、不可变制品�
 | Card Version | 模板、View、样式目标或行为的发布版本 |
 | Contract Version | Card ViewModel Schema 版本 |
 | Render Profile Version | 平台渲染规范版本 |
+| Template Engine Major | Template 语法兼容边界，目标方案使用 `octo-template@1` |
+| Renderer Version | 产生/验证 Bundle 的 Shared Renderer 精确版本 |
 
 版本规则：
 
 - Card 的任何可发布变化都递增 Card Version。
 - ViewModel 兼容性变化才递增 Contract Version。
 - Render Profile 独立版本化，已发布目录禁止原地修改。
+- Template Engine major 破坏性变化必须显式升级；Renderer Version 随制品记录。
 
 ### 10.2 Git 与 Registry
 
@@ -590,6 +642,8 @@ Card Registry
 
 ## 11. CLI 设计
 
+本节包含目标命令集合；当前已实现命令以 README 为准。
+
 ```text
 octo-card init <card-id>
 octo-card list
@@ -623,8 +677,8 @@ Catalog 面向人类查看和评审，不是模板的唯一编辑入口。核心
 - ViewModel JSON 编辑与实时编译。
 - 最终 Card JSON 查看。
 - 数据契约查看。
-- Render Profile 和明暗主题切换。
-- 桌面和移动宽度预览。
+- Render Profile 选择。
+- 320 / 480 / 640 宽度预览。
 - ToggleVisibility 和 Input 操作。
 - 模拟 `Action.Submit` 请求。
 - 展示 Server 将提取的 `Action.Submit.data`。
@@ -632,12 +686,8 @@ Catalog 面向人类查看和评审，不是模板的唯一编辑入口。核心
 - 校验错误定位。
 - 历史版本和视觉 Diff。
 
-每个 Sample 至少生成：
-
-- 桌面亮色截图。
-- 桌面暗色截图。
-- 移动亮色截图。
-- 移动暗色截图。
+每个核心 Sample 至少生成桌面和移动宽度的单主题视觉基线；明暗主题不在当前
+Render Profile 阶段范围内。
 
 ## 13. Agent Skill
 
@@ -647,17 +697,17 @@ Skill 必须要求 Agent：
 
 1. 检查 Git 状态并保护无关改动。
 2. 先定义或确认 Card ViewModel Schema。
-3. 只使用标准 Adaptive Cards 组件和动作。
+3. 只使用标准 Adaptive Cards 组件；Preview Action 使用 Mock Runtime Binding。
 4. 不创建 `interactions.json`。
 5. 不发明 Input 类型、业务状态协议或渲染标记。
-6. Action/Input 说明从模板自动提取。
-7. 不清楚业务字段或动作语义时列出问题，不自行猜测。
+6. Action/Input 说明只能从组装后的 Preview JSON 提取为诊断信息，不声明为业务契约。
+7. 不清楚 Runtime Binding、业务字段或动作语义时列出问题，不自行猜测。
 8. 验证全部 View 和 Sample。
 9. 执行 Server 能力和 Render Profile 校验。
-10. 输出后端字段、Action、Input、版本和本地预览说明。
+10. 输出 ViewModel 字段、Runtime Binding 待确认项、版本和本地预览说明。
 11. 未获得授权时不提交、推送、发布或创建 PR。
 
-## 14. 当前实现迁移
+## 14. 当前实现与后续迁移
 
 ### 14.1 Card Package v2
 
@@ -670,6 +720,22 @@ Skill 必须要求 Agent：
 - 删除所有 Card Package 中的 `interactions.json`。
 
 ### 14.2 Compiler 与 Validator
+
+当前已经存在：
+
+- TypeScript `compileCard()`；
+- `adaptivecards-templating` Template Expand；
+- Samples、Profile 能力校验与标准 JSON 检查；
+- Action/Input/Toggle 诊断提取。
+
+目标迁移：
+
+- 引入 Shared Go Template Renderer；
+- Server 使用原生 Go，Forge 使用同源 WASM；
+- TypeScript Renderer 只在双渲染比对阶段作为参考，最终删除；
+- Action/Input 诊断与业务 Runtime Binding 解耦。
+
+历史上已经完成的协议简化包括：
 
 删除：
 
@@ -693,8 +759,8 @@ Skill 必须要求 Agent：
 - `contract` 不再返回 interactions。
 - 新增 `inspect`。
 - 新增 Card/Contract 兼容性 `diff`。
-- Render API 增加显式 Card Version。
-- 生产 Render API 禁止隐式 latest。
+- 本地 Render API 支持显式 Card Version。
+- 生产 Renderer 在 Server Registry 内只加载精确版本，不使用隐式 latest。
 
 ### 14.4 Host Profile 重命名
 
@@ -729,6 +795,13 @@ octo-card host ...             → octo-card profile ...
 
 如果后续需要更严格的 CI 一致性，可以增加只读的卡片 dry-run 校验接口，但不作为 MVP 前置条件。
 
+目标阶段新增：
+
+- 链接 Shared Go Template Renderer；
+- Registry 启动期加载并 Compile Forge Template；
+- 业务 Adapter 只构造 ViewModel 和 Runtime Binding，不再手写 UI 节点；
+- 原生 Go Render 后继续复用现有 metadata、`cardmsg.Validate`、发送、回调和更新链路。
+
 ## 15. 实施阶段
 
 ### 阶段一：协议简化与能力对齐
@@ -762,14 +835,16 @@ octo-card host ...             → octo-card profile ...
 
 验收：业务后端可以固定 Card Version，并安全升级或回滚。
 
-### 阶段四：生产 Render Service
+### 阶段四：同源 Go/WASM Template Renderer
 
-- 版本化 Render API。
-- 缓存、认证、审计、指标和限流。
-- 灰度与回滚。
-- SLA 和故障处理。
+- 实现受限、确定性的 Template Engine v1。
+- Server 使用原生 Go Library，Registry 启动期 Compile 并缓存 Program。
+- Forge Preview 使用同源 WASM Artifact。
+- Native/WASM/Samples/Goldens 建立一致性门禁。
+- 逐卡 shadow、灰度并删除重复的手写 Go UI Builder。
 
-验收：业务后端可以稳定地将 ViewModel 编译成指定版本的标准 Card JSON，且 `octo-server`、`octo-web` 无需理解 Card Forge 私有协议。
+验收：Template 与 Template Renderer 均只有一个事实来源；生产保持原生 Go 性能，
+Forge Preview 与 Server 对同一输入产生 canonical JSON 等价结果。
 
 ## 16. 最终约束
 
@@ -785,3 +860,6 @@ octo-card host ...             → octo-card profile ...
 8. 外部 Agent 使用 Skill/CLI，平台本身不运行 Agent。
 9. 生产必须固定不可变 Card Version，不隐式使用 latest。
 10. 已发布 Card、Contract 和 Render Profile 制品禁止原地修改。
+11. 生产渲染不得依赖 Forge HTTP 服务；Server 使用原生 Go Template Renderer。
+12. Forge Preview 使用与 Server 同源的 WASM，禁止长期维护第二套 Template 语义。
+13. Forge 不拥有业务 Action/Input 协议；真实 Runtime Binding 与最终校验由 Server 负责。

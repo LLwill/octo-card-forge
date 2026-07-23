@@ -1,6 +1,10 @@
 # Octo Card Forge
 
-面向外部 AI Agent 和开发者的 Adaptive Cards 设计、校验、预览和运行时编译工具。
+面向外部 AI Agent 和开发者的 Adaptive Cards 设计、校验、预览和制品发布工具。
+
+当前实现使用 TypeScript `adaptivecards-templating` 驱动本地 Preview、CLI、check 和
+handoff。目标生产架构是同源 Go/WASM Template Renderer：Server 使用原生 Go，Forge
+Preview 使用同源 WASM；该目标仍处于 Proposal 阶段。
 
 当前 MVP 打通：
 
@@ -53,9 +57,22 @@ pnpm cli profile pack octo-chat@1.2.0-rc.1 --output .release
 ## 系统边界
 
 - 业务后端负责：领域模型 → Card ViewModel。
-- Card Forge 负责：Card ViewModel → 标准 Adaptive Card JSON。
+- Card Forge 负责：Template、ViewModel Schema、Samples、Preview、校验和制品发布。
+- 目标 Shared Go Template Renderer 负责：Template + ViewModel + Runtime Binding → 标准 Adaptive Card JSON。
+- Octo Server 负责：真实 Action/Input Runtime Binding、metadata、最终安全校验和发送/更新。
 - Octo Web 负责：标准 JSON + 固定 Render Profile → 最终 UI。
 - 外部 Agent 通过 Skill/CLI 修改 Card Package；平台自身不运行 Agent。
+
+当前生产后端仍使用现有 Go Builder；目标 Renderer 不应被理解为已经实现。
+
+## 文档导航
+
+- [`docs/architecture-design.md`](docs/architecture-design.md)：总体架构入口，区分当前实现与目标架构。
+- [`docs/shared-go-renderer-design.md`](docs/shared-go-renderer-design.md)：同源 Go/WASM Template Renderer Proposal。
+- [`docs/render-profile-integration-rollout.md`](docs/render-profile-integration-rollout.md)：Web Render Profile、CSS 隔离与跨仓上线顺序。
+
+术语约定：Template Renderer 生成 Card JSON；Web Renderer 使用 Card JSON 和 Render
+Profile 生成 DOM。两者不是同一个组件。
 
 ## 当前命令
 
@@ -92,9 +109,9 @@ pnpm cli contract docs.access-request
 pnpm cli handoff docs.access-request --output dist
 ```
 
-ZIP 解压后包含 `manifest.json`、数据契约、模板、Samples、Goldens、交互报告和接入说明。
+ZIP 解压后包含 `manifest.json`、数据契约、模板、Samples、Goldens、交互诊断报告和接入说明。交互报告用于 Preview/诊断，不是后端业务 Action 契约。
 
-开发阶段可调用本地 Render API：
+开发阶段可调用本地 Render API。它服务 Catalog 和联调，不是生产消息链路依赖：
 
 ```http
 POST /api/render
@@ -141,4 +158,7 @@ pnpm cli check --format json
 
 ## 版本说明
 
-Card Package 使用 Manifest v2：每个 View 显式声明 `wireProfile`，Action/Input/Toggle 只在标准 Adaptive Card JSON 中定义，不再维护 `interactions.json`。MVP 阶段 Card/Contract/Render Profile 版本由 Git 评审。
+Card Package 使用 Manifest v2：每个 View 显式声明 `wireProfile`，不再人工维护
+`interactions.json`。当前 Forge 可从 Preview JSON 提取 Action/Input/Toggle 作为诊断信息；
+目标架构中的真实 Action/Input Runtime Binding 与最终校验由 Server 负责。MVP 阶段
+Card/Contract/Render Profile 版本由 Git 评审。
