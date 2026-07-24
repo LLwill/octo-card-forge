@@ -172,3 +172,117 @@ describe("new Card Package versions", () => {
     });
   });
 });
+
+describe("ai.reasoning-process compiler", () => {
+  it.each([
+    ["reasoning", "active"],
+    ["answering", "active"],
+    ["completed", "result"],
+    ["stopped", "result"],
+    ["error", "error"],
+  ])("compiles the %s sample into the %s view", async (sample, view) => {
+    const result = await compileSample({
+      cardId: "ai.reasoning-process",
+      sample,
+    });
+
+    expect(result.issues).toEqual([]);
+    expect(result.view).toBe(view);
+    expect(result.cardVersion).toBe("0.1.0");
+    expect(result.contractVersion).toBe("1.0.0");
+    expect(result.renderProfile).toBe("octo-chat@1.2.0-rc.1");
+    expect(result.wireProfile).toBe("octo/v2");
+    expect(JSON.stringify(result.payload)).not.toContain("${");
+  });
+
+  it("exposes stable stop and toggle interactions for an active trace", async () => {
+    const result = await compileSample({
+      cardId: "ai.reasoning-process",
+      sample: "reasoning",
+    });
+
+    expect(findById(result.payload, "reasoning_stop")).toMatchObject({
+      type: "Action.Submit",
+      associatedInputs: "none",
+      data: {
+        action: "reasoning_stop",
+        effect: "stop_reasoning",
+        reasoning_id: "reasoning-channel-b-001",
+      },
+    });
+    expect(findById(result.payload, "reasoning_toggle")).toMatchObject({
+      type: "Action.ToggleVisibility",
+      targetElements: ["trace_panel", "collapsed_panel"],
+    });
+    expect(findById(result.payload, "trace_panel")?.isVisible).toBe(true);
+    expect(findById(result.payload, "collapsed_panel")?.isVisible).toBe(false);
+  });
+
+  it("starts a completed trace collapsed and keeps it locally expandable", async () => {
+    const result = await compileSample({
+      cardId: "ai.reasoning-process",
+      sample: "completed",
+    });
+
+    expect(findById(result.payload, "trace_panel")?.isVisible).toBe(false);
+    expect(findById(result.payload, "collapsed_panel")?.isVisible).toBe(true);
+    expect(result.inspection.actions).toEqual([
+      expect.objectContaining({
+        id: "reasoning_toggle",
+        type: "Action.ToggleVisibility",
+      }),
+    ]);
+  });
+
+  it("exposes a retry action with the reasoning identifier after failure", async () => {
+    const result = await compileSample({
+      cardId: "ai.reasoning-process",
+      sample: "error",
+    });
+
+    expect(findById(result.payload, "reasoning_retry")).toMatchObject({
+      type: "Action.Submit",
+      associatedInputs: "none",
+      data: {
+        action: "reasoning_retry",
+        effect: "retry_reasoning",
+        reasoning_id: "reasoning-channel-b-003",
+      },
+    });
+    expect(JSON.stringify(result.payload)).toContain("推理服务连接超时");
+  });
+
+  it("rejects an error state without user-facing error details", async () => {
+    const result = await compileCard({
+      cardId: "ai.reasoning-process",
+      view: "error",
+      data: {
+        reasoningId: "reasoning-missing-error-copy",
+        state: "error",
+        title: "已深度思考",
+        statusLabel: "生成失败",
+        statusTone: "Attention",
+        timerText: "已中断",
+        traceExpanded: false,
+        traceCollapsed: true,
+        collapsedSummary: "生成已中断",
+        phases: [
+          {
+            thought: "读取指标失败。",
+            actions: [
+              {
+                tool: "query_metrics",
+                detail: "连接超时",
+                statusGlyph: "●",
+                statusTone: "Attention",
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(result.payload).toEqual({});
+    expect(result.issues.filter((issue) => issue.code === "contract.required")).toHaveLength(2);
+  });
+});
