@@ -2,7 +2,7 @@
 
 > 状态：目标架构（部分已实现）
 > 初版日期：2026-07-21
-> 最近整理：2026-07-23
+> 最近整理：2026-07-27
 > 适用范围：Octo Adaptive Cards 的设计、数据契约、编译、校验、预览、发布与后端接入
 
 ## 0. 阅读方式与文档地图
@@ -14,6 +14,7 @@
 | 本文 | Forge/Card/Server/Web 的总体边界 | 目标架构，部分已实现 |
 | [`shared-go-renderer-design.md`](./shared-go-renderer-design.md) | Template + Data → Card JSON 的同源 Go/WASM Template Renderer | Proposal，尚未实现 |
 | [`render-profile-integration-rollout.md`](./render-profile-integration-rollout.md) | Card JSON → DOM/CSS 的 Web Render Profile | 专项实施基线，Forge 制品能力已部分落地 |
+| [`cli-skill-and-component-system.md`](./cli-skill-and-component-system.md) | CLI/Skill 边界、平台组件词汇表、晋升制与发布节奏 | 设计基线，部分已实现 |
 
 两个 Renderer 概念不得混用：
 
@@ -284,7 +285,7 @@ Schema 描述展示就绪的数据，不直接暴露后端领域模型：
 ### 6.1 目录结构
 
 ```text
-render-profiles/octo-chat/1.2.0-rc.1/
+render-profiles/octo-chat/
 ├── manifest.json
 ├── host-config.json
 ├── theme.css
@@ -292,6 +293,10 @@ render-profiles/octo-chat/1.2.0-rc.1/
 ├── tokens.json
 └── capabilities.json
 ```
+
+`render-profiles/octo-chat/` 是当前 Profile 源码目录，不是版本制品库。历史精确版本由
+npm / artifact registry 保存；Forge Catalog 和默认校验不预览历史 Card Package。需要
+复现旧卡时，从对应 card/profile 制品重新渲染。
 
 Render Profile 负责：
 
@@ -692,6 +697,11 @@ Render Profile 阶段范围内。
 ## 13. Agent Skill
 
 Card Forge 自身不内置 Agent。外部 Agent 通过仓库 Skill 和 CLI 工作。
+
+CLI 与 Skill 的职责边界、平台组件词汇表、Tier 分流和组件晋升制见
+[`cli-skill-and-component-system.md`](./cli-skill-and-component-system.md)。
+可机检规则必须进入 `cli check`；Skill 只保留需要判断的工作流与禁令。
+
 
 Skill 必须要求 Agent：
 

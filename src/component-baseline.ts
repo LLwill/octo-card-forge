@@ -103,7 +103,7 @@ export function buildComponentBaseline(
     card: adaptiveCard([
       {
         type: "Container",
-        id: "octo-surface-accent-header-baseline",
+        id: "octo-surface-header-accent-baseline",
         style: "accent",
         items: [
           {
@@ -116,7 +116,7 @@ export function buildComponentBaseline(
       },
       {
         type: "Container",
-        id: "octo-surface-default-footer-baseline",
+        id: "octo-surface-footer-default-baseline",
         style: "emphasis",
         bleed: true,
         separator: true,
@@ -158,6 +158,56 @@ export function buildComponentBaseline(
                 id: "octo-badge-neutral-baseline",
                 text: "Neutral badge",
                 isSubtle: true,
+                weight: "Bolder",
+                size: "Small",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        type: "ColumnSet",
+        spacing: "Small",
+        columns: [
+          {
+            type: "Column",
+            width: "auto",
+            items: [
+              {
+                type: "TextBlock",
+                id: "octo-badge-accent-baseline",
+                text: "Accent badge",
+                color: "Accent",
+                weight: "Bolder",
+                size: "Small",
+              },
+            ],
+          },
+          {
+            type: "Column",
+            width: "auto",
+            spacing: "Small",
+            items: [
+              {
+                type: "TextBlock",
+                id: "octo-badge-good-baseline",
+                text: "Good badge",
+                color: "Good",
+                weight: "Bolder",
+                size: "Small",
+              },
+            ],
+          },
+          {
+            type: "Column",
+            width: "auto",
+            spacing: "Small",
+            items: [
+              {
+                type: "TextBlock",
+                id: "octo-badge-attention-baseline",
+                text: "Attention badge",
+                color: "Attention",
                 weight: "Bolder",
                 size: "Small",
               },

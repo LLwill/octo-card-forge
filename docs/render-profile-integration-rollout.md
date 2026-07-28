@@ -11,7 +11,9 @@
 
 术语说明：本文的 **Web Renderer** 指“Adaptive Card JSON → DOM/CSS”。它不负责
 Template 展开。Template + Data 的同源 Go/WASM 方案见
-[`shared-go-renderer-design.md`](./shared-go-renderer-design.md)。
+[`shared-go-renderer-design.md`](./shared-go-renderer-design.md)。平台组件词汇表、
+ID 文法、晋升制与 Agent/CLI 边界见
+[`cli-skill-and-component-system.md`](./cli-skill-and-component-system.md)。
 
 ## 2. 不可破坏的线上前提
 
@@ -91,13 +93,19 @@ Web 不把 Forge Token 映射成 `--wk-*`，只负责选择 legacy 或 Forge。
 目标源目录：
 
 ```text
-render-profiles/octo-chat/1.2.0/
+render-profiles/octo-chat/
 ├── manifest.json
-├── host-config.template.json
+├── host-config.json
+├── theme.css
 ├── tokens.json
 ├── styles.css
 └── capabilities.json
 ```
+
+该目录只保存当前候选 Profile 源码。不要在 Forge 仓库里按版本新增
+`render-profiles/<id>/<version>/` 目录来充当制品库；历史发布版本由 npm / artifact
+registry 保存。Forge 本地 Catalog 和默认校验只覆盖当前 Profile 可渲染的 Card Package；
+历史 Card Package 由制品库负责重渲染。
 
 `tokens.json` 是本轮唯一主题的最终值，而不是 Preview 临时值：
 
@@ -176,9 +184,10 @@ Manifest 至少包含：
 }
 ```
 
-允许使用的元素 ID 只能来自组件基线公开的 `octo-surface-*`、`octo-badge-*`
-前缀。它们表达视觉语义，不得包含 Card 名、业务状态字段、Action/Input 名称；禁止再用
-`:first-child`、`:last-child` 推断 Header/Footer。
+允许使用的元素 ID 只能来自 `capabilities.components` 声明的
+`octo-surface-*`、`octo-badge-*` 前缀。它们表达视觉语义，不得包含 Card 名、
+业务状态字段、Action/Input 名称；禁止再用 `:first-child`、`:last-child` 推断
+Header/Footer。
 
 ### 5.2 禁止
 
@@ -266,10 +275,10 @@ pnpm cli profile pack octo-chat@1.2.0-rc.1 --output .release
 
 Bundle 必须完成：
 
-1. 解析 `host-config.template.json + tokens.json`；
-2. 生成具体值 `host-config.json`；
-3. 生成带作用域的 `theme.css`；
-4. 复制并校验 `styles.css`、`capabilities.json`；
+1. 复制并校验具体值 `host-config.json`；
+2. 复制并校验带作用域的 `theme.css`；
+3. 复制并校验 `styles.css`、`tokens.json`、`capabilities.json`；
+4. 校验 Profile CSS 与 `capabilities.components` 对账；
 5. 校验 Adaptive Cards SDK 版本；
 6. 生成 per-file SHA-256；
 7. 生成可发布 `package.json`；
@@ -569,6 +578,9 @@ Forge Profile 源
 - 不得直接修改已发布 Card Package 的 `renderProfile`，应创建新版本；
 - 将本地目录同步替换为正式 npm 精确依赖；
 - 在 producer 启用前完成 Server 可选字段透传。
+- Server 侧按 resolved Render Profile 的 `capabilities.json` 做最终发送 / 更新前校验；
+- Web 侧按同一个 profile npm 版本加载 HostConfig、theme、stylesheet、tokens 与 capabilities，
+  不混用不同版本资源。
 
 ## 12. 第一阶段完成定义
 

@@ -8,8 +8,9 @@ import type {
   RenderProfileManifest,
 } from "./types.js";
 
-/** 仓库当前唯一的组件基线。历史 Profile 仅用于已发布 Card Package 的复现。 */
+/** 仓库当前唯一的组件基线。历史 Profile 由制品库负责复现。 */
 export const CURRENT_RENDER_PROFILE = "octo-chat@1.2.0-rc.1";
+const ACTIVE_RENDER_PROFILE_ROOT = "render-profiles";
 
 const RENDER_PROFILE_REFERENCE =
   /^([a-z][a-z0-9.-]*)@(latest|\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$/;
@@ -68,6 +69,10 @@ function assertCardManifest(value: CardManifest, filePath: string): void {
   }
 }
 
+function isCurrentRenderProfile(manifest: CardManifest): boolean {
+  return resolveRenderProfileReference(manifest.renderProfile) === CURRENT_RENDER_PROFILE;
+}
+
 export async function listCards(): Promise<CardPackage[]> {
   const cardsRoot = resolveInProject("cards");
   const entries = await readdir(cardsRoot, { withFileTypes: true });
@@ -78,7 +83,9 @@ export async function listCards(): Promise<CardPackage[]> {
     const manifestPath = path.join(root, "manifest.json");
     const manifest = await readJson<CardManifest>(manifestPath);
     assertCardManifest(manifest, manifestPath);
-    cards.push({ reference: manifest.id, root, manifest });
+    if (isCurrentRenderProfile(manifest)) {
+      cards.push({ reference: manifest.id, root, manifest });
+    }
 
     const versionsRoot = path.join(root, "versions");
     let versions: import("node:fs").Dirent[] = [];
@@ -103,11 +110,13 @@ export async function listCards(): Promise<CardPackage[]> {
           `${versionManifestPath}: version must match directory ${versionEntry.name}`
         );
       }
-      cards.push({
-        reference: `${versionManifest.id}@${versionManifest.version}`,
-        root: versionRoot,
-        manifest: versionManifest,
-      });
+      if (isCurrentRenderProfile(versionManifest)) {
+        cards.push({
+          reference: `${versionManifest.id}@${versionManifest.version}`,
+          root: versionRoot,
+          manifest: versionManifest,
+        });
+      }
     }
   }
   return cards.sort((a, b) =>
@@ -121,7 +130,11 @@ export async function listCards(): Promise<CardPackage[]> {
 export async function getCard(cardId: string): Promise<CardPackage> {
   const cards = await listCards();
   const card = cards.find((item) => item.reference === cardId);
-  if (!card) throw new Error(`Unknown card: ${cardId}`);
+  if (!card) {
+    throw new Error(
+      `Unknown current card: ${cardId} (historical packages are rendered from artifacts, not this workspace)`
+    );
+  }
   return card;
 }
 
@@ -134,9 +147,23 @@ export async function getRenderProfile(reference?: string): Promise<{
 }> {
   const resolved = resolveRenderProfileReference(reference);
   const { id, version } = parseRenderProfileReference(resolved);
-  const root = resolveInProject("render-profiles", id, version);
+  const current = parseRenderProfileReference(CURRENT_RENDER_PROFILE);
+  if (id !== current.id) {
+    throw new Error(`Unknown render profile: ${resolved}`);
+  }
+  if (version !== current.version) {
+    throw new Error(
+      `Historical render profile ${resolved} is not available in this workspace; use the artifact registry`
+    );
+  }
+  const root = resolveInProject(ACTIVE_RENDER_PROFILE_ROOT, id);
   try {
     const manifest = await readJson<RenderProfileManifest>(path.join(root, "manifest.json"));
+    if (manifest.id !== id || manifest.version !== version) {
+      throw new Error(
+        `${path.join(root, "manifest.json")}: expected ${resolved}, got ${manifest.id}@${manifest.version}`
+      );
+    }
     const [capabilities, hostConfig] = await Promise.all([
       readJson<RenderCapabilities>(path.join(root, manifest.capabilities)),
       readJson<Record<string, unknown>>(path.join(root, manifest.hostConfig)),

@@ -17,24 +17,28 @@ describe("render profile resolution", () => {
     expect(latest.reference).toBe(CURRENT_RENDER_PROFILE);
     expect(latest.manifest.version).toBe("1.2.0-rc.1");
   });
+
+  it("does not load historical profile artifacts from the workspace", async () => {
+    await expect(getRenderProfile("octo-chat@1.0.0")).rejects.toThrow(
+      "use the artifact registry"
+    );
+  });
 });
 
 describe("versioned Card Package registry", () => {
-  it("keeps published base packages and exposes explicit new versions", async () => {
+  it("exposes only packages renderable by the current workspace profile", async () => {
     const cards = await listCards();
     expect(cards.map((card) => card.reference)).toEqual([
-      "ai.decision-action",
       "ai.decision-action@0.2.0",
       "ai.reasoning-process",
-      "docs.access-request",
       "docs.access-request@0.3.0",
     ]);
   });
 
-  it("does not implicitly replace a base package with a newer version", async () => {
-    await expect(getCard("docs.access-request")).resolves.toMatchObject({
-      manifest: { version: "0.2.0" },
-    });
+  it("leaves historical card packages to artifacts instead of local preview", async () => {
+    await expect(getCard("docs.access-request")).rejects.toThrow(
+      "historical packages are rendered from artifacts"
+    );
     await expect(getCard("docs.access-request@0.3.0")).resolves.toMatchObject({
       manifest: { version: "0.3.0" },
     });

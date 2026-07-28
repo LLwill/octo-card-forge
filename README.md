@@ -52,7 +52,8 @@ pnpm cli profile pack octo-chat@1.2.0-rc.1 --output .release
 ```
 
 打包结果为 `.release/mlt-org-octo-card-profile-octo-chat-1.2.0-rc.1.tgz`。
-历史 `1.1.0` 保持不变，组件基线与新 Card Package 显式使用 RC 版本。
+`render-profiles/octo-chat/` 只保存当前候选 Profile 源码；历史精确版本由制品库保存，
+需要复现旧卡时从对应 card/profile 制品重新渲染，不在本仓预览。
 
 ## 系统边界
 
@@ -70,6 +71,7 @@ pnpm cli profile pack octo-chat@1.2.0-rc.1 --output .release
 - [`docs/architecture-design.md`](docs/architecture-design.md)：总体架构入口，区分当前实现与目标架构。
 - [`docs/shared-go-renderer-design.md`](docs/shared-go-renderer-design.md)：同源 Go/WASM Template Renderer Proposal。
 - [`docs/render-profile-integration-rollout.md`](docs/render-profile-integration-rollout.md)：Web Render Profile、CSS 隔离与跨仓上线顺序。
+- [`docs/cli-skill-and-component-system.md`](docs/cli-skill-and-component-system.md)：CLI/Skill 边界、平台组件词汇表、晋升制与发布节奏。
 
 术语约定：Template Renderer 生成 Card JSON；Web Renderer 使用 Card JSON 和 Render
 Profile 生成 DOM。两者不是同一个组件。
@@ -109,7 +111,9 @@ pnpm cli contract docs.access-request
 pnpm cli handoff docs.access-request --output dist
 ```
 
-ZIP 解压后包含 `manifest.json`、数据契约、模板、Samples、Goldens、交互诊断报告和接入说明。交互报告用于 Preview/诊断，不是后端业务 Action 契约。
+ZIP 解压后包含 `manifest.json`、数据契约、模板、Samples、Goldens、交互诊断报告、
+resolved Render Profile manifest / capabilities 和接入说明。交互报告用于 Preview/诊断，
+不是后端业务 Action 契约。
 
 开发阶段可调用本地 Render API。它服务 Catalog 和联调，不是生产消息链路依赖：
 
@@ -154,7 +158,15 @@ pnpm cli check --format json
 - `octo-chat@latest`：跟随仓库当前基线 `CURRENT_RENDER_PROFILE`
 - 省略字段：等价于 `@latest`
 
-`octo-card init` 默认写入 `octo-chat@latest`。升级基线时只需更新 `src/registry.ts` 中的 `CURRENT_RENDER_PROFILE`（并新增对应 profile 目录），跟随 latest 的卡无需批量改 manifest。编译结果中的 `renderProfile` 会解析成具体版本。
+`octo-card init` 默认写入 `octo-chat@latest`。升级基线时更新
+`render-profiles/octo-chat/manifest.json` 中的版本和 `src/registry.ts` 中的
+`CURRENT_RENDER_PROFILE`；跟随 latest 的卡无需批量改 manifest。编译结果中的
+`renderProfile` 会解析成具体版本。
+
+开发规范：不要在 `render-profiles/` 下新增版本目录来保存制品。修改
+`render-profiles/octo-chat/` 当前源码，通过 `pnpm cli profile bundle/pack` 生成不可变制品；
+已发布版本由 npm / 制品库保存。Forge Catalog 和默认 `cli check` 只覆盖当前 workspace
+profile 可渲染的 Card Package；历史 Card Package 由制品库负责重渲染。
 
 ## 版本说明
 

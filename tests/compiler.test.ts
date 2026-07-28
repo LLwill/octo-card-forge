@@ -20,32 +20,32 @@ function findById(value: unknown, id: string): JsonObject | undefined {
   return undefined;
 }
 
-describe("docs.access-request compiler", () => {
+describe("docs.access-request 0.3 compiler", () => {
   it.each(["pending", "approved", "rejected"])(
     "compiles the %s sample without errors",
     async (sample) => {
-      const result = await compileSample({ cardId: "docs.access-request", sample });
+      const result = await compileSample({ cardId: "docs.access-request@0.3.0", sample });
       expect(result.issues).toEqual([]);
       expect(result.payload).toMatchObject({ type: "AdaptiveCard", version: "1.5" });
       expect(JSON.stringify(result.payload)).not.toContain("${");
-      expect(result.renderProfile).toBe("octo-chat@1.0.0");
+      expect(result.renderProfile).toBe("octo-chat@1.2.0-rc.1");
       expect(result.wireProfile).toBe(sample === "pending" ? "octo/v2" : "octo/v1");
     }
   );
 
   it("keeps approval independent from the hidden required denial input", async () => {
     const { payload } = await compileSample({
-      cardId: "docs.access-request",
+      cardId: "docs.access-request@0.3.0",
       sample: "pending",
     });
     expect(findById(payload, "approve")?.associatedInputs).toBe("none");
-    expect(findById(payload, "deny_reason")).toMatchObject({
+    expect(findById(payload, "rejection_reason")).toMatchObject({
       type: "Input.Text",
       isRequired: true,
       maxLength: 200,
     });
     const result = await compileSample({
-      cardId: "docs.access-request",
+      cardId: "docs.access-request@0.3.0",
       sample: "pending",
     });
     expect(result.inspection.actions).toEqual(
@@ -54,24 +54,24 @@ describe("docs.access-request compiler", () => {
         expect.objectContaining({
           id: "deny",
           associatedInputs: "auto",
-          inputIds: ["deny_reason"],
+          inputIds: ["rejection_reason"],
         }),
       ])
     );
     expect(result.inspection.inputs).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: "deny_reason", isVisible: false }),
+        expect.objectContaining({ id: "rejection_reason", isVisible: false }),
       ])
     );
   });
 
   it("renders rejection reason only for the rejected result", async () => {
     const approved = await compileSample({
-      cardId: "docs.access-request",
+      cardId: "docs.access-request@0.3.0",
       sample: "approved",
     });
     const rejected = await compileSample({
-      cardId: "docs.access-request",
+      cardId: "docs.access-request@0.3.0",
       sample: "rejected",
     });
     expect(JSON.stringify(approved.payload)).not.toContain("拒绝原因：");
@@ -80,7 +80,7 @@ describe("docs.access-request compiler", () => {
 
   it("rejects missing contract fields", async () => {
     const result = await compileCard({
-      cardId: "docs.access-request",
+      cardId: "docs.access-request@0.3.0",
       view: "pending",
       data: { state: "pending" },
     });
@@ -90,13 +90,13 @@ describe("docs.access-request compiler", () => {
 
   it("rejects non-HTTPS business URLs", async () => {
     const sample = await compileSample({
-      cardId: "docs.access-request",
+      cardId: "docs.access-request@0.3.0",
       sample: "pending",
     });
     const data = structuredClone(sample.data);
     (data.document as JsonObject).url = "http://example.com/document";
     const result = await compileCard({
-      cardId: "docs.access-request",
+      cardId: "docs.access-request@0.3.0",
       view: "pending",
       data,
     });
@@ -105,17 +105,12 @@ describe("docs.access-request compiler", () => {
 });
 
 describe("new Card Package versions", () => {
-  it("compiles the AI decision 0.2 choice without changing 0.1", async () => {
-    const legacy = await compileSample({
-      cardId: "ai.decision-action",
-      sample: "choose",
-    });
+  it("compiles the AI decision 0.2 choice", async () => {
     const next = await compileSample({
       cardId: "ai.decision-action@0.2.0",
       sample: "choose",
     });
 
-    expect(legacy.cardVersion).toBe("0.1.0");
     expect(next.cardVersion).toBe("0.2.0");
     expect(next.renderProfile).toBe("octo-chat@1.2.0-rc.1");
     expect(next.issues).toEqual([]);
@@ -127,11 +122,11 @@ describe("new Card Package versions", () => {
       effect: "append_user_message",
       reply_target_uid: "octo-assistant",
     });
-    expect(findById(next.payload, "octo-surface-accent-header")).toMatchObject({
+    expect(findById(next.payload, "octo-surface-header-accent-main")).toMatchObject({
       type: "Container",
       style: "accent",
     });
-    expect(findById(next.payload, "octo-surface-default-footer")).toMatchObject({
+    expect(findById(next.payload, "octo-surface-footer-default-actions")).toMatchObject({
       type: "Container",
       style: "emphasis",
       bleed: true,
@@ -140,16 +135,11 @@ describe("new Card Package versions", () => {
   });
 
   it("compiles the docs 0.3 pending card with a white semantic body", async () => {
-    const legacy = await compileSample({
-      cardId: "docs.access-request",
-      sample: "pending",
-    });
     const next = await compileSample({
       cardId: "docs.access-request@0.3.0",
       sample: "pending",
     });
 
-    expect(legacy.cardVersion).toBe("0.2.0");
     expect(next.cardVersion).toBe("0.3.0");
     expect(next.renderProfile).toBe("octo-chat@1.2.0-rc.1");
     expect(next.issues).toEqual([]);

@@ -101,6 +101,7 @@
                       "id": "octo-badge-neutral-permission",
                       "text": "${permission.label}",
                       "size": "Small",
+                      "weight": "Bolder",
                       "isSubtle": true,
                       "spacing": "None",
                       "wrap": false

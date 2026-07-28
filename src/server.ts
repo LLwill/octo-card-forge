@@ -184,11 +184,17 @@ async function handleApi(
   const styleMatch = url.pathname.match(/^\/api\/render-styles\/(.+)$/);
   if (req.method === "GET" && styleMatch) {
     const profile = await getRenderProfile(decodeURIComponent(styleMatch[1]));
+    const stylesheets = [
+      profile.manifest.theme
+        ? await readText(path.join(profile.root, profile.manifest.theme))
+        : "",
+      await readText(path.join(profile.root, profile.manifest.stylesheet)),
+    ].filter(Boolean);
     sendText(
       res,
       200,
       "text/css",
-      await readText(path.join(profile.root, profile.manifest.stylesheet))
+      stylesheets.join("\n")
     );
     return true;
   }

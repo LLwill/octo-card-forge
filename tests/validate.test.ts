@@ -7,6 +7,30 @@ const capabilities: RenderCapabilities = {
   maxAdaptiveCardVersion: "1.5",
   allowedElements: ["TextBlock", "Container", "ActionSet", "Input.Text"],
   allowedActions: ["Action.Submit", "Action.ToggleVisibility"],
+  components: {
+    "octo-badge": {
+      appliesTo: ["TextBlock"],
+      variants: {
+        warning: {
+          fallback: {
+            size: "Small",
+            weight: "Bolder",
+            color: "Warning",
+          },
+        },
+      },
+    },
+    "octo-surface": {
+      appliesTo: ["Container"],
+      variants: {
+        "header-accent": {
+          fallback: {
+            style: "accent",
+          },
+        },
+      },
+    },
+  },
   maxNodes: 20,
   maxDepth: 20,
   maxPayloadBytes: 10_000,
@@ -108,6 +132,67 @@ describe("render and wire profile validation", () => {
     };
 
     expect(validateCompiledCard(payload, tableCapabilities, "octo/v2")).toEqual([]);
+  });
+
+  it("accepts declared platform component ids with required fallback", () => {
+    const payload: JsonObject = {
+      type: "AdaptiveCard",
+      version: "1.5",
+      body: [
+        {
+          type: "Container",
+          id: "octo-surface-header-accent-main",
+          style: "accent",
+          items: [
+            {
+              type: "TextBlock",
+              id: "octo-badge-warning-state",
+              text: "Pending",
+              size: "Small",
+              weight: "Bolder",
+              color: "Warning",
+            },
+          ],
+        },
+      ],
+    };
+
+    expect(validateCompiledCard(payload, capabilities, "octo/v2")).toEqual([]);
+  });
+
+  it("rejects unknown platform component variants and missing fallback", () => {
+    const payload: JsonObject = {
+      type: "AdaptiveCard",
+      version: "1.5",
+      body: [
+        {
+          type: "TextBlock",
+          id: "octo-badge-pending-state",
+          text: "Pending",
+          size: "Small",
+          weight: "Bolder",
+          color: "Warning",
+        },
+        {
+          type: "TextBlock",
+          id: "octo-badge-warning-state-2",
+          text: "Pending",
+          size: "Small",
+        },
+        {
+          type: "Container",
+          id: "octo-badge-warning-container",
+          style: "emphasis",
+        },
+      ],
+    };
+
+    const codes = validateCompiledCard(payload, capabilities, "octo/v2").map(
+      (issue) => issue.code
+    );
+    expect(codes).toContain("component.unknown");
+    expect(codes).toContain("component.fallback");
+    expect(codes).toContain("component.applies_to");
   });
 });
 

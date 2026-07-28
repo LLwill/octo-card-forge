@@ -77,7 +77,7 @@
                   "items": [
                     {
                       "type": "TextBlock",
-                      "id": "octo-badge-result-request-state",
+                      "id": "octo-badge-${if(equals(state, 'approved'), 'good', 'attention')}-request-state",
                       "text": "${if(equals(state, 'approved'), '已允许', '已拒绝')}",
                       "size": "Small",
                       "weight": "Bolder",
@@ -96,6 +96,7 @@
                       "id": "octo-badge-neutral-permission",
                       "text": "${permission.label}",
                       "size": "Small",
+                      "weight": "Bolder",
                       "isSubtle": true,
                       "spacing": "None"
                     }

@@ -12,14 +12,20 @@ import type { JsonObject } from "../src/types.js";
 
 describe("backend handoff package", () => {
   it("contains the contract, templates, samples and compiled cards", async () => {
-    const handoff = await buildHandoffPackage("docs.access-request");
+    const handoff = await buildHandoffPackage("docs.access-request@0.3.0");
     expect(handoff).toMatchObject({
       formatVersion: 1,
       generatedBy: "octo-card-forge",
       card: {
         id: "docs.access-request",
-        version: "0.2.0",
+        version: "0.3.0",
         schemaVersion: 2,
+      },
+      renderProfile: {
+        requested: "octo-chat@1.2.0-rc.1",
+        resolved: "octo-chat@1.2.0-rc.1",
+        server: { required: true },
+        web: { required: true },
       },
       dataContract: { type: "object" },
     });
@@ -42,17 +48,19 @@ describe("backend handoff package", () => {
   it("writes the same ZIP archive used by the page export", async () => {
     const output = await mkdtemp(path.join(os.tmpdir(), "octo-card-handoff-"));
     try {
-      const result = await writeHandoffPackage("docs.access-request", output);
+      const result = await writeHandoffPackage("docs.access-request@0.3.0", output);
       expect(path.basename(result.filePath)).toBe(
-        "docs.access-request@0.2.0.handoff.zip"
+        "docs.access-request@0.3.0.handoff.zip"
       );
       const written = await readFile(result.filePath);
       const zip = await JSZip.loadAsync(written);
-      const prefix = "docs.access-request@0.2.0/";
+      const prefix = "docs.access-request@0.3.0/";
       expect(Object.keys(zip.files)).toEqual(
         expect.arrayContaining([
           `${prefix}README.md`,
           `${prefix}manifest.json`,
+          `${prefix}render-profile/manifest.json`,
+          `${prefix}render-profile/capabilities.json`,
           `${prefix}contract/data.schema.json`,
           `${prefix}templates/pending.template.json`,
           `${prefix}samples/pending.json`,
@@ -63,7 +71,7 @@ describe("backend handoff package", () => {
       const manifest = JSON.parse(
         await zip.file(`${prefix}manifest.json`)!.async("string")
       );
-      expect(manifest).toMatchObject({ id: "docs.access-request", version: "0.2.0" });
+      expect(manifest).toMatchObject({ id: "docs.access-request", version: "0.3.0" });
       expect(result.bytes).toBeGreaterThan(0);
     } finally {
       await rm(output, { recursive: true, force: true });
@@ -71,8 +79,8 @@ describe("backend handoff package", () => {
   });
 
   it("creates deterministic archive names", async () => {
-    const archive = await buildHandoffArchive("docs.access-request");
-    expect(archive.fileName).toBe("docs.access-request@0.2.0.handoff.zip");
+    const archive = await buildHandoffArchive("docs.access-request@0.3.0");
+    expect(archive.fileName).toBe("docs.access-request@0.3.0.handoff.zip");
     expect(archive.buffer.byteLength).toBeGreaterThan(0);
   });
 });

@@ -5,7 +5,7 @@
   "body": [
     {
       "type": "Container",
-      "id": "octo-surface-accent-header-reasoning-result",
+      "id": "octo-surface-header-accent-reasoning-result",
       "style": "accent",
       "bleed": true,
       "spacing": "None",
@@ -43,7 +43,7 @@
               "items": [
                 {
                   "type": "TextBlock",
-                  "id": "octo-badge-reasoning-result-status",
+                  "id": "octo-badge-${if(equals(statusTone, 'Good'), 'good', if(equals(statusTone, 'Warning'), 'warning', if(equals(statusTone, 'Attention'), 'attention', 'accent')))}-reasoning-result-status",
                   "text": "${statusLabel}",
                   "color": "${statusTone}",
                   "weight": "Bolder",
@@ -153,7 +153,7 @@
     },
     {
       "type": "Container",
-      "id": "octo-surface-default-footer-reasoning-result",
+      "id": "octo-surface-footer-default-reasoning-result",
       "style": "emphasis",
       "bleed": true,
       "separator": true,

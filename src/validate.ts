@@ -1,5 +1,6 @@
 import type {
   JsonObject,
+  RenderComponentDefinition,
   RenderCapabilities,
   ValidationIssue,
   WireProfile,
@@ -17,6 +18,43 @@ function compareVersion(a: string, b: string): number {
   const aa = a.split(".").map(Number);
   const bb = b.split(".").map(Number);
   return (aa[0] ?? 0) - (bb[0] ?? 0) || (aa[1] ?? 0) - (bb[1] ?? 0);
+}
+
+function findComponent(
+  id: string,
+  components: Record<string, RenderComponentDefinition> | undefined
+):
+  | {
+      family: string;
+      variant: string;
+      definition: RenderComponentDefinition;
+    }
+  | undefined {
+  if (!components) return undefined;
+  const families = Object.keys(components).sort((a, b) => b.length - a.length);
+  for (const family of families) {
+    const definition = components[family];
+    const familyPrefix = `${family}-`;
+    if (!id.startsWith(familyPrefix)) continue;
+    const variants = Object.keys(definition.variants).sort(
+      (a, b) => b.length - a.length
+    );
+    for (const variant of variants) {
+      const prefix = `${family}-${variant}-`;
+      if (id.startsWith(prefix) && id.length > prefix.length) {
+        return {
+          family,
+          variant,
+          definition,
+        };
+      }
+    }
+  }
+  return undefined;
+}
+
+function formatValue(value: unknown): string {
+  return JSON.stringify(value);
 }
 
 export function validateCompiledCard(
@@ -90,6 +128,36 @@ export function validateCompiledCard(
           error("schema.duplicate_id", `${path}.id`, `Duplicate id: ${value.id}`);
         } else {
           ids.add(value.id);
+        }
+
+        if (typeof value.id === "string" && value.id.startsWith("octo-")) {
+          const component = findComponent(value.id, capabilities.components);
+          if (!component) {
+            error(
+              "component.unknown",
+              `${path}.id`,
+              `${value.id} is not declared by the render profile components`
+            );
+          } else {
+            if (!type || !component.definition.appliesTo.includes(type)) {
+              error(
+                "component.applies_to",
+                `${path}.id`,
+                `${component.family}-${component.variant} does not apply to ${type ?? "unknown type"}`
+              );
+            }
+            const fallback =
+              component.definition.variants[component.variant]?.fallback ?? {};
+            for (const [key, expected] of Object.entries(fallback)) {
+              if (value[key] !== expected) {
+                error(
+                  "component.fallback",
+                  `${path}.${key}`,
+                  `${value.id} requires fallback ${key}=${formatValue(expected)}`
+                );
+              }
+            }
+          }
         }
       }
 
