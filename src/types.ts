@@ -35,10 +35,21 @@ export interface RenderProfileManifest {
   capabilities: string;
 }
 
+export interface RenderComponentVariant {
+  fallback?: JsonObject;
+  deprecated?: boolean;
+}
+
+export interface RenderComponentDefinition {
+  appliesTo: string[];
+  variants: Record<string, RenderComponentVariant>;
+}
+
 export interface RenderCapabilities {
   maxAdaptiveCardVersion: string;
   allowedElements: string[];
   allowedActions: string[];
+  components?: Record<string, RenderComponentDefinition>;
   maxNodes: number;
   maxDepth: number;
   maxPayloadBytes: number;

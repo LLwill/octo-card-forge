@@ -1,0 +1,93 @@
+{
+  "maxAdaptiveCardVersion": "1.5",
+  "allowedElements": [
+    "TextBlock",
+    "RichTextBlock",
+    "Image",
+    "ImageSet",
+    "Container",
+    "ColumnSet",
+    "Column",
+    "FactSet",
+    "Table",
+    "ActionSet",
+    "Input.Text",
+    "Input.Toggle",
+    "Input.ChoiceSet",
+    "Input.Number",
+    "Input.Date",
+    "Input.Time"
+  ],
+  "allowedActions": [
+    "Action.OpenUrl",
+    "Action.Submit",
+    "Action.ToggleVisibility"
+  ],
+  "components": {
+    "octo-badge": {
+      "appliesTo": ["TextBlock"],
+      "variants": {
+        "neutral": {
+          "fallback": {
+            "size": "Small",
+            "weight": "Bolder",
+            "isSubtle": true
+          }
+        },
+        "accent": {
+          "fallback": {
+            "size": "Small",
+            "weight": "Bolder",
+            "color": "Accent"
+          }
+        },
+        "good": {
+          "fallback": {
+            "size": "Small",
+            "weight": "Bolder",
+            "color": "Good"
+          }
+        },
+        "warning": {
+          "fallback": {
+            "size": "Small",
+            "weight": "Bolder",
+            "color": "Warning"
+          }
+        },
+        "attention": {
+          "fallback": {
+            "size": "Small",
+            "weight": "Bolder",
+            "color": "Attention"
+          }
+        }
+      }
+    },
+    "octo-surface": {
+      "appliesTo": ["Container", "Column"],
+      "variants": {
+        "accent": {
+          "fallback": {
+            "style": "accent"
+          }
+        },
+        "header-accent": {
+          "fallback": {
+            "style": "accent"
+          }
+        },
+        "footer-default": {
+          "fallback": {
+            "style": "emphasis"
+          }
+        }
+      }
+    }
+  },
+  "maxNodes": 200,
+  "maxDepth": 24,
+  "maxPayloadBytes": 65536,
+  "imageUrlSchemes": ["https"],
+  "openUrlSchemes": ["https"]
+}

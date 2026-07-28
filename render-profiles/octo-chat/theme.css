@@ -1,0 +1,24 @@
+.octo-card-profile {
+  --octo-card-color-surface: #ffffff;
+  --octo-card-color-surface-subtle: #f7f8f9;
+  --octo-card-color-surface-accent: #f3eeff;
+  --octo-card-color-text-primary: #1f2329;
+  --octo-card-color-text-secondary: #6b7075;
+  --octo-card-color-accent: #7f3bf5;
+  --octo-card-color-good: #41cd59;
+  --octo-card-color-warning: #fc8800;
+  --octo-card-color-attention: #f54a45;
+  --octo-card-color-border-subtle: #eeeeee;
+  --octo-card-radius-card: 8px;
+  --octo-card-radius-container: 6px;
+  --octo-card-badge-bg-neutral: rgba(28, 28, 35, .06);
+  --octo-card-badge-fg-neutral: var(--octo-card-color-text-secondary);
+  --octo-card-badge-bg-accent: #f3eeff;
+  --octo-card-badge-fg-accent: var(--octo-card-color-accent);
+  --octo-card-badge-bg-good: rgba(65, 205, 89, .12);
+  --octo-card-badge-fg-good: #228a35;
+  --octo-card-badge-bg-warning: #fff7ec;
+  --octo-card-badge-fg-warning: #a95500;
+  --octo-card-badge-bg-attention: rgba(245, 74, 69, .10);
+  --octo-card-badge-fg-attention: var(--octo-card-color-attention);
+}

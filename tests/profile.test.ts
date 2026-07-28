@@ -50,7 +50,7 @@ describe("render profile bundle", () => {
       repository: {
         type: "git",
         url: "git+https://github.com/LLwill/octo-card-forge.git",
-        directory: "render-profiles/octo-chat/1.2.0-rc.1",
+        directory: "render-profiles/octo-chat",
       },
     });
     expect(packageJson.exports["./host-config.json"]).toBe("./dist/host-config.json");

@@ -4,6 +4,7 @@ import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import { getRenderProfile } from "./registry.js";
+import type { RenderCapabilities } from "./types.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -39,6 +40,56 @@ function assertScopedCss(css: string, filePath: string): void {
   }
 }
 
+function assertComponentCapabilities(
+  capabilities: RenderCapabilities,
+  css: string,
+  filePath: string
+): void {
+  const components = capabilities.components ?? {};
+  const allowedPrefixes = new Set<string>();
+  for (const [family, definition] of Object.entries(components)) {
+    if (!family.startsWith("octo-")) {
+      throw new Error(`${filePath}: component family must start with octo-: ${family}`);
+    }
+    if (definition.appliesTo.length === 0) {
+      throw new Error(`${filePath}: component ${family} must declare appliesTo`);
+    }
+    allowedPrefixes.add(`${family}-`);
+    const variants = Object.keys(definition.variants);
+    if (variants.length === 0) {
+      throw new Error(`${filePath}: component ${family} must declare variants`);
+    }
+    for (const variant of variants) {
+      if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(variant)) {
+        throw new Error(`${filePath}: invalid component variant ${family}-${variant}`);
+      }
+      for (const other of variants) {
+        if (variant !== other && other.startsWith(`${variant}-`)) {
+          throw new Error(
+            `${filePath}: component variants must not be prefix-compatible: ${family}-${variant} and ${family}-${other}`
+          );
+        }
+      }
+      allowedPrefixes.add(`${family}-${variant}-`);
+      if (!css.includes(`[id^="${family}-${variant}-"]`)) {
+        throw new Error(
+          `${filePath}: missing CSS rule for component variant ${family}-${variant}`
+        );
+      }
+    }
+  }
+
+  const selectorPrefixes = css.matchAll(/\[id\^=(["'])(octo-[^"']+)\1\]/g);
+  for (const match of selectorPrefixes) {
+    const prefix = match[2];
+    if (!allowedPrefixes.has(prefix)) {
+      throw new Error(
+        `${filePath}: CSS selector prefix ${prefix} is not declared as a component family or variant`
+      );
+    }
+  }
+}
+
 async function validateLoadedRenderProfile(
   reference: string,
   profile: Awaited<ReturnType<typeof getRenderProfile>>
@@ -61,6 +112,11 @@ async function validateLoadedRenderProfile(
     files.map((file) => readFile(path.join(profile.root, file)))
   );
   assertScopedCss(
+    contents[files.indexOf(manifest.stylesheet)].toString("utf8"),
+    path.join(profile.root, manifest.stylesheet)
+  );
+  assertComponentCapabilities(
+    profile.capabilities,
     contents[files.indexOf(manifest.stylesheet)].toString("utf8"),
     path.join(profile.root, manifest.stylesheet)
   );
@@ -139,7 +195,7 @@ export async function bundleRenderProfile(
     repository: {
       type: "git",
       url: "git+https://github.com/LLwill/octo-card-forge.git",
-      directory: `render-profiles/${manifest.id}/${manifest.version}`,
+      directory: `render-profiles/${manifest.id}`,
     },
     publishConfig: {
       access: "public",

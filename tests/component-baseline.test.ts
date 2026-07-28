@@ -58,8 +58,8 @@ describe("component baseline", () => {
     );
 
     expect(stylesheet).toContain('[id^="octo-surface-accent-"]');
-    expect(stylesheet).toContain('[id^="octo-surface-accent-header"]');
-    expect(stylesheet).toContain('[id^="octo-surface-default-footer"]');
+    expect(stylesheet).toContain('[id^="octo-surface-header-accent-"]');
+    expect(stylesheet).toContain('[id^="octo-surface-footer-default-"]');
     expect(stylesheet).toContain('[id^="octo-badge-"]');
     expect(stylesheet).not.toContain(":first-child");
     expect(stylesheet).not.toContain(":last-child");

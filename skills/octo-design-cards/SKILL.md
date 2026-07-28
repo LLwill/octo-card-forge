@@ -7,6 +7,8 @@ description: Create, modify, validate, preview, and prepare versioned standard A
 
 Work from the Octo Card Forge repository root. Use its CLI for deterministic creation, compilation, and validation. Use only standard Adaptive Cards elements and actions; never introduce card-specific renderer markers.
 
+Keep machine-checkable rules in `pnpm cli check`. Use this Skill for workflow, version judgment, component-tier choices, and when to stop and ask. Do not invent business behavior, private Adaptive Cards types, or shared profile CSS for a single card.
+
 ## Start safely
 
 1. Inspect `git status` and preserve unrelated work.
@@ -53,9 +55,65 @@ Never copy an existing business card as scaffolding. Reuse patterns only after c
 
 Use a separate view when structure or available actions change materially. Use conditional template expressions when only status text, semantic color, icon, or optional content changes.
 
+## Platform components
+
+Platform visual primitives are not private Adaptive Cards types. They are semantic
+element IDs enhanced by the pinned Render Profile CSS.
+
+Canonical design:
+[`docs/cli-skill-and-component-system.md`](../../docs/cli-skill-and-component-system.md).
+
+### Expression tiers
+
+1. **Tier 0**: standard Adaptive Cards + HostConfig only.
+2. **Tier 1**: published `octo-*` components from the pinned profile capabilities.
+3. **Tier 2**: one-off standard Adaptive Cards composition inside the card.
+   Do not invent a new `octo-*` family for a single card.
+4. **Forbidden**: edit `render-profiles/` to finish one card, invent business CSS
+   selectors, or introduce card-private renderer markers.
+
+### ID grammar
+
+Use only:
+
+```text
+octo-<family>-<variant>-<free-suffix>
+```
+
+Current validated families:
+
+- `octo-badge-<neutral|accent|good|warning|attention>-...` on `TextBlock`
+- `octo-surface-<accent|header-accent|footer-default>-...` on `Container` / `Column`
+
+Rules:
+
+- `variant` is from the published closed set and must not be prefix-compatible
+  with another variant in the same family.
+- Free suffixes make IDs unique inside the card; they never become CSS selectors.
+- Business states choose a tone variant; they do not become family or variant names.
+- Every `octo-*` element must still read correctly without Profile CSS. Keep the
+  standard Adaptive Cards fallback attributes (`size`, `weight`, `color`,
+  `isSubtle`, container structure) on the element itself.
+- Unknown `octo-*` prefixes are invalid even if the preview looks acceptable.
+
+Prefer values declared in `capabilities.components` over this prose list when the
+pinned Render Profile changes.
+
+When Tier 2 is used, or the same visual pattern appears repeatedly, record a
+candidate component pattern in the handoff report instead of patching the shared
+profile.
+
 ## Handle Render Profiles
 
-Change a Render Profile only for renderer-wide behavior shared by multiple cards. Never modify a released profile directory in place. Create a new version directory under `render-profiles/<id>/<version>/`, then point `CURRENT_RENDER_PROFILE` at it when it becomes the repo baseline.
+
+Change a Render Profile only for renderer-wide behavior shared by multiple cards.
+`render-profiles/<id>/` is the current source directory, not a version store.
+Do not create `render-profiles/<id>/<version>/` directories for new releases.
+When the current source becomes a new baseline, update its manifest version and
+`CURRENT_RENDER_PROFILE`, then generate an immutable bundle/package. Released
+versions live in the artifact registry. Do not add historical profile fixtures to
+this repository; historical Card Packages are re-rendered from artifacts, not the
+local Forge Catalog.
 
 Card `renderProfile` references:
 - `octo-chat@latest` (or omit): follow `CURRENT_RENDER_PROFILE` — preferred for draft cards.
@@ -104,6 +162,8 @@ Inspect the final diff and exclude unrelated files. Report:
 - Views and samples added or changed.
 - Required/optional backend fields and state-specific requirements.
 - Action IDs, input IDs, submit payload shape, and expected update-card behavior.
+- Platform components used (`octo-badge-*`, `octo-surface-*`, etc.) and any Tier 2 candidate patterns.
+- Whether the card depends on unpublished Render Profile capabilities.
 - Commands run and their results; local preview command.
 - Remaining prototype assets, unresolved product choices, or required Octo Web Render Profile work.
 
