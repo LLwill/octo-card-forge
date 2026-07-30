@@ -72,6 +72,7 @@ pnpm cli profile pack octo-chat@1.2.0-rc.1 --output .release
 - [`docs/shared-go-renderer-design.md`](docs/shared-go-renderer-design.md)：同源 Go/WASM Template Renderer Proposal。
 - [`docs/render-profile-integration-rollout.md`](docs/render-profile-integration-rollout.md)：Web Render Profile、CSS 隔离与跨仓上线顺序。
 - [`docs/cli-skill-and-component-system.md`](docs/cli-skill-and-component-system.md)：CLI/Skill 边界、平台组件词汇表、晋升制与发布节奏。
+- [`docs/octo-card-utility-system-development-plan.md`](docs/octo-card-utility-system-development-plan.md)：Tailwind-like `id` utility、Profile 超集、校验、CSS 对账和发布边界的开发落地计划。
 
 术语约定：Template Renderer 生成 Card JSON；Web Renderer 使用 Card JSON 和 Render
 Profile 生成 DOM。两者不是同一个组件。
