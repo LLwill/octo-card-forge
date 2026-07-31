@@ -2,7 +2,7 @@ import { cp, mkdtemp, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { checkCards } from "../src/check.js";
+import { checkCardPackage, checkCards } from "../src/check.js";
 import { resolveInProject } from "../src/fs.js";
 import { initCard } from "../src/init.js";
 
@@ -62,6 +62,26 @@ describe("initCard", () => {
     const options = { cardId: "docs.notice", name: "通知", root };
     await initCard(options);
     await expect(initCard(options)).rejects.toThrow("Card already exists: docs.notice");
+  });
+
+  it("can create a standalone card package outside the forge cards directory", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "octo-card-standalone-"));
+    temporaryRoots.push(root);
+    const cardRoot = path.join(root, "docs.share-notification");
+
+    const result = await initCard({
+      cardId: "docs.share-notification",
+      name: "文档分享通知",
+      outputRoot: cardRoot,
+    });
+
+    expect(result.root).toBe(cardRoot);
+    await expect(
+      readFile(path.join(cardRoot, "manifest.json"), "utf8")
+    ).resolves.toContain('"id": "docs.share-notification"');
+    await expect(checkCardPackage(cardRoot)).resolves.toMatchObject({
+      valid: true,
+    });
   });
 
   it("rejects an unknown render profile before creating files", async () => {

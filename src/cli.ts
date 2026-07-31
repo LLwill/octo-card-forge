@@ -38,6 +38,7 @@ const VALUE_FLAGS = new Set([
   "--host",
   "--name",
   "--output",
+  "--out",
   "--port",
   "--profile",
   "--profile-dir",
@@ -55,7 +56,7 @@ function flag(name: string): string | undefined {
 
 function usage(): void {
   console.log(`octo-card commands:
-  init <card-id> --name <name> [--view default] [--wire-profile octo/v1] [--render-profile octo-chat@latest] [--format json]
+  init <card-id> --name <name> [--out <dir>] [--view default] [--wire-profile octo/v1] [--render-profile octo-chat@latest] [--format json]
   list
   discover [query] [--profile octo-chat@latest] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
   explain utility <token> [--profile octo-chat@latest] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
@@ -173,13 +174,17 @@ try {
       view: flag("--view"),
       renderProfile: flag("--render-profile"),
       wireProfile: flag("--wire-profile") as "octo/v1" | "octo/v2" | undefined,
+      outputRoot: flag("--out"),
     });
     if (flag("--format") === "json") {
       console.log(JSON.stringify(result, null, 2));
     } else {
       console.log(`Created ${result.cardId} (${result.name})`);
       for (const file of result.files) console.log(`  ${file}`);
-      console.log(`Next: pnpm cli check ${result.cardId}`);
+      const next = flag("--out")
+        ? `pnpm cli check --card ${result.root}`
+        : `pnpm cli check ${result.cardId}`;
+      console.log(`Next: ${next}`);
     }
   } else if (command === "list") {
     const cards = await listCards();

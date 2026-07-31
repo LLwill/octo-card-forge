@@ -1,7 +1,7 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { projectRoot } from "./fs.js";
-import { getRenderProfile } from "./registry.js";
+import { loadRenderProfileForReference } from "./profile-source.js";
 import type { WireProfile } from "./types.js";
 
 const CARD_ID = /^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$/;
@@ -15,6 +15,7 @@ export interface InitCardOptions {
   renderProfile?: string;
   wireProfile?: WireProfile;
   root?: string;
+  outputRoot?: string;
 }
 
 export interface InitCardResult {
@@ -59,7 +60,7 @@ export async function initCard(options: InitCardOptions): Promise<InitCardResult
   process.env.OCTO_CARD_FORGE_ROOT = root;
   let adaptiveCardVersion: string;
   try {
-    const profile = await getRenderProfile(renderProfile);
+    const profile = await loadRenderProfileForReference(renderProfile);
     adaptiveCardVersion = profile.capabilities.maxAdaptiveCardVersion;
   } catch (error) {
     throw new Error(
@@ -69,9 +70,10 @@ export async function initCard(options: InitCardOptions): Promise<InitCardResult
     if (previousRoot === undefined) delete process.env.OCTO_CARD_FORGE_ROOT;
     else process.env.OCTO_CARD_FORGE_ROOT = previousRoot;
   }
-  const cardsRoot = path.join(root, "cards");
-  const cardRoot = path.join(cardsRoot, cardId);
-  await mkdir(cardsRoot, { recursive: true });
+  const cardRoot = options.outputRoot
+    ? path.resolve(options.outputRoot)
+    : path.join(root, "cards", cardId);
+  await mkdir(path.dirname(cardRoot), { recursive: true });
   try {
     await mkdir(cardRoot);
   } catch (error) {
