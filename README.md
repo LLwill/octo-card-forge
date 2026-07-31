@@ -190,6 +190,7 @@ CLI 会优先读取已安装的 profile package，找不到时才回退到 Forge
 pnpm typecheck
 pnpm test
 pnpm cli check --format json
+pnpm smoke:repo-free-agent
 ```
 
 ## Render Profile
