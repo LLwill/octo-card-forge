@@ -49,6 +49,9 @@ jobs:
       - name: Run tests
         run: pnpm test
 
+      - name: Run repo-free Agent smoke
+        run: pnpm smoke:repo-free-agent
+
       - name: Compile and validate every Card sample
         run: pnpm check
 
