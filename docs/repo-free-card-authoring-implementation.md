@@ -701,6 +701,8 @@ octo-card handoff --card ./bot.token-view --output dist
 状态：已开始落地。`octo-design-cards` Skill 已改为默认 repo-free authoring；
 新增 `pnpm smoke:repo-free-agent`，会打包 CLI/Profile，在临时空目录安装后只通过
 `octo-card` 命令完成 `discover/init/check/lint/emit/handoff`。
+新增 `pnpm prepare:agent-validation` 用于创建真实验证 workspace；它只安装
+CLI/Profile 包并写入 `TASK.md`，实际产卡由新会话在该 workspace 中完成。
 
 目标：用新 Skill 驱动一个全新 Agent 产卡。
 

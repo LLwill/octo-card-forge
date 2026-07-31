@@ -194,6 +194,17 @@ pnpm cli check --format json
 pnpm smoke:repo-free-agent
 ```
 
+创建真实 Agent 验证用的消费者工作区：
+
+```bash
+pnpm prepare:agent-validation -- --scenario bot-token
+pnpm prepare:agent-validation -- --scenario docs-forward
+```
+
+脚本会打包当前 CLI/Profile，本地安装到临时目录，并写入 `AGENTS.md` 与 `TASK.md`。
+随后在该临时目录新开 Codex task，只让 Agent 完成 `TASK.md`，才能验证它是否自然使用
+`octo-card` 而不是回到 Forge 仓库工作流。
+
 ## Render Profile
 
 卡片 `manifest.renderProfile` 支持：
