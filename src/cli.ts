@@ -76,6 +76,7 @@ function usage(): void {
   render <card-id> --view <view> --data <file>
   render --card <dir> [--profile-dir <dir> | --profile-package <pkg>] --sample <name>
   render --card <dir> [--profile-dir <dir> | --profile-package <pkg>] --view <view> --data <file>
+  emit <card-id|--card dir> --sample <name>  # alias for render
   check [card-id] [--card <dir>] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
   profile validate <profile@version>
   profile bundle <profile@version> [--output .release]
@@ -353,7 +354,7 @@ try {
         }
       }
     }
-  } else if (command === "render") {
+  } else if (command === "render" || command === "emit") {
     const cardRoot = flag("--card");
     const profileSource = await explicitProfileForCardCommand(cardRoot);
     const cardId = cardRoot ? undefined : positional(0);

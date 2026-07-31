@@ -179,7 +179,7 @@ octo-card check --card ./<card-id> --format json
 octo-card lint --card ./<card-id> --format json
 octo-card inspect --card ./<card-id> --format json
 octo-card handoff --card ./<card-id> --output dist --format json
-octo-card render --card ./<card-id> --sample <sample-name>
+octo-card emit --card ./<card-id> --sample <sample-name>
 octo-card dev --card ./<card-id>
 ```
 

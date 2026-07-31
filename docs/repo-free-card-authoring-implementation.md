@@ -665,8 +665,8 @@ pnpm dlx @mlt-org/octo-card-cli discover
 ### Phase 4：Repo-free init/dev/handoff
 
 状态：已落地主要闭环。`init --out <dir>`、`dev --card <dir>`、
-`handoff --card <dir>`、`check/lint/render/inspect --card <dir>` 均已支持。
-`emit` alias 暂未实现，当前继续使用 `render` 作为标准 JSON 输出命令。
+`handoff --card <dir>`、`check/lint/render/emit/inspect --card <dir>` 均已支持。
+`emit` 是 `render` 的别名，用于强调输出的是最终标准 Adaptive Card JSON。
 
 目标：Agent 端完整开发闭环。
 
@@ -690,7 +690,7 @@ octo-card emit --card ./bot.token-view --sample pending
 octo-card init bot.token-view --name "Bot Token 查看" --out ./bot.token-view
 octo-card dev --card ./bot.token-view
 octo-card check --card ./bot.token-view
-octo-card render --card ./bot.token-view --sample default > card.json
+octo-card emit --card ./bot.token-view --sample default > card.json
 octo-card handoff --card ./bot.token-view --output dist
 ```
 
@@ -698,7 +698,7 @@ octo-card handoff --card ./bot.token-view --output dist
 
 状态：已开始落地。`octo-design-cards` Skill 已改为默认 repo-free authoring；
 新增 `pnpm smoke:repo-free-agent`，会打包 CLI/Profile，在临时空目录安装后只通过
-`octo-card` 命令完成 `discover/init/check/lint/render/handoff`。
+`octo-card` 命令完成 `discover/init/check/lint/emit/handoff`。
 
 目标：用新 Skill 驱动一个全新 Agent 产卡。
 
@@ -849,7 +849,7 @@ pnpm exec octo-card discover skeleton --format json
 pnpm exec octo-card init bot.token-view --name "Bot Token 查看" --out ./bot.token-view
 pnpm exec octo-card check --card ./bot.token-view --format json
 pnpm exec octo-card lint --card ./bot.token-view --format json
-pnpm exec octo-card render --card ./bot.token-view --sample default > card.json
+pnpm exec octo-card emit --card ./bot.token-view --sample default > card.json
 ```
 
 预期：

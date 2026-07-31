@@ -75,7 +75,7 @@ run("pnpm", [
 ], { cwd: workspace });
 const check = JSON.parse(octo("check", "--card", cardRoot, "--format", "json"));
 const lint = JSON.parse(octo("lint", "--card", cardRoot, "--format", "json"));
-const card = JSON.parse(octo("render", "--card", cardRoot, "--sample", "default"));
+const card = JSON.parse(octo("emit", "--card", cardRoot, "--sample", "default"));
 const handoff = JSON.parse(octo(
   "handoff",
   "--card",

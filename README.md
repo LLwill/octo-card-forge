@@ -96,6 +96,7 @@ octo-card handoff docs.access-request [--output dist]
 octo-card handoff --card ./docs.access-request [--output dist]
 octo-card render docs.access-request --sample pending
 octo-card render --card ./docs.access-request --sample pending
+octo-card emit --card ./docs.access-request --sample pending
 octo-card check [docs.access-request] [--card ./docs.access-request] [--format json]
 octo-card dev [docs.access-request] [--card ./docs.access-request] [--host 127.0.0.1] [--port 4318]
 ```
@@ -177,7 +178,7 @@ pnpm exec octo-card init bot.token-view --name "Bot Token 查看" --out ./bot.to
 pnpm exec octo-card dev --card ./bot.token-view
 pnpm exec octo-card check --card ./bot.token-view --format json
 pnpm exec octo-card lint --card ./bot.token-view --format json
-pnpm exec octo-card render --card ./bot.token-view --sample default > card.json
+pnpm exec octo-card emit --card ./bot.token-view --sample default > card.json
 pnpm exec octo-card handoff --card ./bot.token-view --output dist
 ```
 
