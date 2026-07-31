@@ -1,26 +1,26 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import JSZip from "jszip";
-import { compileCard } from "./compiler.js";
+import { compileCardPackage } from "./compiler.js";
 import { readJson } from "./fs.js";
-import {
-  getCard,
-  getRenderProfile,
-  resolveRenderProfileReference,
-} from "./registry.js";
-import type { JsonObject } from "./types.js";
+import { getCard } from "./registry.js";
+import { loadRenderProfileForReference } from "./profile-source.js";
+import type { CardPackage, JsonObject, RenderProfileSource } from "./types.js";
 
 /** Build a deterministic, self-contained package for manual backend handoff. */
-export async function buildHandoffPackage(cardId: string): Promise<JsonObject> {
-  const card = await getCard(cardId);
+export async function buildHandoffPackageForCard(
+  card: CardPackage,
+  profileSource?: RenderProfileSource
+): Promise<JsonObject> {
   const requestedRenderProfile =
     typeof card.manifest.renderProfile === "string" && card.manifest.renderProfile
       ? card.manifest.renderProfile
       : "octo-chat@latest";
-  const resolvedRenderProfile = resolveRenderProfileReference(
-    card.manifest.renderProfile
+  const profile = await loadRenderProfileForReference(
+    requestedRenderProfile,
+    profileSource
   );
-  const profile = await getRenderProfile(resolvedRenderProfile);
+  const resolvedRenderProfile = profile.reference;
   const views: JsonObject = {};
 
   for (const [viewName, definition] of Object.entries(card.manifest.views)) {
@@ -28,7 +28,12 @@ export async function buildHandoffPackage(cardId: string): Promise<JsonObject> {
     for (const samplePath of definition.samples) {
       const name = path.basename(samplePath, path.extname(samplePath));
       const data = await readJson<JsonObject>(path.join(card.root, samplePath));
-      const result = await compileCard({ cardId, view: viewName, data });
+      const result = await compileCardPackage({
+        card,
+        view: viewName,
+        data,
+        profile: profileSource ?? profile,
+      });
       const errors = result.issues.filter((issue) => issue.severity === "error");
       if (errors.length > 0) {
         throw new Error(`Cannot export invalid sample ${name}: ${errors[0].message}`);
@@ -73,14 +78,19 @@ export async function buildHandoffPackage(cardId: string): Promise<JsonObject> {
   };
 }
 
+export async function buildHandoffPackage(cardId: string): Promise<JsonObject> {
+  return buildHandoffPackageForCard(await getCard(cardId));
+}
+
 function json(value: unknown): string {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
 
-export async function buildHandoffArchive(
-  cardId: string
+export async function buildHandoffArchiveForCard(
+  card: CardPackage,
+  profileSource?: RenderProfileSource
 ): Promise<{ buffer: Buffer; fileName: string }> {
-  const handoff = await buildHandoffPackage(cardId);
+  const handoff = await buildHandoffPackageForCard(card, profileSource);
   const manifest = handoff.card as JsonObject;
   const packageName = `${String(manifest.id)}@${String(manifest.version)}`;
   const zip = new JSZip();
@@ -114,8 +124,8 @@ export async function buildHandoffArchive(
     }
   }
 
-  const resolvedRenderProfile = resolveRenderProfileReference(
-    typeof manifest.renderProfile === "string" ? manifest.renderProfile : undefined
+  const resolvedRenderProfile = String(
+    (handoff.renderProfile as JsonObject).resolved
   );
   const renderProfileLabel =
     manifest.renderProfile && manifest.renderProfile !== resolvedRenderProfile
@@ -147,11 +157,18 @@ export async function buildHandoffArchive(
   };
 }
 
-export async function writeHandoffPackage(
-  cardId: string,
-  output: string
+export async function buildHandoffArchive(
+  cardId: string
+): Promise<{ buffer: Buffer; fileName: string }> {
+  return buildHandoffArchiveForCard(await getCard(cardId));
+}
+
+export async function writeHandoffPackageForCard(
+  card: CardPackage,
+  output: string,
+  profileSource?: RenderProfileSource
 ): Promise<{ filePath: string; bytes: number }> {
-  const archive = await buildHandoffArchive(cardId);
+  const archive = await buildHandoffArchiveForCard(card, profileSource);
   const resolved = path.resolve(output);
   const filePath = path.extname(resolved).toLowerCase() === ".zip"
     ? resolved
@@ -159,4 +176,11 @@ export async function writeHandoffPackage(
   await mkdir(path.dirname(filePath), { recursive: true });
   await writeFile(filePath, archive.buffer);
   return { filePath, bytes: archive.buffer.byteLength };
+}
+
+export async function writeHandoffPackage(
+  cardId: string,
+  output: string
+): Promise<{ filePath: string; bytes: number }> {
+  return writeHandoffPackageForCard(await getCard(cardId), output);
 }

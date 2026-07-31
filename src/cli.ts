@@ -14,7 +14,12 @@ import {
   compileSampleFromDirectory,
 } from "./compiler.js";
 import { readJson } from "./fs.js";
-import { buildHandoffPackage, writeHandoffPackage } from "./handoff.js";
+import {
+  buildHandoffPackage,
+  buildHandoffPackageForCard,
+  writeHandoffPackage,
+  writeHandoffPackageForCard,
+} from "./handoff.js";
 import { initCard } from "./init.js";
 import {
   bundleRenderProfile,
@@ -64,7 +69,9 @@ function usage(): void {
   contract <card-id> [--format json]
   inspect <card-id> [--card <dir>] [--profile-dir <dir> | --profile-package <pkg>] [--sample <name>] [--format json]
   handoff <card-id> [--output dist] [--format json]
+  handoff --card <dir> [--profile-dir <dir> | --profile-package <pkg>] [--output dist] [--format json]
   handoff <card-id> --output -  # print the aggregate JSON to stdout
+  handoff --card <dir> --output -  # print the aggregate JSON to stdout
   render <card-id> --sample <name>
   render <card-id> --view <view> --data <file>
   render --card <dir> [--profile-dir <dir> | --profile-package <pkg>] --sample <name>
@@ -317,17 +324,33 @@ try {
       console.log(JSON.stringify({ cardId: card.manifest.id, samples }, null, 2));
     }
   } else if (command === "handoff") {
-    const cardId = args[0];
-    if (!cardId) throw new Error("card-id is required");
+    const cardRoot = flag("--card");
     const output = flag("--output") ?? "dist";
-    if (output === "-") {
-      console.log(JSON.stringify(await buildHandoffPackage(cardId), null, 2));
-    } else {
-      const result = await writeHandoffPackage(cardId, output);
-      if (flag("--format") === "json") {
-        console.log(JSON.stringify({ cardId, ...result }, null, 2));
+    if (cardRoot) {
+      const profileSource = await explicitProfileForCardCommand(cardRoot);
+      const card = await loadCardPackage(cardRoot);
+      if (output === "-") {
+        console.log(JSON.stringify(await buildHandoffPackageForCard(card, profileSource), null, 2));
       } else {
-        console.log(`Created backend handoff package: ${result.filePath}`);
+        const result = await writeHandoffPackageForCard(card, output, profileSource);
+        if (flag("--format") === "json") {
+          console.log(JSON.stringify({ cardId: card.manifest.id, ...result }, null, 2));
+        } else {
+          console.log(`Created backend handoff package: ${result.filePath}`);
+        }
+      }
+    } else {
+      const cardId = args[0];
+      if (!cardId) throw new Error("card-id or --card is required");
+      if (output === "-") {
+        console.log(JSON.stringify(await buildHandoffPackage(cardId), null, 2));
+      } else {
+        const result = await writeHandoffPackage(cardId, output);
+        if (flag("--format") === "json") {
+          console.log(JSON.stringify({ cardId, ...result }, null, 2));
+        } else {
+          console.log(`Created backend handoff package: ${result.filePath}`);
+        }
       }
     }
   } else if (command === "render") {
