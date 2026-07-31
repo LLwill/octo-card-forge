@@ -2,6 +2,11 @@ import { access } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { readJson, readText } from "./fs.js";
+import {
+  getRenderProfile,
+  parseRenderProfileReference,
+  resolveRenderProfileReference,
+} from "./registry.js";
 import type {
   RenderCapabilities,
   RenderProfileManifest,
@@ -9,6 +14,9 @@ import type {
 } from "./types.js";
 
 const require = createRequire(import.meta.url);
+const DEFAULT_RENDER_PROFILE_PACKAGES: Record<string, string> = {
+  "octo-chat": "@mlt-org/octo-card-profile-octo-chat",
+};
 
 async function exists(filePath: string): Promise<boolean> {
   try {
@@ -82,4 +90,56 @@ export async function loadRenderProfileFromPackage(
       ? path.dirname(manifestDir)
       : manifestDir;
   return loadFromRoot(packageRoot);
+}
+
+function isModuleNotFound(error: unknown, packageName: string): boolean {
+  return (
+    (error as NodeJS.ErrnoException).code === "MODULE_NOT_FOUND" &&
+    error instanceof Error &&
+    error.message.includes(packageName)
+  );
+}
+
+function assertProfileMatchesRequest(
+  profile: RenderProfileSource,
+  reference?: string
+): void {
+  if (!reference) return;
+  const requested = parseRenderProfileReference(reference);
+  if (requested.id !== profile.manifest.id) {
+    throw new Error(
+      `${reference}: loaded profile package ${profile.reference} belongs to ${profile.manifest.id}`
+    );
+  }
+  if (requested.version !== "latest" && requested.version !== profile.manifest.version) {
+    throw new Error(
+      `${reference}: loaded profile package is ${profile.reference}`
+    );
+  }
+}
+
+export async function loadRenderProfileForReference(
+  reference?: string,
+  explicitSource?: RenderProfileSource
+): Promise<RenderProfileSource> {
+  if (explicitSource) {
+    assertProfileMatchesRequest(explicitSource, reference);
+    return explicitSource;
+  }
+
+  const requested = reference
+    ? parseRenderProfileReference(reference)
+    : parseRenderProfileReference(resolveRenderProfileReference());
+  const packageName = DEFAULT_RENDER_PROFILE_PACKAGES[requested.id];
+  if (packageName) {
+    try {
+      const profile = await loadRenderProfileFromPackage(packageName);
+      assertProfileMatchesRequest(profile, reference);
+      return profile;
+    } catch (error) {
+      if (!isModuleNotFound(error, packageName)) throw error;
+    }
+  }
+
+  return getRenderProfile(reference);
 }

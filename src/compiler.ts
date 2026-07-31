@@ -5,10 +5,10 @@ import { readJson } from "./fs.js";
 import { inspectCard } from "./inspect.js";
 import {
   getCard,
-  getRenderProfile,
   loadCardPackage,
   resolveRenderProfileReference,
 } from "./registry.js";
+import { loadRenderProfileForReference } from "./profile-source.js";
 import type {
   CardPackage,
   CompileResult,
@@ -69,7 +69,7 @@ export async function compileCardPackage(options: {
     const templateJson = await readJson<JsonObject>(path.join(card.root, view.template));
     const template = new ACData.Template(templateJson);
     payload = template.expand({ $root: options.data }) as JsonObject;
-    const profile = options.profile ?? await getRenderProfile(renderProfile);
+    const profile = await loadRenderProfileForReference(renderProfile, options.profile);
     issues.push(...validateCompiledCard(payload, profile.capabilities, view.wireProfile));
   }
 

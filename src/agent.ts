@@ -1,11 +1,7 @@
 import path from "node:path";
 import { compileSampleFromPackage } from "./compiler.js";
-import {
-  getRenderProfile,
-  loadCardPackage,
-  listCards,
-  resolveRenderProfileReference,
-} from "./registry.js";
+import { loadCardPackage, listCards, resolveRenderProfileReference } from "./registry.js";
+import { loadRenderProfileForReference } from "./profile-source.js";
 import type {
   JsonObject,
   RenderUtilityDefinition,
@@ -129,7 +125,10 @@ export async function discoverUtilities(options: {
   profileSource?: RenderProfileSource;
   query?: string;
 } = {}): Promise<AgentDiscoverReport> {
-  const profile = options.profileSource ?? await getRenderProfile(options.profile);
+  const profile = await loadRenderProfileForReference(
+    options.profile,
+    options.profileSource
+  );
   const grouped = new Map<string, AgentUtilityToken[]>();
   for (const [token, definition] of Object.entries(profile.capabilities.utilities ?? {})) {
     const item = utilityToToken(token, definition);
@@ -199,7 +198,10 @@ export async function explainUtility(options: {
   profile?: string;
   profileSource?: RenderProfileSource;
 }): Promise<AgentExplainReport> {
-  const profile = options.profileSource ?? await getRenderProfile(options.profile);
+  const profile = await loadRenderProfileForReference(
+    options.profile,
+    options.profileSource
+  );
   const definition = profile.capabilities.utilities?.[options.token];
   if (!definition) {
     throw new Error(`${options.token} is not declared by ${profile.reference}`);
