@@ -1,7 +1,10 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import path from "node:path";
 import { compileCard, compileSample } from "./compiler.js";
-import { buildComponentBaseline } from "./component-baseline.js";
+import {
+  buildComponentBaseline,
+  buildComponentBaselineGroups,
+} from "./component-baseline.js";
 import { readJson, readText, resolveInProject } from "./fs.js";
 import { buildHandoffArchive } from "./handoff.js";
 import {
@@ -95,6 +98,7 @@ async function handleApi(
       capabilities: profile.capabilities,
       stylesheetUrl: `/api/render-styles/${encodeURIComponent(CURRENT_RENDER_PROFILE)}`,
       sections: buildComponentBaseline(profile.capabilities),
+      groups: buildComponentBaselineGroups(profile.capabilities),
     });
     return true;
   }

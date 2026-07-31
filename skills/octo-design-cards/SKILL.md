@@ -66,7 +66,7 @@ Canonical design:
 ### Expression tiers
 
 1. **Tier 0**: standard Adaptive Cards + HostConfig only.
-2. **Tier 1**: published `octo-*` components from the pinned profile capabilities.
+2. **Tier 1**: published `octo-*` components and `octo--...--uid-*` utilities from the pinned profile capabilities.
 3. **Tier 2**: one-off standard Adaptive Cards composition inside the card.
    Do not invent a new `octo-*` family for a single card.
 4. **Forbidden**: edit `render-profiles/` to finish one card, invent business CSS
@@ -74,10 +74,11 @@ Canonical design:
 
 ### ID grammar
 
-Use only:
+Use only one of these public Profile ID forms:
 
 ```text
 octo-<family>-<variant>-<free-suffix>
+octo--<utility-token>--<utility-token>--uid-<unique-name>
 ```
 
 Current validated families:
@@ -96,8 +97,19 @@ Rules:
   `isSubtle`, container structure) on the element itself.
 - Unknown `octo-*` prefixes are invalid even if the preview looks acceptable.
 
-Prefer values declared in `capabilities.components` over this prose list when the
-pinned Render Profile changes.
+Utility rules:
+
+- Before using utilities, run `pnpm cli discover [query] --format json`.
+- For a chosen token, run `pnpm cli explain utility <token> --format json`.
+- Use only tokens declared in `capabilities.utilities`; never invent token names.
+- Keep fallback Adaptive Card fields required by the token on the element itself
+  (for example `style`, `size`, `weight`, or `color`).
+- Do not use two utilities from the same `group` on one element.
+- Keep within `utilityRules.maxTokensPerElement`.
+- The `uid-*` suffix is only a unique stable id segment. It is not a style name.
+
+Prefer values declared in `capabilities.components` and `capabilities.utilities`
+over this prose list when the pinned Render Profile changes.
 
 When Tier 2 is used, or the same visual pattern appears repeatedly, record a
 candidate component pattern in the handoff report instead of patching the shared
@@ -145,6 +157,7 @@ Run:
 pnpm typecheck
 pnpm test
 pnpm cli check <card-id> --format json
+pnpm cli lint <card-id> --format json
 pnpm cli inspect <card-id> --format json
 pnpm cli handoff <card-id> --output dist --format json
 pnpm cli render <card-id> --sample <sample-name>

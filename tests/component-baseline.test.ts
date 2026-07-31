@@ -1,7 +1,10 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { buildComponentBaseline } from "../src/component-baseline.js";
+import {
+  buildComponentBaseline,
+  buildComponentBaselineGroups,
+} from "../src/component-baseline.js";
 import {
   CURRENT_RENDER_PROFILE,
   getCurrentRenderProfile,
@@ -34,9 +37,76 @@ describe("component baseline", () => {
       "actions",
     ]);
     for (const section of sections) {
+      expect(section.card, section.id).toBeDefined();
       expect(
-        validateCompiledCard(section.card, profile.capabilities, "octo/v2"),
+        validateCompiledCard(section.card!, profile.capabilities, "octo/v2"),
         section.id
+      ).toEqual([]);
+    }
+  });
+
+  it("splits style system content into planned sections", async () => {
+    const profile = await getCurrentRenderProfile();
+    const groups = buildComponentBaselineGroups(profile.capabilities);
+
+    expect(groups.map((group) => group.id)).toEqual([
+      "foundation",
+      "adaptive-card-components",
+      "octo-utility-tokens",
+      "composition-patterns",
+    ]);
+    expect(groups[0].sections.map((section) => section.id)).toEqual([
+      "foundation-typography",
+      "foundation-colors",
+      "foundation-layout",
+    ]);
+    expect(groups[1].sections.map((section) => section.id)).toEqual([
+      "typography",
+      "containers",
+      "semantic-primitives",
+      "layout",
+      "media-facts",
+      "table",
+      "inputs-basic",
+      "inputs-choice",
+      "actions",
+    ]);
+    expect(groups[2].sections.map((section) => section.id)).toEqual([
+      "utility-surface",
+      "utility-badge",
+      "utility-inset",
+      "utility-line",
+      "utility-motion",
+    ]);
+    expect(groups[3].sections.map((section) => section.id)).toEqual([
+      "pattern-skeleton-preview",
+      "pattern-status-block",
+    ]);
+    for (const section of groups[3].sections) {
+      expect(section.card, section.id).toBeDefined();
+      expect(
+        validateCompiledCard(section.card!, profile.capabilities, "octo/v2"),
+        section.id
+      ).toEqual([]);
+    }
+  });
+
+  it("shows every declared utility token with a valid preview card", async () => {
+    const profile = await getCurrentRenderProfile();
+    const utilityGroup = buildComponentBaselineGroups(profile.capabilities).find(
+      (group) => group.id === "octo-utility-tokens"
+    );
+    const specimens = utilityGroup?.sections.flatMap(
+      (section) => section.utilityTokens ?? []
+    );
+
+    expect(specimens?.map((specimen) => specimen.token).sort()).toEqual(
+      Object.keys(profile.capabilities.utilities ?? {}).sort()
+    );
+    for (const specimen of specimens ?? []) {
+      expect(
+        validateCompiledCard(specimen.card, profile.capabilities, "octo/v2"),
+        specimen.token
       ).toEqual([]);
     }
   });
@@ -61,6 +131,7 @@ describe("component baseline", () => {
     expect(stylesheet).toContain('[id^="octo-surface-header-accent-"]');
     expect(stylesheet).toContain('[id^="octo-surface-footer-default-"]');
     expect(stylesheet).toContain('[id^="octo-badge-"]');
+    expect(stylesheet).toContain('[id^="octo--"][id*="--line-skeleton--"]');
     expect(stylesheet).not.toContain(":first-child");
     expect(stylesheet).not.toContain(":last-child");
     expect(stylesheet).not.toContain("#preview");

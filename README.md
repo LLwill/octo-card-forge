@@ -26,6 +26,9 @@ pnpm cli list
 pnpm cli check docs.access-request
 pnpm cli inspect docs.access-request --sample pending
 pnpm cli render docs.access-request --sample pending
+pnpm cli discover skeleton
+pnpm cli explain utility line-skeleton
+pnpm cli lint docs.access-request --format json
 pnpm dev
 ```
 
@@ -73,6 +76,7 @@ pnpm cli profile pack octo-chat@1.2.0-rc.1 --output .release
 - [`docs/render-profile-integration-rollout.md`](docs/render-profile-integration-rollout.md)：Web Render Profile、CSS 隔离与跨仓上线顺序。
 - [`docs/cli-skill-and-component-system.md`](docs/cli-skill-and-component-system.md)：CLI/Skill 边界、平台组件词汇表、晋升制与发布节奏。
 - [`docs/octo-card-utility-system-development-plan.md`](docs/octo-card-utility-system-development-plan.md)：Tailwind-like `id` utility、Profile 超集、校验、CSS 对账和发布边界的开发落地计划。
+- [`docs/octo-card-utility-core-development.md`](docs/octo-card-utility-core-development.md)：Utility Core 的文件级开发任务、函数签名、错误码、测试和验收标准。
 
 术语约定：Template Renderer 生成 Card JSON；Web Renderer 使用 Card JSON 和 Render
 Profile 生成 DOM。两者不是同一个组件。
@@ -81,6 +85,9 @@ Profile 生成 DOM。两者不是同一个组件。
 
 ```text
 octo-card list
+octo-card discover [skeleton] [--profile octo-chat@latest] [--format json]
+octo-card explain utility line-skeleton [--profile octo-chat@latest] [--format json]
+octo-card lint [docs.access-request] [--format json]
 octo-card init docs.share-notification --name "文档分享通知"
 octo-card contract docs.access-request
 octo-card inspect docs.access-request [--sample pending]
@@ -142,6 +149,18 @@ Content-Type: application/json
 ## Agent 使用
 
 仓库内置 [`octo-design-cards`](skills/octo-design-cards/SKILL.md) Skill。外部 Agent 使用该 Skill 创建或修改 Card Package，并理解数据契约、标准 Action/Input、Render Profile、版本规则和必跑校验；Card Forge 自身不运行 Agent。
+
+Agent 不应凭提示词记忆 Profile 能力。需要查找样式能力时使用：
+
+```bash
+pnpm cli discover [query] --format json
+pnpm cli explain utility <token> --format json
+pnpm cli lint [card-id] --format json
+```
+
+`discover` 从当前 Render Profile 的 `capabilities.utilities` 返回可用 token、适用元素、
+fallback 和 `octo--<token>--uid-*` 写法；`explain` 给出单个 token 的组合规则和标准
+Adaptive Card 示例；`lint` 在常规校验之外列出每个 sample 实际使用的 utility id/token。
 
 ## 质量检查
 

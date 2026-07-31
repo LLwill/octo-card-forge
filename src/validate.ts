@@ -5,9 +5,11 @@ import type {
   ValidationIssue,
   WireProfile,
 } from "./types.js";
+import { isUtilityId, parseUtilityId } from "./utility-id.js";
 
 const ACTION_PREFIX = "Action.";
 const INPUT_PREFIX = "Input.";
+const DEFAULT_MAX_UTILITY_TOKENS_PER_ELEMENT = 3;
 const STRUCTURAL_TYPES = new Set(["TextRun", "TableRow", "TableCell"]);
 
 function isObject(value: unknown): value is JsonObject {
@@ -57,6 +59,87 @@ function formatValue(value: unknown): string {
   return JSON.stringify(value);
 }
 
+function validateUtilityId(
+  id: string,
+  value: JsonObject,
+  type: string | undefined,
+  path: string,
+  capabilities: RenderCapabilities,
+  error: (code: string, path: string, message: string) => void,
+  warning: (code: string, path: string, message: string) => void
+): void {
+  const parsed = parseUtilityId(id);
+  if (!parsed) return;
+  if (!parsed.ok) {
+    error("utility.id_invalid", `${path}.id`, parsed.message);
+    return;
+  }
+
+  const maxTokens =
+    capabilities.utilityRules?.maxTokensPerElement ??
+    DEFAULT_MAX_UTILITY_TOKENS_PER_ELEMENT;
+  if (parsed.value.tokens.length > maxTokens) {
+    error(
+      "utility.too_many_tokens",
+      `${path}.id`,
+      `${id} uses ${parsed.value.tokens.length} utility tokens, maximum is ${maxTokens}`
+    );
+  }
+
+  const groups = new Map<string, string[]>();
+  const utilities = capabilities.utilities ?? {};
+  for (const token of parsed.value.tokens) {
+    const definition = utilities[token];
+    if (!definition) {
+      error(
+        "utility.unknown",
+        `${path}.id`,
+        `${token} is not declared by the render profile utilities`
+      );
+      continue;
+    }
+
+    const groupTokens = groups.get(definition.group) ?? [];
+    groupTokens.push(token);
+    groups.set(definition.group, groupTokens);
+
+    if (
+      !type ||
+      (!definition.appliesTo.includes("*") && !definition.appliesTo.includes(type))
+    ) {
+      error(
+        "utility.applies_to",
+        `${path}.id`,
+        `${token} does not apply to ${type ?? "unknown type"}`
+      );
+    }
+
+    if (definition.deprecated) {
+      warning("utility.deprecated", `${path}.id`, `${token} is deprecated`);
+    }
+
+    for (const [key, expected] of Object.entries(definition.fallback ?? {})) {
+      if (value[key] !== expected) {
+        error(
+          "utility.fallback",
+          `${path}.${key}`,
+          `${id} requires fallback ${key}=${formatValue(expected)}`
+        );
+      }
+    }
+  }
+
+  for (const [group, tokens] of groups) {
+    if (tokens.length > 1) {
+      error(
+        "utility.group_conflict",
+        `${path}.id`,
+        `Utilities in group ${group} cannot be combined: ${tokens.join(", ")}`
+      );
+    }
+  }
+}
+
 export function validateCompiledCard(
   payload: JsonObject,
   capabilities: RenderCapabilities,
@@ -70,6 +153,8 @@ export function validateCompiledCard(
 
   const error = (code: string, path: string, message: string) =>
     issues.push({ severity: "error", code, path, message });
+  const warning = (code: string, path: string, message: string) =>
+    issues.push({ severity: "warning", code, path, message });
 
   if (payload.type !== "AdaptiveCard") {
     error("schema.root_type", "$.type", 'Root type must be "AdaptiveCard"');
@@ -130,7 +215,17 @@ export function validateCompiledCard(
           ids.add(value.id);
         }
 
-        if (typeof value.id === "string" && value.id.startsWith("octo-")) {
+        if (typeof value.id === "string" && isUtilityId(value.id)) {
+          validateUtilityId(
+            value.id,
+            value,
+            type,
+            path,
+            capabilities,
+            error,
+            warning
+          );
+        } else if (typeof value.id === "string" && value.id.startsWith("octo-")) {
           const component = findComponent(value.id, capabilities.components);
           if (!component) {
             error(

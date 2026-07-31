@@ -139,6 +139,15 @@
 .octo-card-profile .ac-input-container {
   width: 100%;
 }
+.octo-card-profile label.ac-richTextBlock {
+  margin-bottom: 6px !important;
+}
+.octo-card-profile label.ac-richTextBlock .ac-textRun {
+  color: #475569 !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  line-height: 16px !important;
+}
 .octo-card-profile .ac-textInput {
   box-sizing: border-box;
   width: 100% !important;
@@ -170,4 +179,176 @@
 .octo-card-profile .ac-input-validation-failed .ac-textInput,
 .octo-card-profile .ac-textInput.ac-input-validation-failed {
   border-color: #f54a45;
+}
+.octo-card-profile .ac-numberInput,
+.octo-card-profile .ac-dateInput,
+.octo-card-profile .ac-timeInput,
+.octo-card-profile .ac-multichoiceInput {
+  box-sizing: border-box;
+  width: 100% !important;
+  min-height: 36px;
+  padding: 7px 12px;
+  color: #1f2329;
+  background-color: #fff;
+  border: 1px solid rgba(28, 28, 35, .12);
+  border-radius: 8px;
+  font: 13px/20px inherit;
+  transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+}
+.octo-card-profile .ac-numberInput:hover,
+.octo-card-profile .ac-dateInput:hover,
+.octo-card-profile .ac-timeInput:hover,
+.octo-card-profile .ac-multichoiceInput:hover {
+  border-color: rgba(28, 28, 35, .22);
+}
+.octo-card-profile .ac-numberInput:focus,
+.octo-card-profile .ac-dateInput:focus,
+.octo-card-profile .ac-timeInput:focus,
+.octo-card-profile .ac-multichoiceInput:focus {
+  outline: none;
+  border-color: #7f3bf5;
+  box-shadow: 0 0 0 3px rgba(127, 59, 245, .12);
+}
+.octo-card-profile .ac-multichoiceInput {
+  appearance: none;
+  padding-right: 34px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #64748b 50%),
+    linear-gradient(135deg, #64748b 50%, transparent 50%);
+  background-position:
+    calc(100% - 17px) 50%,
+    calc(100% - 12px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+.octo-card-profile .ac-dateInput::-webkit-calendar-picker-indicator,
+.octo-card-profile .ac-timeInput::-webkit-calendar-picker-indicator {
+  opacity: .62;
+  cursor: pointer;
+}
+.octo-card-profile .ac-toggleInput {
+  box-sizing: border-box;
+  width: 100% !important;
+  min-height: 42px;
+  padding: 10px 12px;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid rgba(28, 28, 35, .10);
+  border-radius: 8px;
+  transition: border-color .15s ease, background-color .15s ease, box-shadow .15s ease;
+}
+.octo-card-profile .ac-toggleInput:hover {
+  border-color: rgba(127, 59, 245, .35);
+  background: #fbfaff;
+}
+.octo-card-profile .ac-toggleInput:has(input:checked) {
+  border-color: #7f3bf5;
+  background: #f5f0ff;
+  box-shadow: 0 0 0 1px rgba(127, 59, 245, .18);
+}
+.octo-card-profile .ac-toggleInput > div {
+  display: none;
+}
+.octo-card-profile .ac-toggleInput input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0 !important;
+  accent-color: #7f3bf5;
+  cursor: pointer;
+}
+.octo-card-profile .ac-toggleInput label.ac-textBlock {
+  flex: 1 1 auto !important;
+  margin: 0 !important;
+  color: #1f2329 !important;
+  line-height: 20px !important;
+  cursor: pointer;
+}
+.octo-card-profile [role="table"] {
+  width: 100%;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid rgba(28, 28, 35, .10);
+  border-radius: 8px;
+}
+.octo-card-profile [role="row"] {
+  min-width: 0;
+  border-top: 1px solid rgba(28, 28, 35, .08);
+}
+.octo-card-profile [role="row"]:has([role="columnheader"]) {
+  border-top: 0;
+  background: #f8fafc;
+}
+.octo-card-profile [role="columnheader"],
+.octo-card-profile [role="cell"] {
+  min-height: 36px;
+  padding: 10px 12px !important;
+  justify-content: center !important;
+  border-radius: 0 !important;
+}
+.octo-card-profile [role="columnheader"] {
+  color: #475569;
+}
+.octo-card-profile [role="cell"] {
+  color: #1f2329;
+}
+.octo-card-profile [role="columnheader"] + [role="columnheader"],
+.octo-card-profile [role="cell"] + [role="cell"] {
+  border-left: 1px solid rgba(28, 28, 35, .08);
+}
+
+/* Utility tokens: className-like id syntax without cascade semantics. */
+.octo-card-profile [id^="octo--"][id*="--surface-subtle--"] {
+  background: var(--octo-card-color-surface-subtle) !important;
+  border-radius: var(--octo-card-radius-container) !important;
+}
+.octo-card-profile [id^="octo--"][id*="--surface-warning--"] {
+  background: #fff7ec !important;
+  border-radius: var(--octo-card-radius-container) !important;
+}
+.octo-card-profile [id^="octo--"][id*="--badge-warning--"] {
+  box-sizing: border-box;
+  width: fit-content !important;
+  padding: 2px 8px !important;
+  border-radius: 999px;
+  background: var(--octo-card-badge-bg-warning) !important;
+  color: var(--octo-card-badge-fg-warning) !important;
+}
+.octo-card-profile [id^="octo--"][id*="--inset-md--"] {
+  padding: 12px !important;
+}
+.octo-card-profile [id^="octo--"][id*="--line-skeleton--"] {
+  display: block !important;
+  min-height: 6px !important;
+  max-height: 6px !important;
+  overflow: hidden !important;
+  border-radius: 999px !important;
+  color: transparent !important;
+  background-color: var(--octo-card-skeleton-bg) !important;
+}
+
+@keyframes octo-motion-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes octo-motion-shimmer {
+  from { background-position: 120% 0; }
+  to { background-position: -120% 0; }
+}
+
+.octo-card-profile [id^="octo--"][id*="--motion-fade-in--"] {
+  animation: octo-motion-fade-in var(--octo-card-motion-duration-base) var(--octo-card-motion-ease-out) both;
+}
+.octo-card-profile [id^="octo--"][id*="--motion-shimmer--"] {
+  background-image: linear-gradient(90deg, var(--octo-card-skeleton-bg), var(--octo-card-skeleton-shimmer), var(--octo-card-skeleton-bg)) !important;
+  background-size: 240% 100% !important;
+  animation: octo-motion-shimmer 1.2s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .octo-card-profile [id^="octo--"][id*="--motion-fade-in--"],
+  .octo-card-profile [id^="octo--"][id*="--motion-shimmer--"] {
+    animation: none !important;
+    transition: none !important;
+  }
 }

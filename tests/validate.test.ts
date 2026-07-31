@@ -31,6 +31,49 @@ const capabilities: RenderCapabilities = {
       },
     },
   },
+  utilities: {
+    "surface-subtle": {
+      group: "surface",
+      appliesTo: ["Container"],
+      fallback: { style: "emphasis" },
+      description: "Subtle surface",
+    },
+    "surface-warning": {
+      group: "surface",
+      appliesTo: ["Container"],
+      fallback: { style: "warning" },
+      description: "Warning surface",
+    },
+    "inset-md": {
+      group: "inset",
+      appliesTo: ["Container"],
+      description: "Medium inset",
+    },
+    "line-skeleton": {
+      group: "line",
+      appliesTo: ["Container", "TextBlock"],
+      description: "Skeleton line",
+    },
+    "badge-warning": {
+      group: "badge",
+      appliesTo: ["TextBlock"],
+      fallback: {
+        size: "Small",
+        weight: "Bolder",
+        color: "Warning",
+      },
+      description: "Warning badge",
+    },
+    "motion-fade-in": {
+      group: "motion",
+      appliesTo: ["Container", "TextBlock"],
+      description: "Fade in",
+      deprecated: true,
+    },
+  },
+  utilityRules: {
+    maxTokensPerElement: 3,
+  },
   maxNodes: 20,
   maxDepth: 20,
   maxPayloadBytes: 10_000,
@@ -193,6 +236,130 @@ describe("render and wire profile validation", () => {
     expect(codes).toContain("component.unknown");
     expect(codes).toContain("component.fallback");
     expect(codes).toContain("component.applies_to");
+  });
+
+  it("accepts declared utility ids with required fallback", () => {
+    const payload: JsonObject = {
+      type: "AdaptiveCard",
+      version: "1.5",
+      body: [
+        {
+          type: "Container",
+          id: "octo--surface-subtle--inset-md--uid-summary",
+          style: "emphasis",
+          items: [],
+        },
+        {
+          type: "TextBlock",
+          id: "octo--badge-warning--uid-state",
+          text: "Pending",
+          size: "Small",
+          weight: "Bolder",
+          color: "Warning",
+        },
+      ],
+    };
+
+    expect(validateCompiledCard(payload, capabilities, "octo/v2")).toEqual([]);
+  });
+
+  it("rejects invalid utility id syntax and unknown utility tokens", () => {
+    const payload: JsonObject = {
+      type: "AdaptiveCard",
+      version: "1.5",
+      body: [
+        {
+          type: "Container",
+          id: "octo--surface_subtle--uid-panel",
+          items: [],
+        },
+        {
+          type: "Container",
+          id: "octo--surface-magic--uid-panel",
+          items: [],
+        },
+      ],
+    };
+
+    const codes = validateCompiledCard(payload, capabilities, "octo/v2").map(
+      (issue) => issue.code
+    );
+    expect(codes).toContain("utility.id_invalid");
+    expect(codes).toContain("utility.unknown");
+  });
+
+  it("rejects utility appliesTo mismatch and missing fallback", () => {
+    const payload: JsonObject = {
+      type: "AdaptiveCard",
+      version: "1.5",
+      body: [
+        {
+          type: "TextBlock",
+          id: "octo--surface-subtle--uid-wrong-element",
+          text: "Wrong element",
+          style: "emphasis",
+        },
+        {
+          type: "Container",
+          id: "octo--surface-subtle--uid-missing-fallback",
+          items: [],
+        },
+      ],
+    };
+
+    const codes = validateCompiledCard(payload, capabilities, "octo/v2").map(
+      (issue) => issue.code
+    );
+    expect(codes).toContain("utility.applies_to");
+    expect(codes).toContain("utility.fallback");
+  });
+
+  it("rejects same-group utility conflicts and too many tokens", () => {
+    const payload: JsonObject = {
+      type: "AdaptiveCard",
+      version: "1.5",
+      body: [
+        {
+          type: "Container",
+          id: "octo--surface-subtle--surface-warning--uid-conflict",
+          style: "emphasis",
+          items: [],
+        },
+        {
+          type: "Container",
+          id: "octo--surface-subtle--inset-md--line-skeleton--motion-fade-in--uid-crowded",
+          style: "emphasis",
+          items: [],
+        },
+      ],
+    };
+
+    const codes = validateCompiledCard(payload, capabilities, "octo/v2").map(
+      (issue) => issue.code
+    );
+    expect(codes).toContain("utility.group_conflict");
+    expect(codes).toContain("utility.too_many_tokens");
+  });
+
+  it("warns when a declared utility is deprecated", () => {
+    const payload: JsonObject = {
+      type: "AdaptiveCard",
+      version: "1.5",
+      body: [
+        {
+          type: "Container",
+          id: "octo--motion-fade-in--uid-panel",
+          items: [],
+        },
+      ],
+    };
+
+    expect(validateCompiledCard(payload, capabilities, "octo/v2")).toEqual([
+      expect.objectContaining({
+        severity: "warning",
+        code: "utility.deprecated",
+      }),
+    ]);
   });
 });
 

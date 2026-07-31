@@ -4,7 +4,32 @@ export interface ComponentBaselineSection {
   id: string;
   title: string;
   description: string;
+  card?: JsonObject;
+  rows?: StyleMatrixRow[];
+  utilityTokens?: UtilityTokenSpecimen[];
+}
+
+export interface StyleMatrixRow {
+  name: string;
+  value: string;
+  description: string;
+  preview: "text" | "color" | "spacing" | "radius";
+}
+
+export interface UtilityTokenSpecimen {
+  token: string;
+  group: string;
+  description: string;
+  appliesTo: string[];
+  fallback?: JsonObject;
   card: JsonObject;
+}
+
+export interface ComponentBaselineGroup {
+  id: string;
+  title: string;
+  description: string;
+  sections: ComponentBaselineSection[];
 }
 
 function adaptiveCard(body: JsonObject[], actions?: JsonObject[]): JsonObject {
@@ -22,6 +47,210 @@ function supportsElement(capabilities: RenderCapabilities, type: string): boolea
 
 function supportsAction(capabilities: RenderCapabilities, type: string): boolean {
   return capabilities.allowedActions.includes(type);
+}
+
+export function buildFoundationSections(): ComponentBaselineSection[] {
+  return [
+    {
+      id: "foundation-typography",
+      title: "Typography scale",
+      description: "基础字号和字重，用于判断正文、辅助信息和标题的默认层级。",
+      rows: [
+        { name: "Small", value: "TextBlock.size", description: "辅助信息、时间、来源", preview: "text" },
+        { name: "Default", value: "TextBlock.size", description: "正文和普通说明", preview: "text" },
+        { name: "Medium", value: "TextBlock.size", description: "小标题和关键字段", preview: "text" },
+        { name: "Large", value: "TextBlock.size", description: "卡片标题", preview: "text" },
+        { name: "Bolder", value: "TextBlock.weight", description: "标题、状态、关键值", preview: "text" },
+      ],
+    },
+    {
+      id: "foundation-colors",
+      title: "Semantic colors",
+      description: "语义色只表达状态，不表达业务；业务状态应映射到这些固定语义。",
+      rows: [
+        { name: "Default", value: "text/default", description: "主体文字", preview: "color" },
+        { name: "Accent", value: "text/accent", description: "品牌强调、链接入口", preview: "color" },
+        { name: "Good", value: "text/good", description: "成功、通过、完成", preview: "color" },
+        { name: "Warning", value: "text/warning", description: "待处理、警告、需注意", preview: "color" },
+        { name: "Attention", value: "text/attention", description: "危险、失败、阻断", preview: "color" },
+      ],
+    },
+    {
+      id: "foundation-layout",
+      title: "Spacing and radius",
+      description: "默认间距和圆角提供舒适度；具体卡片优先用标准 spacing 和显式 utility。",
+      rows: [
+        { name: "Small", value: "spacing", description: "紧密关联的信息", preview: "spacing" },
+        { name: "Medium", value: "spacing", description: "普通段落分隔", preview: "spacing" },
+        { name: "Large", value: "spacing", description: "主要内容区分隔", preview: "spacing" },
+        { name: "card radius", value: "8px", description: "卡片外壳圆角", preview: "radius" },
+        { name: "container radius", value: "6px", description: "内容容器圆角", preview: "radius" },
+      ],
+    },
+  ];
+}
+
+function sampleCardForUtility(token: string, group: string): JsonObject {
+  if (token === "badge-warning") {
+    return adaptiveCard([
+      {
+        type: "TextBlock",
+        id: "octo--badge-warning--uid-sample-badge-warning",
+        text: "Warning badge",
+        size: "Small",
+        weight: "Bolder",
+        color: "Warning",
+      },
+    ]);
+  }
+
+  if (token === "line-skeleton") {
+    return adaptiveCard([
+      {
+        type: "ColumnSet",
+        columns: [
+          {
+            type: "Column",
+            width: "stretch",
+            items: [
+              {
+                type: "Container",
+                id: "octo--line-skeleton--uid-sample-line-skeleton-main",
+                items: [],
+              },
+            ],
+          },
+          {
+            type: "Column",
+            width: "96px",
+            items: [
+              {
+                type: "Container",
+                id: "octo--line-skeleton--uid-sample-line-skeleton-short",
+                items: [],
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+  }
+
+  if (token === "motion-shimmer") {
+    return adaptiveCard([
+      {
+        type: "ColumnSet",
+        columns: [
+          {
+            type: "Column",
+            width: "stretch",
+            items: [
+              {
+                type: "Container",
+                id: "octo--line-skeleton--motion-shimmer--uid-sample-motion-shimmer-main",
+                items: [],
+              },
+            ],
+          },
+          {
+            type: "Column",
+            width: "80px",
+            items: [
+              {
+                type: "Container",
+                id: "octo--line-skeleton--motion-shimmer--uid-sample-motion-shimmer-short",
+                items: [],
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+  }
+
+  if (token === "motion-fade-in") {
+    return adaptiveCard([
+      {
+        type: "Container",
+        id: "octo--surface-subtle--inset-md--motion-fade-in--uid-sample-motion-fade-in",
+        style: "emphasis",
+        items: [
+          {
+            type: "TextBlock",
+            text: "motion-fade-in",
+            weight: "Bolder",
+            wrap: true,
+          },
+          {
+            type: "TextBlock",
+            text: "新内容出现时的轻量动效。",
+            isSubtle: true,
+            spacing: "Small",
+            wrap: true,
+          },
+        ],
+      },
+    ]);
+  }
+
+  if (token === "inset-md") {
+    return adaptiveCard([
+      {
+        type: "Container",
+        id: "octo--surface-subtle--inset-md--uid-sample-inset-md",
+        style: "emphasis",
+        items: [
+          {
+            type: "TextBlock",
+            text: "inset-md",
+            weight: "Bolder",
+            wrap: true,
+          },
+          {
+            type: "TextBlock",
+            text: "显式选择中等内部留白。",
+            isSubtle: true,
+            spacing: "Small",
+            wrap: true,
+          },
+        ],
+      },
+    ]);
+  }
+
+  if (group === "surface") {
+    const style = token === "surface-warning" ? "warning" : "emphasis";
+    return adaptiveCard([
+      {
+        type: "Container",
+        id: `octo--${token}--inset-md--uid-sample-${token}`,
+        style,
+        items: [
+          {
+            type: "TextBlock",
+            text: token,
+            weight: "Bolder",
+            wrap: true,
+          },
+          {
+            type: "TextBlock",
+            text: "通用内容表面。",
+            isSubtle: true,
+            spacing: "Small",
+            wrap: true,
+          },
+        ],
+      },
+    ]);
+  }
+
+  return adaptiveCard([
+    {
+      type: "TextBlock",
+      text: token,
+      wrap: true,
+    },
+  ]);
 }
 
 export function buildComponentBaseline(
@@ -531,4 +760,147 @@ export function buildComponentBaseline(
   });
 
   return sections;
+}
+
+export function buildCompositionSections(): ComponentBaselineSection[] {
+  return [
+    {
+      id: "pattern-skeleton-preview",
+      title: "Skeleton preview",
+      description: "占位骨架通过 line-skeleton + motion-shimmer 表达，宽度由 ColumnSet 控制。",
+      card: adaptiveCard([
+        {
+          type: "Container",
+          id: "octo--surface-subtle--inset-md--uid-pattern-skeleton-shell",
+          style: "emphasis",
+          items: [
+            {
+              type: "ColumnSet",
+              columns: [
+                {
+                  type: "Column",
+                  width: "stretch",
+                  items: [
+                    {
+                      type: "Container",
+                      id: "octo--line-skeleton--motion-shimmer--uid-pattern-skeleton-main",
+                      items: [],
+                    },
+                  ],
+                },
+                {
+                  type: "Column",
+                  width: "88px",
+                  items: [
+                    {
+                      type: "Container",
+                      id: "octo--line-skeleton--motion-shimmer--uid-pattern-skeleton-short",
+                      items: [],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ]),
+    },
+    {
+      id: "pattern-status-block",
+      title: "Status block",
+      description: "状态区由 surface + inset + badge 组合，业务状态映射到通用语义。",
+      card: adaptiveCard([
+        {
+          type: "Container",
+          id: "octo--surface-warning--inset-md--uid-pattern-status",
+          style: "warning",
+          items: [
+            {
+              type: "TextBlock",
+              id: "octo--badge-warning--uid-pattern-status-badge",
+              text: "Pending",
+              size: "Small",
+              weight: "Bolder",
+              color: "Warning",
+            },
+            {
+              type: "TextBlock",
+              text: "需要用户确认后继续。",
+              spacing: "Small",
+              wrap: true,
+            },
+          ],
+        },
+      ]),
+    },
+  ];
+}
+
+export function buildUtilityTokenSections(
+  capabilities: RenderCapabilities
+): ComponentBaselineSection[] {
+  const utilities = capabilities.utilities ?? {};
+  const groups = new Map<string, UtilityTokenSpecimen[]>();
+  for (const [token, definition] of Object.entries(utilities)) {
+    const specimens = groups.get(definition.group) ?? [];
+    specimens.push({
+      token,
+      group: definition.group,
+      description: definition.description,
+      appliesTo: definition.appliesTo,
+      fallback: definition.fallback,
+      card: sampleCardForUtility(token, definition.group),
+    });
+    groups.set(definition.group, specimens);
+  }
+
+  const groupOrder = ["surface", "badge", "inset", "line", "motion"];
+  return [...groups.entries()]
+    .sort(
+      ([left], [right]) =>
+        (groupOrder.includes(left) ? groupOrder.indexOf(left) : groupOrder.length) -
+          (groupOrder.includes(right) ? groupOrder.indexOf(right) : groupOrder.length) ||
+        left.localeCompare(right)
+    )
+    .map(([group, specimens]) => ({
+      id: `utility-${group}`,
+      title: `${group} utilities`,
+      description: `已发布 ${group} 组 utility token。token 可以组合，但同组不能在同一元素上重复使用。`,
+      utilityTokens: specimens.sort((a, b) => a.token.localeCompare(b.token)),
+    }));
+}
+
+export function buildComponentBaselineGroups(
+  capabilities: RenderCapabilities
+): ComponentBaselineGroup[] {
+  return [
+    {
+      id: "foundation",
+      title: "Foundation",
+      description:
+        "先看基础尺度：字号、语义色、间距和圆角。这些是所有 Adaptive Card 默认美化和 utility 的共同底座。",
+      sections: buildFoundationSections(),
+    },
+    {
+      id: "adaptive-card-components",
+      title: "Adaptive Card Defaults",
+      description:
+        "展示标准 Adaptive Cards 元素经过 octo-chat HostConfig 和默认 Profile CSS 后的基础效果。",
+      sections: buildComponentBaseline(capabilities),
+    },
+    {
+      id: "octo-utility-tokens",
+      title: "Octo Utility Tokens",
+      description:
+        "展示类似 Tailwind CSS 的受控样式 token，以及不同 utility 名称对应的呈现效果。",
+      sections: buildUtilityTokenSections(capabilities),
+    },
+    {
+      id: "composition-patterns",
+      title: "Composition Patterns",
+      description:
+        "展示多个 utility 与标准 Adaptive Card 结构如何组合成可复用的卡片片段。",
+      sections: buildCompositionSections(),
+    },
+  ];
 }

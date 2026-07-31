@@ -40,6 +40,10 @@ function assertScopedCss(css: string, filePath: string): void {
   }
 }
 
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function assertComponentCapabilities(
   capabilities: RenderCapabilities,
   css: string,
@@ -82,12 +86,95 @@ function assertComponentCapabilities(
   const selectorPrefixes = css.matchAll(/\[id\^=(["'])(octo-[^"']+)\1\]/g);
   for (const match of selectorPrefixes) {
     const prefix = match[2];
+    if (prefix === "octo--") continue;
     if (!allowedPrefixes.has(prefix)) {
       throw new Error(
         `${filePath}: CSS selector prefix ${prefix} is not declared as a component family or variant`
       );
     }
   }
+}
+
+function assertUtilityCapabilities(
+  capabilities: RenderCapabilities,
+  css: string,
+  filePath: string
+): void {
+  const tokenPattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
+  const utilities = capabilities.utilities ?? {};
+  const utilityRules = capabilities.utilityRules;
+  if (
+    utilityRules?.maxTokensPerElement !== undefined &&
+    (!Number.isInteger(utilityRules.maxTokensPerElement) ||
+      utilityRules.maxTokensPerElement <= 0)
+  ) {
+    throw new Error(`${filePath}: utilityRules.maxTokensPerElement must be a positive integer`);
+  }
+
+  const declaredTokens = Object.keys(utilities);
+  for (const token of declaredTokens) {
+    if (!tokenPattern.test(token)) {
+      throw new Error(`${filePath}: invalid utility token ${token}`);
+    }
+    const definition = utilities[token];
+    if (!tokenPattern.test(definition.group)) {
+      throw new Error(`${filePath}: invalid utility group ${definition.group}`);
+    }
+    if (!Array.isArray(definition.appliesTo) || definition.appliesTo.length === 0) {
+      throw new Error(`${filePath}: utility ${token} must declare appliesTo`);
+    }
+    for (const element of definition.appliesTo) {
+      if (element !== "*" && !capabilities.allowedElements.includes(element)) {
+        throw new Error(`${filePath}: utility ${token} applies to unsupported element ${element}`);
+      }
+    }
+    if (typeof definition.description !== "string" || definition.description.trim() === "") {
+      throw new Error(`${filePath}: utility ${token} must declare description`);
+    }
+    if (definition.fallback !== undefined && !isObject(definition.fallback)) {
+      throw new Error(`${filePath}: utility ${token} fallback must be an object`);
+    }
+    for (const other of declaredTokens) {
+      if (token !== other && other.startsWith(`${token}-`)) {
+        throw new Error(
+          `${filePath}: utility tokens must not be prefix-compatible: ${token} and ${other}`
+        );
+      }
+    }
+  }
+
+  const cssTokens = new Set<string>();
+  const selectorTokens = css.matchAll(
+    /\[id\*=(["'])--([a-z][a-z0-9]*(?:-[a-z0-9]+)*)--\1\]/g
+  );
+  for (const match of selectorTokens) {
+    const token = match[2];
+    cssTokens.add(token);
+    if (!utilities[token]) {
+      throw new Error(
+        `${filePath}: CSS utility selector token ${token} is not declared in capabilities.utilities`
+      );
+    }
+  }
+
+  for (const [token, definition] of Object.entries(utilities)) {
+    if (definition.cssRequired === false) continue;
+    if (!cssTokens.has(token)) {
+      throw new Error(
+        `${filePath}: missing CSS rule for utility token ${token}`
+      );
+    }
+  }
+}
+
+export function validateRenderProfileCss(
+  capabilities: RenderCapabilities,
+  css: string,
+  filePath: string
+): void {
+  assertScopedCss(css, filePath);
+  assertComponentCapabilities(capabilities, css, filePath);
+  assertUtilityCapabilities(capabilities, css, filePath);
 }
 
 async function validateLoadedRenderProfile(
@@ -111,11 +198,7 @@ async function validateLoadedRenderProfile(
   const contents = await Promise.all(
     files.map((file) => readFile(path.join(profile.root, file)))
   );
-  assertScopedCss(
-    contents[files.indexOf(manifest.stylesheet)].toString("utf8"),
-    path.join(profile.root, manifest.stylesheet)
-  );
-  assertComponentCapabilities(
+  validateRenderProfileCss(
     profile.capabilities,
     contents[files.indexOf(manifest.stylesheet)].toString("utf8"),
     path.join(profile.root, manifest.stylesheet)

@@ -1,5 +1,10 @@
 #!/usr/bin/env node
 import path from "node:path";
+import {
+  discoverUtilities,
+  explainUtility,
+  lintCardsForAgent,
+} from "./agent.js";
 import { checkCards } from "./check.js";
 import { compileCard, compileSample } from "./compiler.js";
 import { readJson } from "./fs.js";
@@ -26,6 +31,9 @@ function usage(): void {
   console.log(`octo-card commands:
   init <card-id> --name <name> [--view default] [--wire-profile octo/v1] [--render-profile octo-chat@latest] [--format json]
   list
+  discover [query] [--profile octo-chat@latest] [--format json]
+  explain utility <token> [--profile octo-chat@latest] [--format json]
+  lint [card-id] [--format json]
   contract <card-id> [--format json]
   inspect <card-id> [--sample <name>] [--format json]
   handoff <card-id> [--output dist] [--format json]
@@ -37,6 +45,73 @@ function usage(): void {
   profile bundle <profile@version> [--output .release]
   profile pack <profile@version> [--output .release]
   dev [card-id] [--host 127.0.0.1] [--port 4318]`);
+}
+
+function positional(index: number): string | undefined {
+  const values: string[] = [];
+  for (let i = 0; i < args.length; i++) {
+    if (args[i].startsWith("--")) {
+      i++;
+      continue;
+    }
+    values.push(args[i]);
+  }
+  return values[index];
+}
+
+function printDiscoverText(report: Awaited<ReturnType<typeof discoverUtilities>>): void {
+  console.log(`Profile: ${report.profile}`);
+  console.log(`ID syntax: ${report.idSyntax}`);
+  console.log(`Max tokens per element: ${report.maxTokensPerElement}`);
+  for (const group of report.groups) {
+    console.log(`\n${group.group}`);
+    for (const token of group.tokens) {
+      const fallback = token.fallback
+        ? ` fallback=${JSON.stringify(token.fallback)}`
+        : "";
+      console.log(
+        `  ${token.token}\t${token.appliesTo.join(", ")}\t${token.description}${fallback}`
+      );
+    }
+  }
+}
+
+function printExplainText(report: Awaited<ReturnType<typeof explainUtility>>): void {
+  console.log(`${report.token} (${report.group})`);
+  console.log(report.description);
+  console.log(`Profile: ${report.profile}`);
+  console.log(`Applies to: ${report.appliesTo.join(", ")}`);
+  if (report.fallback) console.log(`Fallback: ${JSON.stringify(report.fallback)}`);
+  console.log(`ID: ${report.idExample}`);
+  console.log(`Rule: ${report.groupConflictRule}`);
+  if (report.recommendedCombinations.length > 0) {
+    console.log(`Can combine with: ${report.recommendedCombinations.join(", ")}`);
+  }
+  console.log(`Example:\n${JSON.stringify(report.cardExample, null, 2)}`);
+}
+
+function printLintText(report: Awaited<ReturnType<typeof lintCardsForAgent>>): void {
+  console.log(
+    `${report.valid ? "✓" : "✗"} ${report.summary.cards} cards · ${report.summary.samples} samples · ${report.summary.errors} errors · ${report.summary.warnings} warnings`
+  );
+  if (report.summary.tokens.length > 0) {
+    console.log(`Utility tokens: ${report.summary.tokens.join(", ")}`);
+  }
+  for (const card of report.cards) {
+    console.log(`\n${card.cardId}@${card.version}`);
+    for (const sample of card.samples) {
+      const tokens =
+        sample.utilities.tokens.length > 0
+          ? ` utilities=${sample.utilities.tokens.join(",")}`
+          : "";
+      console.log(
+        `  ${sample.valid ? "✓" : "✗"} ${sample.name} (${sample.view}, ${sample.wireProfile})${tokens}`
+      );
+      for (const issue of sample.issues) {
+        console.log(`    ${issue.severity}: ${issue.code} ${issue.path} ${issue.message}`);
+      }
+    }
+  }
 }
 
 try {
@@ -69,6 +144,39 @@ try {
         )
         .join("\n")
     );
+  } else if (command === "discover") {
+    const query = positional(0);
+    const report = await discoverUtilities({
+      query,
+      profile: flag("--profile"),
+    });
+    if (flag("--format") === "json") {
+      console.log(JSON.stringify(report, null, 2));
+    } else {
+      printDiscoverText(report);
+    }
+  } else if (command === "explain") {
+    const subject = positional(0);
+    const token = subject === "utility" ? positional(1) : subject;
+    if (!token) throw new Error("utility token is required");
+    const report = await explainUtility({
+      token,
+      profile: flag("--profile"),
+    });
+    if (flag("--format") === "json") {
+      console.log(JSON.stringify(report, null, 2));
+    } else {
+      printExplainText(report);
+    }
+  } else if (command === "lint") {
+    const cardId = positional(0);
+    const report = await lintCardsForAgent(cardId);
+    if (flag("--format") === "json") {
+      console.log(JSON.stringify(report, null, 2));
+    } else {
+      printLintText(report);
+    }
+    if (!report.valid) process.exitCode = 1;
   } else if (command === "contract") {
     const cardId = args[0];
     if (!cardId) throw new Error("card-id is required");
