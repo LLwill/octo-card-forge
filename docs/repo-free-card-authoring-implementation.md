@@ -639,7 +639,8 @@ pnpm exec octo-card discover skeleton --format json
 
 状态：已完成发布准备，尚未真实发布到 npm。当前 package 已改为
 `@mlt-org/octo-card-cli`，具备 `octo-card` bin、`pnpm build`、`dist/` 输出、
-package metadata 测试，以及安装 tarball + profile tarball 的 repo-free smoke test。
+package metadata 测试、安装 tarball + profile tarball 的 repo-free smoke test，
+以及 `publish-octo-card-cli` npm 发布 workflow。
 
 目标：发布 `@mlt-org/octo-card-cli`。
 
@@ -652,6 +653,7 @@ package metadata 测试，以及安装 tarball + profile tarball 的 repo-free s
 - 将 web showcase/dev server 依赖放到平台包或 optional；
 - 增加 package-level tests；
 - 增加 release workflow。
+- 发布 tag 约定为 `octo-card-cli/v<version>`。
 
 验收：
 

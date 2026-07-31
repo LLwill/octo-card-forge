@@ -1,13 +1,13 @@
-name: publish-render-profile
+name: publish-octo-card-cli
 
 on:
   push:
     tags:
-      - render-profile/*/v*
+      - octo-card-cli/v*
   workflow_dispatch:
     inputs:
-      profile_ref:
-        description: Render Profile reference, for example octo-chat@1.2.0-rc.1
+      version:
+        description: CLI package version, for example 0.1.0
         required: true
         type: string
 
@@ -16,13 +16,14 @@ permissions:
   id-token: write
 
 concurrency:
-  group: publish-render-profile-${{ github.ref }}
+  group: publish-octo-card-cli-${{ github.ref }}
   cancel-in-progress: false
 
 env:
   NODE_VERSION: "22"
   PNPM_VERSION: "10.32.0"
   NPM_REGISTRY_URL: https://registry.npmjs.org/
+  PACKAGE_NAME: "@mlt-org/octo-card-cli"
 
 jobs:
   build:
@@ -30,7 +31,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       package_name: ${{ steps.metadata.outputs.package_name }}
-      profile_ref: ${{ steps.metadata.outputs.profile_ref }}
       tarball: ${{ steps.metadata.outputs.tarball }}
       version: ${{ steps.metadata.outputs.version }}
     steps:
@@ -52,37 +52,25 @@ jobs:
       - name: Resolve and verify release metadata
         id: metadata
         env:
-          REQUESTED_PROFILE_REF: ${{ inputs.profile_ref }}
+          REQUESTED_VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
           if [[ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]]; then
-            if [[ ! "$REQUESTED_PROFILE_REF" =~ ^([^@/]+)@(.+)$ ]]; then
-              echo "Invalid Render Profile reference: $REQUESTED_PROFILE_REF" >&2
-              exit 1
-            fi
-            profile_id="${BASH_REMATCH[1]}"
-            version="${BASH_REMATCH[2]}"
+            version="$REQUESTED_VERSION"
           else
             tag="$GITHUB_REF_NAME"
-            if [[ ! "$tag" =~ ^render-profile/([^/]+)/v(.+)$ ]]; then
-              echo "Invalid Render Profile tag: $tag" >&2
+            if [[ ! "$tag" =~ ^octo-card-cli/v(.+)$ ]]; then
+              echo "Invalid CLI release tag: $tag" >&2
               exit 1
             fi
-            profile_id="${BASH_REMATCH[1]}"
-            version="${BASH_REMATCH[2]}"
+            version="${BASH_REMATCH[1]}"
           fi
-          profile_ref="$profile_id@$version"
-          manifest="render-profiles/$profile_id/manifest.json"
-          test -f "$manifest"
-          test "$(node -p "require('./$manifest').id")" = "$profile_id"
-          test "$(node -p "require('./$manifest').version")" = "$version"
-          package_name="$(node -p "require('./$manifest').packageName")"
-          test "$package_name" = "@mlt-org/octo-card-profile-octo-chat"
-          package_slug="${package_name#@}"
+          test "$(node -p "require('./package.json').name")" = "$PACKAGE_NAME"
+          test "$(node -p "require('./package.json').version")" = "$version"
+          package_slug="${PACKAGE_NAME#@}"
           package_slug="${package_slug//\//-}"
           {
-            echo "package_name=$package_name"
-            echo "profile_ref=$profile_ref"
+            echo "package_name=$PACKAGE_NAME"
             echo "tarball=$package_slug-$version.tgz"
             echo "version=$version"
           } >> "$GITHUB_OUTPUT"
@@ -103,15 +91,30 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run release gates
-        env:
-          PROFILE_REF: ${{ steps.metadata.outputs.profile_ref }}
         run: |
           set -euo pipefail
           pnpm typecheck
           pnpm test
           pnpm check
-          pnpm cli profile validate "$PROFILE_REF"
-          pnpm cli profile pack "$PROFILE_REF" --output .release
+          pnpm smoke:repo-free-agent
+
+      - name: Build CLI package
+        run: pnpm build
+
+      - name: Pack CLI package
+        run: pnpm pack --pack-destination .release
+
+      - name: Inspect package contents
+        env:
+          TARBALL: ${{ steps.metadata.outputs.tarball }}
+        run: |
+          set -euo pipefail
+          test -f ".release/$TARBALL"
+          tar -tzf ".release/$TARBALL" | sort
+          tar -tzf ".release/$TARBALL" | grep -q '^package/dist/cli.js$'
+          tar -tzf ".release/$TARBALL" | grep -q '^package/skills/octo-design-cards/SKILL.md$'
+          sha256sum ".release/$TARBALL"
+          npm pack --dry-run
 
       - name: Ensure version is unpublished
         env:
@@ -137,18 +140,11 @@ jobs:
               ;;
           esac
 
-      - name: Record artifact checksum
-        env:
-          TARBALL: ${{ steps.metadata.outputs.tarball }}
-        run: sha256sum ".release/$TARBALL"
-
       - name: Upload release candidate
         uses: actions/upload-artifact@v4
         with:
-          name: render-profile-package
-          path: |
-            .release/${{ steps.metadata.outputs.tarball }}
-            .release/octo-chat-${{ steps.metadata.outputs.version }}/package/dist/bundle-manifest.json
+          name: octo-card-cli-package
+          path: .release/${{ steps.metadata.outputs.tarball }}
           if-no-files-found: error
           retention-days: 90
 
@@ -161,7 +157,7 @@ jobs:
       - name: Download validated package
         uses: actions/download-artifact@v5
         with:
-          name: render-profile-package
+          name: octo-card-cli-package
           path: release-artifact
 
       - name: Set up Node.js and npm authentication
@@ -194,11 +190,11 @@ jobs:
               ;;
           esac
 
-      - name: Publish RC with provenance
+      - name: Publish CLI with provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           TARBALL: ${{ needs.build.outputs.tarball }}
-        run: npm publish "./release-artifact/$TARBALL" --tag next --access public --provenance
+        run: npm publish "./release-artifact/$TARBALL" --access public --provenance
 
       - name: Verify published package
         env:

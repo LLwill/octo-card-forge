@@ -212,6 +212,35 @@ pnpm smoke:repo-free-agent
 已发布版本由 npm / 制品库保存。Forge Catalog 和默认 `cli check` 只覆盖当前 workspace
 profile 可渲染的 Card Package；历史 Card Package 由制品库负责重渲染。
 
+## 发布
+
+普通分支 push 和 PR 不会发布 npm 包。PR 只运行验证；合并到 `main` 也只运行 CI 和
+候选 artifact 打包。真正发布需要手动 workflow，或在已经合入 `main` 的 commit 上打 tag。
+
+发布 Agent 侧 CLI：
+
+```bash
+git tag octo-card-cli/v0.1.0
+git push origin octo-card-cli/v0.1.0
+```
+
+这会触发 `publish-octo-card-cli`，验证 `package.json` 中的
+`@mlt-org/octo-card-cli@0.1.0`，运行 `typecheck/test/check/smoke:repo-free-agent`，
+打包并发布 `@mlt-org/octo-card-cli`。
+
+发布 Render Profile：
+
+```bash
+git tag render-profile/octo-chat/v1.2.0-rc.1
+git push origin render-profile/octo-chat/v1.2.0-rc.1
+```
+
+这会触发 `publish-render-profile`，验证 `render-profiles/octo-chat/manifest.json` 中的
+`@mlt-org/octo-card-profile-octo-chat@1.2.0-rc.1`，打包并以 `next` tag 发布。
+
+两个发布 workflow 都要求 tag 指向已经合入 `main` 的 commit，并使用 `npm-publish`
+environment 与 `NPM_TOKEN`。
+
 ## 版本说明
 
 Card Package 使用 Manifest v2：每个 View 显式声明 `wireProfile`，不再人工维护
