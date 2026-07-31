@@ -89,14 +89,15 @@ octo-card list
 octo-card discover [skeleton] [--profile octo-chat@latest] [--format json]
 octo-card explain utility line-skeleton [--profile octo-chat@latest] [--format json]
 octo-card lint [docs.access-request] [--card ./docs.access-request] [--format json]
-octo-card init docs.share-notification --name "文档分享通知"
+octo-card init docs.share-notification --name "文档分享通知" [--out ./docs.share-notification]
 octo-card contract docs.access-request
 octo-card inspect docs.access-request [--card ./docs.access-request] [--sample pending]
 octo-card handoff docs.access-request [--output dist]
+octo-card handoff --card ./docs.access-request [--output dist]
 octo-card render docs.access-request --sample pending
 octo-card render --card ./docs.access-request --sample pending
 octo-card check [docs.access-request] [--card ./docs.access-request] [--format json]
-octo-card dev [docs.access-request] [--host 127.0.0.1] [--port 4318]
+octo-card dev [docs.access-request] [--card ./docs.access-request] [--host 127.0.0.1] [--port 4318]
 ```
 
 需要让同一局域网设备访问 Catalog 时，显式监听全部网卡：
@@ -165,6 +166,23 @@ fallback 和 `octo--<token>--uid-*` 写法；`explain` 给出单个 token 的组
 Adaptive Card 示例；`lint` 在常规校验之外列出每个 sample 实际使用的 utility id/token。
 Repo-free 试点路径可用 `--card <dir>` 指向单卡目录，并用 `--profile-package <dir-or-package>`
 或 `--profile-dir <dir>` 显式指定 Render Profile 来源。
+
+Agent 侧不需要 clone 本仓库即可完成单卡开发闭环。典型流程是安装 CLI 与目标
+Render Profile 包后，在自己的工作目录中生成、预览、校验和交付：
+
+```bash
+pnpm add -D @mlt-org/octo-card-cli @mlt-org/octo-card-profile-octo-chat
+pnpm exec octo-card discover skeleton --format json
+pnpm exec octo-card init bot.token-view --name "Bot Token 查看" --out ./bot.token-view
+pnpm exec octo-card dev --card ./bot.token-view
+pnpm exec octo-card check --card ./bot.token-view --format json
+pnpm exec octo-card lint --card ./bot.token-view --format json
+pnpm exec octo-card render --card ./bot.token-view --sample default > card.json
+pnpm exec octo-card handoff --card ./bot.token-view --output dist
+```
+
+这里 `--out` 创建的是一个独立 Card Package 目录；后续 `--card` 都指向这个目录。
+CLI 会优先读取已安装的 profile package，找不到时才回退到 Forge 仓库源码，方便平台开发。
 
 ## 质量检查
 

@@ -608,10 +608,11 @@ octo-card render --card ./tmp/bot.token-view --sample pending
 
 ### Phase 2：Profile package 消费
 
-状态：已开始落地。当前 CLI 已支持 `--profile-dir <dir>` 和
+状态：已落地。当前 CLI 已支持 `--profile-dir <dir>` 和
 `--profile-package <dir-or-package>`，可从 `profile bundle/pack` 生成的 package
-目录读取 manifest、host config、capabilities 和 stylesheets；默认 npm 包名解析已预留，
-完整 CLI 发布后再作为主要路径。
+目录读取 manifest、host config、capabilities 和 stylesheets；未显式传入时会优先
+尝试解析已安装的默认 npm profile package，例如
+`@mlt-org/octo-card-profile-octo-chat`，找不到时才回退到 Forge workspace 源码。
 
 目标：CLI 不读取 forge `render-profiles/` 也能 discover/explain/check/render。
 
@@ -636,6 +637,10 @@ pnpm exec octo-card discover skeleton --format json
 
 ### Phase 3：CLI 包发布
 
+状态：已完成发布准备，尚未真实发布到 npm。当前 package 已改为
+`@mlt-org/octo-card-cli`，具备 `octo-card` bin、`pnpm build`、`dist/` 输出、
+package metadata 测试，以及安装 tarball + profile tarball 的 repo-free smoke test。
+
 目标：发布 `@mlt-org/octo-card-cli`。
 
 任务：
@@ -659,6 +664,10 @@ pnpm dlx @mlt-org/octo-card-cli discover
 
 ### Phase 4：Repo-free init/dev/handoff
 
+状态：已落地主要闭环。`init --out <dir>`、`dev --card <dir>`、
+`handoff --card <dir>`、`check/lint/render/inspect --card <dir>` 均已支持。
+`emit` alias 暂未实现，当前继续使用 `render` 作为标准 JSON 输出命令。
+
 目标：Agent 端完整开发闭环。
 
 任务：
@@ -679,8 +688,10 @@ octo-card emit --card ./bot.token-view --sample pending
 
 ```bash
 octo-card init bot.token-view --name "Bot Token 查看" --out ./bot.token-view
+octo-card dev --card ./bot.token-view
 octo-card check --card ./bot.token-view
 octo-card render --card ./bot.token-view --sample default > card.json
+octo-card handoff --card ./bot.token-view --output dist
 ```
 
 ### Phase 5：Skill 发布与 Agent 验证
