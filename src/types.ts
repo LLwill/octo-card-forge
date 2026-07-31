@@ -74,6 +74,15 @@ export interface RenderCapabilities {
   openUrlSchemes: string[];
 }
 
+export interface RenderProfileSource {
+  root: string;
+  reference: string;
+  manifest: RenderProfileManifest;
+  capabilities: RenderCapabilities;
+  hostConfig: Record<string, unknown>;
+  stylesheets?: string[];
+}
+
 export interface InspectedAction {
   path: string;
   id?: string;

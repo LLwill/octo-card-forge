@@ -3,10 +3,17 @@ import { createRequire } from "node:module";
 import * as ACData from "adaptivecards-templating";
 import { readJson } from "./fs.js";
 import { inspectCard } from "./inspect.js";
-import { getCard, getRenderProfile, resolveRenderProfileReference } from "./registry.js";
+import {
+  getCard,
+  getRenderProfile,
+  loadCardPackage,
+  resolveRenderProfileReference,
+} from "./registry.js";
 import type {
+  CardPackage,
   CompileResult,
   JsonObject,
+  RenderProfileSource,
   ValidationIssue,
 } from "./types.js";
 import { validateCompiledCard } from "./validate.js";
@@ -28,14 +35,15 @@ const Ajv = (AjvModule.default ?? AjvModule) as new (options?: Record<string, un
 const formatsModule = require("ajv-formats");
 const addFormats = (formatsModule.default ?? formatsModule) as (ajv: object) => void;
 
-export async function compileCard(options: {
-  cardId: string;
+export async function compileCardPackage(options: {
+  card: CardPackage;
   view: string;
   data: JsonObject;
+  profile?: RenderProfileSource;
 }): Promise<CompileResult> {
-  const card = await getCard(options.cardId);
+  const { card } = options;
   const view = card.manifest.views[options.view];
-  if (!view) throw new Error(`Unknown view ${options.view} for ${options.cardId}`);
+  if (!view) throw new Error(`Unknown view ${options.view} for ${card.reference}`);
 
   const schema = await readJson<JsonObject>(
     path.join(card.root, card.manifest.dataSchema)
@@ -61,7 +69,7 @@ export async function compileCard(options: {
     const templateJson = await readJson<JsonObject>(path.join(card.root, view.template));
     const template = new ACData.Template(templateJson);
     payload = template.expand({ $root: options.data }) as JsonObject;
-    const profile = await getRenderProfile(renderProfile);
+    const profile = options.profile ?? await getRenderProfile(renderProfile);
     issues.push(...validateCompiledCard(payload, profile.capabilities, view.wireProfile));
   }
 
@@ -69,7 +77,7 @@ export async function compileCard(options: {
     cardId: card.manifest.id,
     cardVersion: card.manifest.version,
     contractVersion: card.manifest.contractVersion,
-    renderProfile,
+    renderProfile: options.profile?.reference ?? renderProfile,
     wireProfile: view.wireProfile,
     view: options.view,
     payload,
@@ -78,11 +86,24 @@ export async function compileCard(options: {
   };
 }
 
-export async function compileSample(options: {
+export async function compileCard(options: {
   cardId: string;
+  view: string;
+  data: JsonObject;
+}): Promise<CompileResult> {
+  return compileCardPackage({
+    card: await getCard(options.cardId),
+    view: options.view,
+    data: options.data,
+  });
+}
+
+export async function compileSampleFromPackage(options: {
+  card: CardPackage;
   sample: string;
+  profile?: RenderProfileSource;
 }): Promise<CompileResult & { data: JsonObject }> {
-  const card = await getCard(options.cardId);
+  const { card } = options;
   for (const [viewName, view] of Object.entries(card.manifest.views)) {
     const match = view.samples.find(
       (samplePath) => path.basename(samplePath, path.extname(samplePath)) === options.sample
@@ -90,9 +111,50 @@ export async function compileSample(options: {
     if (!match) continue;
     const data = await readJson<JsonObject>(path.join(card.root, match));
     return {
-      ...(await compileCard({ cardId: card.reference, view: viewName, data })),
+      ...(await compileCardPackage({
+        card,
+        view: viewName,
+        data,
+        profile: options.profile,
+      })),
       data,
     };
   }
-  throw new Error(`Unknown sample ${options.sample} for ${options.cardId}`);
+  throw new Error(`Unknown sample ${options.sample} for ${card.reference}`);
+}
+
+export async function compileSample(options: {
+  cardId: string;
+  sample: string;
+}): Promise<CompileResult & { data: JsonObject }> {
+  return compileSampleFromPackage({
+    card: await getCard(options.cardId),
+    sample: options.sample,
+  });
+}
+
+export async function compileCardDirectory(options: {
+  cardRoot: string;
+  view: string;
+  data: JsonObject;
+  profile?: RenderProfileSource;
+}): Promise<CompileResult> {
+  return compileCardPackage({
+    card: await loadCardPackage(options.cardRoot),
+    view: options.view,
+    data: options.data,
+    profile: options.profile,
+  });
+}
+
+export async function compileSampleFromDirectory(options: {
+  cardRoot: string;
+  sample: string;
+  profile?: RenderProfileSource;
+}): Promise<CompileResult & { data: JsonObject }> {
+  return compileSampleFromPackage({
+    card: await loadCardPackage(options.cardRoot),
+    sample: options.sample,
+    profile: options.profile,
+  });
 }

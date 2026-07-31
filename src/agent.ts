@@ -1,7 +1,8 @@
 import path from "node:path";
-import { compileSample } from "./compiler.js";
+import { compileSampleFromPackage } from "./compiler.js";
 import {
   getRenderProfile,
+  loadCardPackage,
   listCards,
   resolveRenderProfileReference,
 } from "./registry.js";
@@ -10,6 +11,8 @@ import type {
   RenderUtilityDefinition,
   ValidationIssue,
   WireProfile,
+  CardPackage,
+  RenderProfileSource,
 } from "./types.js";
 import { isUtilityId, parseUtilityId } from "./utility-id.js";
 
@@ -123,9 +126,10 @@ function matchesQuery(token: AgentUtilityToken, query: string): boolean {
 
 export async function discoverUtilities(options: {
   profile?: string;
+  profileSource?: RenderProfileSource;
   query?: string;
 } = {}): Promise<AgentDiscoverReport> {
-  const profile = await getRenderProfile(options.profile);
+  const profile = options.profileSource ?? await getRenderProfile(options.profile);
   const grouped = new Map<string, AgentUtilityToken[]>();
   for (const [token, definition] of Object.entries(profile.capabilities.utilities ?? {})) {
     const item = utilityToToken(token, definition);
@@ -193,8 +197,9 @@ function exampleForUtility(token: AgentUtilityToken, id: string): JsonObject {
 export async function explainUtility(options: {
   token: string;
   profile?: string;
+  profileSource?: RenderProfileSource;
 }): Promise<AgentExplainReport> {
-  const profile = await getRenderProfile(options.profile);
+  const profile = options.profileSource ?? await getRenderProfile(options.profile);
   const definition = profile.capabilities.utilities?.[options.token];
   if (!definition) {
     throw new Error(`${options.token} is not declared by ${profile.reference}`);
@@ -274,20 +279,10 @@ function collectUtilityUsage(value: unknown, pathName = "$"): AgentUtilityUsage[
   return usages;
 }
 
-export async function lintCardsForAgent(cardId?: string): Promise<AgentLintReport> {
-  const availableCards = await listCards();
-  const cards = cardId
-    ? availableCards.filter(
-        (card) => card.reference === cardId || card.manifest.id === cardId
-      )
-    : availableCards;
-  if (cardId && cards.length === 0) {
-    throw new Error(
-      `Unknown current card: ${cardId} (expected one of ${availableCards
-        .map((card) => card.reference)
-        .join(", ")})`
-    );
-  }
+async function lintCardPackages(
+  cards: CardPackage[],
+  profile?: RenderProfileSource
+): Promise<AgentLintReport> {
   const report: AgentLintReport = {
     valid: true,
     summary: {
@@ -314,7 +309,7 @@ export async function lintCardsForAgent(cardId?: string): Promise<AgentLintRepor
         const sample = path.basename(samplePath, path.extname(samplePath));
         report.summary.samples++;
         try {
-          const result = await compileSample({ cardId: card.reference, sample });
+          const result = await compileSampleFromPackage({ card, sample, profile });
           const valid = !result.issues.some((issue) => issue.severity === "error");
           const utilityIds = collectUtilityUsage(result.payload);
           for (const usage of utilityIds) {
@@ -371,4 +366,28 @@ export async function lintCardsForAgent(cardId?: string): Promise<AgentLintRepor
 
   report.summary.tokens = [...tokens].sort();
   return report;
+}
+
+export async function lintCardsForAgent(cardId?: string): Promise<AgentLintReport> {
+  const availableCards = await listCards();
+  const cards = cardId
+    ? availableCards.filter(
+        (card) => card.reference === cardId || card.manifest.id === cardId
+      )
+    : availableCards;
+  if (cardId && cards.length === 0) {
+    throw new Error(
+      `Unknown current card: ${cardId} (expected one of ${availableCards
+        .map((card) => card.reference)
+        .join(", ")})`
+    );
+  }
+  return lintCardPackages(cards);
+}
+
+export async function lintCardPackageForAgent(
+  cardRoot: string,
+  profile?: RenderProfileSource
+): Promise<AgentLintReport> {
+  return lintCardPackages([await loadCardPackage(cardRoot)], profile);
 }

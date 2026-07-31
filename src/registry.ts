@@ -6,6 +6,7 @@ import type {
   CardPackage,
   RenderCapabilities,
   RenderProfileManifest,
+  RenderProfileSource,
 } from "./types.js";
 
 /** 仓库当前唯一的组件基线。历史 Profile 由制品库负责复现。 */
@@ -49,7 +50,7 @@ export function resolveRenderProfileReference(reference?: string): string {
   return `${id}@${version}`;
 }
 
-function assertCardManifest(value: CardManifest, filePath: string): void {
+export function assertCardManifest(value: CardManifest, filePath: string): void {
   if (value.schemaVersion !== 2) {
     throw new Error(`${filePath}: unsupported schemaVersion ${String(value.schemaVersion)}`);
   }
@@ -67,6 +68,18 @@ function assertCardManifest(value: CardManifest, filePath: string): void {
       throw new Error(`${filePath}: view ${viewName} has an invalid wireProfile`);
     }
   }
+}
+
+export async function loadCardPackage(root: string): Promise<CardPackage> {
+  const resolvedRoot = path.resolve(root);
+  const manifestPath = path.join(resolvedRoot, "manifest.json");
+  const manifest = await readJson<CardManifest>(manifestPath);
+  assertCardManifest(manifest, manifestPath);
+  return {
+    reference: manifest.id,
+    root: resolvedRoot,
+    manifest,
+  };
 }
 
 function isCurrentRenderProfile(manifest: CardManifest): boolean {
@@ -138,13 +151,7 @@ export async function getCard(cardId: string): Promise<CardPackage> {
   return card;
 }
 
-export async function getRenderProfile(reference?: string): Promise<{
-  root: string;
-  reference: string;
-  manifest: RenderProfileManifest;
-  capabilities: RenderCapabilities;
-  hostConfig: Record<string, unknown>;
-}> {
+export async function getRenderProfile(reference?: string): Promise<RenderProfileSource> {
   const resolved = resolveRenderProfileReference(reference);
   const { id, version } = parseRenderProfileReference(resolved);
   const current = parseRenderProfileReference(CURRENT_RENDER_PROFILE);
@@ -177,6 +184,6 @@ export async function getRenderProfile(reference?: string): Promise<{
   }
 }
 
-export function getCurrentRenderProfile(): ReturnType<typeof getRenderProfile> {
+export function getCurrentRenderProfile(): Promise<RenderProfileSource> {
   return getRenderProfile(CURRENT_RENDER_PROFILE);
 }

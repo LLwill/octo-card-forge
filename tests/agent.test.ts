@@ -4,6 +4,11 @@ import {
   explainUtility,
   lintCardsForAgent,
 } from "../src/agent.js";
+import { mkdtemp } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { bundleRenderProfile } from "../src/profile.js";
+import { loadRenderProfileFromPackage } from "../src/profile-source.js";
 
 describe("agent utility discovery", () => {
   it("groups declared utility tokens for agent lookup", async () => {
@@ -35,6 +40,18 @@ describe("agent utility discovery", () => {
       id: "octo--surface-warning--inset-md--uid-example",
       style: "warning",
     });
+  });
+
+  it("can discover utilities from a bundled profile package", async () => {
+    const output = await mkdtemp(path.join(os.tmpdir(), "octo-agent-profile-"));
+    const bundle = await bundleRenderProfile("octo-chat@latest", output);
+    const profileSource = await loadRenderProfileFromPackage(bundle.packageRoot);
+    const report = await discoverUtilities({ query: "warning", profileSource });
+
+    expect(report.profile).toBe("octo-chat@1.2.0-rc.1");
+    expect(report.groups.flatMap((group) => group.tokens.map((token) => token.token))).toContain(
+      "surface-warning"
+    );
   });
 });
 
