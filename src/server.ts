@@ -1,20 +1,31 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import path from "node:path";
-import { compileCard, compileSample } from "./compiler.js";
+import {
+  compileCard,
+  compileCardPackage,
+  compileSample,
+  compileSampleFromPackage,
+} from "./compiler.js";
 import {
   buildComponentBaseline,
   buildComponentBaselineGroups,
 } from "./component-baseline.js";
 import { readJson, readText, resolveInProject } from "./fs.js";
-import { buildHandoffArchive } from "./handoff.js";
+import { buildHandoffArchive, buildHandoffArchiveForCard } from "./handoff.js";
+import { loadRenderProfileForReference } from "./profile-source.js";
 import {
-  CURRENT_RENDER_PROFILE,
   getCard,
   getCurrentRenderProfile,
   getRenderProfile,
+  loadCardPackage,
   listCards,
 } from "./registry.js";
-import type { JsonObject } from "./types.js";
+import type { CardPackage, JsonObject, RenderProfileSource } from "./types.js";
+
+interface ServerContext {
+  card?: CardPackage;
+  profile?: RenderProfileSource;
+}
 
 function sendJson(res: ServerResponse, status: number, value: unknown): void {
   res.writeHead(status, {
@@ -64,10 +75,11 @@ async function readBody(req: IncomingMessage): Promise<JsonObject> {
 async function handleApi(
   req: IncomingMessage,
   res: ServerResponse,
-  url: URL
+  url: URL,
+  context: ServerContext
 ): Promise<boolean> {
   if (req.method === "GET" && url.pathname === "/api/cards") {
-    const cards = await listCards();
+    const cards = context.card ? [context.card] : await listCards();
     sendJson(
       res,
       200,
@@ -90,13 +102,13 @@ async function handleApi(
   }
 
   if (req.method === "GET" && url.pathname === "/api/component-baseline") {
-    const profile = await getCurrentRenderProfile();
+    const profile = context.profile ?? await getCurrentRenderProfile();
     sendJson(res, 200, {
-      reference: CURRENT_RENDER_PROFILE,
+      reference: profile.reference,
       renderProfile: profile.manifest,
       hostConfig: profile.hostConfig,
       capabilities: profile.capabilities,
-      stylesheetUrl: `/api/render-styles/${encodeURIComponent(CURRENT_RENDER_PROFILE)}`,
+      stylesheetUrl: `/api/render-styles/${encodeURIComponent(profile.reference)}`,
       sections: buildComponentBaseline(profile.capabilities),
       groups: buildComponentBaselineGroups(profile.capabilities),
     });
@@ -106,7 +118,9 @@ async function handleApi(
   const handoffMatch = url.pathname.match(/^\/api\/cards\/([^/]+)\/handoff$/);
   if (req.method === "GET" && handoffMatch) {
     const cardId = decodeURIComponent(handoffMatch[1]);
-    const archive = await buildHandoffArchive(cardId);
+    const archive = context.card
+      ? await buildHandoffArchiveForCard(context.card, context.profile)
+      : await buildHandoffArchive(cardId);
     sendBinaryDownload(
       res,
       archive.fileName,
@@ -119,13 +133,15 @@ async function handleApi(
   const cardMatch = url.pathname.match(/^\/api\/cards\/([^/]+)\/(contract|context)$/);
   if (req.method === "GET" && cardMatch) {
     const cardReference = decodeURIComponent(cardMatch[1]);
-    const card = await getCard(cardReference);
+    const card = context.card ?? await getCard(cardReference);
     if (cardMatch[2] === "contract") {
       const interactionReports = [];
       for (const [view, definition] of Object.entries(card.manifest.views)) {
         for (const samplePath of definition.samples) {
           const sample = path.basename(samplePath, path.extname(samplePath));
-          const result = await compileSample({ cardId: card.reference, sample });
+          const result = context.card
+            ? await compileSampleFromPackage({ card, sample, profile: context.profile })
+            : await compileSample({ cardId: card.reference, sample });
           interactionReports.push({
             sample,
             view,
@@ -143,7 +159,8 @@ async function handleApi(
         interactionReports,
       });
     } else {
-      const profile = await getRenderProfile(card.manifest.renderProfile);
+      const profile =
+        context.profile ?? await getRenderProfile(card.manifest.renderProfile);
       sendJson(res, 200, {
         card: card.manifest,
         renderProfile: profile.manifest,
@@ -156,10 +173,17 @@ async function handleApi(
 
   const sampleMatch = url.pathname.match(/^\/api\/cards\/([^/]+)\/samples\/([^/]+)$/);
   if (req.method === "GET" && sampleMatch) {
-    const result = await compileSample({
-      cardId: decodeURIComponent(sampleMatch[1]),
-      sample: decodeURIComponent(sampleMatch[2]),
-    });
+    const sample = decodeURIComponent(sampleMatch[2]);
+    const result = context.card
+      ? await compileSampleFromPackage({
+          card: context.card,
+          sample,
+          profile: context.profile,
+        })
+      : await compileSample({
+          cardId: decodeURIComponent(sampleMatch[1]),
+          sample,
+        });
     sendJson(res, 200, result);
     return true;
   }
@@ -168,7 +192,7 @@ async function handleApi(
     /^\/api\/cards\/([^/]+)\/views\/([^/]+)\/template$/
   );
   if (req.method === "GET" && templateMatch) {
-    const card = await getCard(decodeURIComponent(templateMatch[1]));
+    const card = context.card ?? await getCard(decodeURIComponent(templateMatch[1]));
     const viewName = decodeURIComponent(templateMatch[2]);
     const view = card.manifest.views[viewName];
     if (!view) {
@@ -187,8 +211,12 @@ async function handleApi(
 
   const styleMatch = url.pathname.match(/^\/api\/render-styles\/(.+)$/);
   if (req.method === "GET" && styleMatch) {
-    const profile = await getRenderProfile(decodeURIComponent(styleMatch[1]));
-    const stylesheets = [
+    const requested = decodeURIComponent(styleMatch[1]);
+    const profile =
+      context.profile && requested === context.profile.reference
+        ? context.profile
+        : await getRenderProfile(requested);
+    const stylesheets = profile.stylesheets ?? [
       profile.manifest.theme
         ? await readText(path.join(profile.root, profile.manifest.theme))
         : "",
@@ -218,11 +246,18 @@ async function handleApi(
       });
       return true;
     }
-    const result = await compileCard({
-      cardId: body.cardId,
-      view: body.view,
-      data: body.data as JsonObject,
-    });
+    const result = context.card
+      ? await compileCardPackage({
+          card: context.card,
+          view: body.view,
+          data: body.data as JsonObject,
+          profile: context.profile,
+        })
+      : await compileCard({
+          cardId: body.cardId,
+          view: body.view,
+          data: body.data as JsonObject,
+        });
     const valid = !result.issues.some((issue) => issue.severity === "error");
     sendJson(res, valid ? 200 : 422, { valid, ...result });
     return true;
@@ -233,14 +268,21 @@ async function handleApi(
 export async function startServer(options: {
   port?: number;
   host?: string;
+  cardRoot?: string;
+  profile?: RenderProfileSource;
 } = {}): Promise<void> {
   const port = options.port ?? 4318;
   const host = options.host ?? "127.0.0.1";
+  const card = options.cardRoot ? await loadCardPackage(options.cardRoot) : undefined;
+  const profile = card
+    ? await loadRenderProfileForReference(card.manifest.renderProfile, options.profile)
+    : options.profile;
+  const context: ServerContext = { card, profile };
   const webRoot = resolveInProject("web");
   const server = createServer(async (req, res) => {
     try {
       const url = new URL(req.url ?? "/", `http://${req.headers.host ?? host}`);
-      if (await handleApi(req, res, url)) return;
+      if (await handleApi(req, res, url, context)) return;
       const files: Record<string, [string, string]> = {
         "/": ["index.html", "text/html"],
         "/components": ["components.html", "text/html"],
@@ -266,5 +308,6 @@ export async function startServer(options: {
     server.once("error", reject);
     server.listen(port, host, () => resolve());
   });
-  console.log(`Octo Card Forge: http://${host}:${port}`);
+  const label = card ? ` (${card.manifest.id})` : "";
+  console.log(`Octo Card Forge${label}: http://${host}:${port}`);
 }

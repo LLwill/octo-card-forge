@@ -80,7 +80,7 @@ function usage(): void {
   profile validate <profile@version>
   profile bundle <profile@version> [--output .release]
   profile pack <profile@version> [--output .release]
-  dev [card-id] [--host 127.0.0.1] [--port 4318]`);
+  dev [card-id] [--card <dir>] [--profile-dir <dir> | --profile-package <pkg>] [--host 127.0.0.1] [--port 4318]`);
 }
 
 function positional(index: number): string | undefined {
@@ -423,7 +423,9 @@ try {
   } else if (command === "dev") {
     const port = Number(flag("--port") ?? "4318");
     const host = flag("--host") ?? "127.0.0.1";
-    await startServer({ host, port });
+    const cardRoot = flag("--card");
+    const profileSource = await explicitProfileForCardCommand(cardRoot);
+    await startServer({ host, port, cardRoot, profile: profileSource });
   } else {
     usage();
     if (command !== "help" && command !== "--help") process.exitCode = 1;
