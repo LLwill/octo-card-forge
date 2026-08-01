@@ -20,7 +20,7 @@ import {
   writeHandoffPackage,
   writeHandoffPackageForCard,
 } from "./handoff.js";
-import { initCard } from "./init.js";
+import { initCard, listInitPresets } from "./init.js";
 import {
   bundleRenderProfile,
   packRenderProfile,
@@ -36,6 +36,7 @@ import type { JsonObject } from "./types.js";
 
 const args = process.argv.slice(2);
 const command = args.shift() ?? "help";
+const DEFAULT_HANDOFF_OUTPUT = "handoff";
 const VALUE_FLAGS = new Set([
   "--card",
   "--data",
@@ -48,6 +49,7 @@ const VALUE_FLAGS = new Set([
   "--profile",
   "--profile-dir",
   "--profile-package",
+  "--preset",
   "--render-profile",
   "--sample",
   "--view",
@@ -61,15 +63,16 @@ function flag(name: string): string | undefined {
 
 function usage(): void {
   console.log(`octo-card commands:
-  init <card-id> --name <name> [--out <dir>] [--view default] [--wire-profile octo/v1] [--render-profile octo-chat@latest] [--format json]
+  init <card-id> --name <name> [--out <dir>] [--preset blank|bot-token|docs-forward] [--view default] [--wire-profile octo/v1|octo/v2] [--render-profile octo-chat@latest] [--format json]
+  presets [--format json]
   list
   discover [query] [--profile octo-chat@latest] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
   explain utility <token> [--profile octo-chat@latest] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
   lint [card-id] [--card <dir>] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
   contract <card-id> [--format json]
   inspect <card-id> [--card <dir>] [--profile-dir <dir> | --profile-package <pkg>] [--sample <name>] [--format json]
-  handoff <card-id> [--output dist] [--format json]
-  handoff --card <dir> [--profile-dir <dir> | --profile-package <pkg>] [--output dist] [--format json]
+  handoff <card-id> [--output handoff] [--format json]
+  handoff --card <dir> [--profile-dir <dir> | --profile-package <pkg>] [--output handoff] [--format json]
   handoff <card-id> --output -  # print the aggregate JSON to stdout
   handoff --card <dir> --output -  # print the aggregate JSON to stdout
   render <card-id> --sample <name>
@@ -179,6 +182,7 @@ try {
     const result = await initCard({
       cardId,
       name,
+      preset: flag("--preset"),
       view: flag("--view"),
       renderProfile: flag("--render-profile"),
       wireProfile: flag("--wire-profile") as "octo/v1" | "octo/v2" | undefined,
@@ -188,11 +192,21 @@ try {
       console.log(JSON.stringify(result, null, 2));
     } else {
       console.log(`Created ${result.cardId} (${result.name})`);
+      console.log(`Preset: ${result.preset}`);
       for (const file of result.files) console.log(`  ${file}`);
       const next = flag("--out")
         ? `pnpm cli check --card ${result.root}`
         : `pnpm cli check ${result.cardId}`;
       console.log(`Next: ${next}`);
+    }
+  } else if (command === "presets") {
+    const presets = listInitPresets();
+    if (flag("--format") === "json") {
+      console.log(JSON.stringify({ presets }, null, 2));
+    } else {
+      for (const preset of presets) {
+        console.log(`${preset.id}\t${preset.wireProfile}\t${preset.description}`);
+      }
     }
   } else if (command === "list") {
     const cards = await listCards();
@@ -326,7 +340,7 @@ try {
     }
   } else if (command === "handoff") {
     const cardRoot = flag("--card");
-    const output = flag("--output") ?? "dist";
+    const output = flag("--output") ?? DEFAULT_HANDOFF_OUTPUT;
     if (cardRoot) {
       const profileSource = await explicitProfileForCardCommand(cardRoot);
       const card = await loadCardPackage(cardRoot);

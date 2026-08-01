@@ -89,11 +89,12 @@ octo-card list
 octo-card discover [skeleton] [--profile octo-chat@latest] [--format json]
 octo-card explain utility line-skeleton [--profile octo-chat@latest] [--format json]
 octo-card lint [docs.access-request] [--card ./docs.access-request] [--format json]
-octo-card init docs.share-notification --name "文档分享通知" [--out ./docs.share-notification]
+octo-card presets [--format json]
+octo-card init docs.share-notification --name "文档分享通知" [--out ./docs.share-notification] [--preset docs-forward]
 octo-card contract docs.access-request
 octo-card inspect docs.access-request [--card ./docs.access-request] [--sample pending]
-octo-card handoff docs.access-request [--output dist]
-octo-card handoff --card ./docs.access-request [--output dist]
+octo-card handoff docs.access-request [--output handoff]
+octo-card handoff --card ./docs.access-request [--output handoff]
 octo-card render docs.access-request --sample pending
 octo-card render --card ./docs.access-request --sample pending
 octo-card emit --card ./docs.access-request --sample pending
@@ -120,7 +121,7 @@ pnpm cli contract docs.access-request
 也可以从页面点击“导出后端交付包”，或使用 CLI 生成同一份 ZIP：
 
 ```bash
-pnpm cli handoff docs.access-request --output dist
+pnpm cli handoff docs.access-request --output handoff
 ```
 
 ZIP 解压后包含 `manifest.json`、数据契约、模板、Samples、Goldens、交互诊断报告、
@@ -174,12 +175,13 @@ Render Profile 包后，在自己的工作目录中生成、预览、校验和�
 ```bash
 pnpm add -D @mlt-org/octo-card-cli @mlt-org/octo-card-profile-octo-chat
 pnpm exec octo-card discover skeleton --format json
-pnpm exec octo-card init bot.token-view --name "Bot Token 查看" --out ./bot.token-view
+pnpm exec octo-card presets --format json
+pnpm exec octo-card init bot.token-view --name "Bot Token 查看" --out ./bot.token-view --preset bot-token
 pnpm exec octo-card dev --card ./bot.token-view
 pnpm exec octo-card check --card ./bot.token-view --format json
 pnpm exec octo-card lint --card ./bot.token-view --format json
 pnpm exec octo-card emit --card ./bot.token-view --sample default > card.json
-pnpm exec octo-card handoff --card ./bot.token-view --output dist
+pnpm exec octo-card handoff --card ./bot.token-view --output handoff
 ```
 
 这里 `--out` 创建的是一个独立 Card Package 目录；后续 `--card` 都指向这个目录。

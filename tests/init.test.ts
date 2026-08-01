@@ -4,7 +4,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { checkCardPackage, checkCards } from "../src/check.js";
 import { resolveInProject } from "../src/fs.js";
-import { initCard } from "../src/init.js";
+import { initCard, listInitPresets } from "../src/init.js";
 
 const temporaryRoots: string[] = [];
 
@@ -84,6 +84,52 @@ describe("initCard", () => {
     });
   });
 
+  it("creates validated scenario presets for repo-free agents", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "octo-card-presets-"));
+    temporaryRoots.push(root);
+
+    const botToken = await initCard({
+      cardId: "bot.token-view",
+      name: "Bot Token 查看",
+      outputRoot: path.join(root, "bot.token-view"),
+      preset: "bot-token",
+    });
+    const docsForward = await initCard({
+      cardId: "docs.forward",
+      name: "文档转发",
+      outputRoot: path.join(root, "docs.forward"),
+      preset: "docs-forward",
+    });
+
+    const botManifest = JSON.parse(
+      await readFile(path.join(botToken.root, "manifest.json"), "utf8")
+    );
+    const docsManifest = JSON.parse(
+      await readFile(path.join(docsForward.root, "manifest.json"), "utf8")
+    );
+
+    expect(botToken.preset).toBe("bot-token");
+    expect(docsForward.preset).toBe("docs-forward");
+    expect(botManifest.views.default.wireProfile).toBe("octo/v2");
+    expect(docsManifest.views.default.wireProfile).toBe("octo/v2");
+    await expect(checkCardPackage(botToken.root)).resolves.toMatchObject({
+      valid: true,
+    });
+    await expect(checkCardPackage(docsForward.root)).resolves.toMatchObject({
+      valid: true,
+    });
+  });
+
+  it("lists supported init presets for agent discovery", () => {
+    expect(listInitPresets()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "blank" }),
+        expect.objectContaining({ id: "bot-token" }),
+        expect.objectContaining({ id: "docs-forward" }),
+      ])
+    );
+  });
+
   it("rejects an unknown render profile before creating files", async () => {
     const root = await temporaryRoot();
     await expect(
@@ -94,6 +140,18 @@ describe("initCard", () => {
         root,
       })
     ).rejects.toThrow("Unknown render profile: unknown-profile@1.0.0");
+  });
+
+  it("rejects unknown presets before creating files", async () => {
+    const root = await temporaryRoot();
+    await expect(
+      initCard({
+        cardId: "docs.notice",
+        name: "通知",
+        preset: "unknown",
+        root,
+      })
+    ).rejects.toThrow("unknown preset unknown");
   });
 
   it.each(["../escape", "Docs.Notice", "docs_notice", "docs/"])(

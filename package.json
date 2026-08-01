@@ -27,6 +27,7 @@
     }
   },
   "scripts": {
+    "prebuild": "node scripts/clean-build-output.mjs",
     "build": "tsc -p tsconfig.build.json",
     "cli": "tsx src/cli.ts",
     "cli:dist": "node dist/cli.js",

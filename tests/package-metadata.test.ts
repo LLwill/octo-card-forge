@@ -15,6 +15,9 @@ describe("CLI package metadata", () => {
     expect(manifest.name).toBe("@mlt-org/octo-card-cli");
     expect(manifest.bin).toEqual({ "octo-card": "./dist/cli.js" });
     expect(manifest.files).toContain("dist");
+    expect(manifest.files).not.toContain("cards");
+    expect(manifest.files).not.toContain("render-profiles");
+    expect(manifest.scripts?.prebuild).toBe("node scripts/clean-build-output.mjs");
     expect(manifest.scripts?.build).toBe("tsc -p tsconfig.build.json");
     expect(manifest.scripts?.["prepare:agent-validation"]).toBe(
       "node scripts/create-agent-validation-workspace.mjs"

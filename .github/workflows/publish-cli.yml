@@ -113,6 +113,18 @@ jobs:
           tar -tzf ".release/$TARBALL" | sort
           tar -tzf ".release/$TARBALL" | grep -q '^package/dist/cli.js$'
           tar -tzf ".release/$TARBALL" | grep -q '^package/skills/octo-design-cards/SKILL.md$'
+          if tar -tzf ".release/$TARBALL" | grep -q '\.handoff\.zip$'; then
+            echo "CLI package must not include handoff ZIP artifacts." >&2
+            exit 1
+          fi
+          if tar -tzf ".release/$TARBALL" | grep -q '^package/cards/'; then
+            echo "CLI package must not include card fixtures." >&2
+            exit 1
+          fi
+          if tar -tzf ".release/$TARBALL" | grep -q '^package/render-profiles/'; then
+            echo "CLI package must not include Render Profile source." >&2
+            exit 1
+          fi
           sha256sum ".release/$TARBALL"
           npm pack --dry-run
 

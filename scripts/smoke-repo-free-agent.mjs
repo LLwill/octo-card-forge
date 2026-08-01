@@ -61,6 +61,16 @@ const discover = runJson("pnpm", [
   "--format",
   "json",
 ], { cwd: workspace });
+const presets = runJson("pnpm", [
+  "exec",
+  "octo-card",
+  "presets",
+  "--format",
+  "json",
+], { cwd: workspace });
+if (!presets.presets.some((preset) => preset.id === "bot-token")) {
+  throw new Error("Installed octo-card CLI did not expose the bot-token preset");
+}
 run("pnpm", [
   "exec",
   "octo-card",
@@ -70,6 +80,8 @@ run("pnpm", [
   "Bot Token View",
   "--out",
   cardRoot,
+  "--preset",
+  "bot-token",
   "--format",
   "json",
 ], { cwd: workspace });
@@ -81,7 +93,7 @@ const handoff = JSON.parse(octo(
   "--card",
   cardRoot,
   "--output",
-  path.join(workspace, "dist"),
+  path.join(workspace, "handoff"),
   "--format",
   "json"
 ));
@@ -94,6 +106,7 @@ if (!handoff.bytes || handoff.bytes <= 0) throw new Error("handoff package was e
 console.log(JSON.stringify({
   workspace,
   profile: discover.profile,
+  presets: presets.presets.map((preset) => preset.id),
   card: "bot.token-view",
   valid: true,
   handoffBytes: handoff.bytes,

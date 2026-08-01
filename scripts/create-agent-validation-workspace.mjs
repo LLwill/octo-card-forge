@@ -86,6 +86,12 @@ function taskFor(name) {
 `;
 }
 
+function presetHintFor(name) {
+  if (name === "docs-forward") return "docs-forward";
+  if (name === "bot-token") return "bot-token";
+  return undefined;
+}
+
 run("pnpm", ["build"], { stdio: "inherit" });
 const profilePack = runJson("pnpm", [
   "--silent",
@@ -138,6 +144,7 @@ This is a consumer workspace, not the Octo Card Forge repository.
 For Octo card work:
 - Use the installed \`octo-card\` CLI through \`pnpm exec octo-card\`.
 - Read the card authoring skill from \`node_modules/@mlt-org/octo-card-cli/skills/octo-design-cards/SKILL.md\`.
+- Run \`pnpm exec octo-card presets --format json\`; if a preset matches the task, use it as an editable starting point with \`octo-card init --preset\`.
 - Produce an independent card package in this workspace.
 - Do not depend on a local Forge checkout.
 
@@ -158,8 +165,10 @@ Useful local checks after the task:
 pnpm exec octo-card check --card ./<card-dir> --format json
 pnpm exec octo-card lint --card ./<card-dir> --format json
 pnpm exec octo-card emit --card ./<card-dir> --sample <sample-name> > card.json
-pnpm exec octo-card handoff --card ./<card-dir> --output dist --format json
+pnpm exec octo-card handoff --card ./<card-dir> --output handoff --format json
 \`\`\`
+
+Suggested starting preset for this scenario: \`${presetHintFor(scenario) ?? "none"}\`.
 `
 );
 

@@ -10,7 +10,10 @@ describe("octo-design-cards skill", () => {
     );
 
     expect(skill).toContain("Default to repo-free card authoring");
-    expect(skill).toContain("octo-card init <card-id> --name \"<display-name>\" --out ./<card-id>");
+    expect(skill).toContain("octo-card presets --format json");
+    expect(skill).toContain(
+      'octo-card init <card-id> --name "<display-name>" --out ./<card-id> [--preset <preset-id>]'
+    );
     expect(skill).toContain("octo-card check --card ./<card-id> --format json");
     expect(skill).toContain("octo-card emit --card ./<card-id> --sample <sample-name>");
     expect(skill).toContain("octo-card dev --card ./<card-id>");

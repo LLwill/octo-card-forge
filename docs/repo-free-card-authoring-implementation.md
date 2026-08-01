@@ -102,16 +102,18 @@ Web 不依赖 forge repo。
 ```bash
 octo-card discover warning --profile octo-chat@latest
 octo-card explain utility surface-warning --profile octo-chat@latest
+octo-card presets --format json
 
 octo-card init bot.token-view \
   --name "Bot Token 查看" \
   --out ./bot.token-view \
+  --preset bot-token \
   --render-profile octo-chat@latest
 
 octo-card check --card ./bot.token-view
 octo-card lint --card ./bot.token-view
 octo-card render --card ./bot.token-view --sample pending > card.json
-octo-card handoff --card ./bot.token-view --output dist
+octo-card handoff --card ./bot.token-view --output handoff
 ```
 
 Agent 的工作目录只包含这张卡：
@@ -363,7 +365,8 @@ Platform commands   给 forge 平台开发者
 这些命令必须 repo-free。
 
 ```text
-octo-card init <card-id> --name <name> --out <dir>
+octo-card presets [--format json]
+octo-card init <card-id> --name <name> --out <dir> [--preset <preset-id>]
 octo-card discover [query] [--profile octo-chat@latest]
 octo-card explain utility <token> [--profile octo-chat@latest]
 octo-card check --card <dir>
@@ -551,7 +554,8 @@ Skill 应要求 Agent：
 
 ```bash
 octo-card discover --format json
-octo-card init <card-id> --name "<name>" --out ./<card-id>
+octo-card presets --format json
+octo-card init <card-id> --name "<name>" --out ./<card-id> [--preset <preset-id>]
 octo-card check --card ./<card-id> --format json
 octo-card lint --card ./<card-id> --format json
 octo-card inspect --card ./<card-id> --format json
@@ -689,11 +693,11 @@ octo-card emit --card ./bot.token-view --sample pending
 从空目录完成：
 
 ```bash
-octo-card init bot.token-view --name "Bot Token 查看" --out ./bot.token-view
+octo-card init bot.token-view --name "Bot Token 查看" --out ./bot.token-view --preset bot-token
 octo-card dev --card ./bot.token-view
 octo-card check --card ./bot.token-view
 octo-card emit --card ./bot.token-view --sample default > card.json
-octo-card handoff --card ./bot.token-view --output dist
+octo-card handoff --card ./bot.token-view --output handoff
 ```
 
 ### Phase 5：Skill 发布与 Agent 验证
@@ -850,7 +854,8 @@ Repo-free 后更要保持：
 pnpm init -y
 pnpm add -D @mlt-org/octo-card-cli @mlt-org/octo-card-profile-octo-chat
 pnpm exec octo-card discover skeleton --format json
-pnpm exec octo-card init bot.token-view --name "Bot Token 查看" --out ./bot.token-view
+pnpm exec octo-card presets --format json
+pnpm exec octo-card init bot.token-view --name "Bot Token 查看" --out ./bot.token-view --preset bot-token
 pnpm exec octo-card check --card ./bot.token-view --format json
 pnpm exec octo-card lint --card ./bot.token-view --format json
 pnpm exec octo-card emit --card ./bot.token-view --sample default > card.json

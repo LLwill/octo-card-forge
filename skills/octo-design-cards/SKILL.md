@@ -39,13 +39,15 @@ Do not commit, push, publish, or open a pull request unless the task authorizes 
 2. Run:
 
    ```bash
-   octo-card init <card-id> --name "<display-name>" --out ./<card-id>
+   octo-card presets --format json
+   octo-card init <card-id> --name "<display-name>" --out ./<card-id> [--preset <preset-id>]
    ```
 
    In the Forge repository, use `pnpm cli init <card-id> --name "<display-name>"` only when the card should intentionally become a repository fixture.
 
+   Use a matching preset such as `bot-token` or `docs-forward` as an editable starting point when it fits the task. Do not force a preset when the scenario semantics differ.
    Use `--view`, `--wire-profile`, or `--render-profile` only when the defaults are unsuitable. Interactive views require `octo/v2`; display-only views should use `octo/v1`.
-3. Immediately replace the generated `title` and `message` placeholders. A card is not implemented while scaffold fields or sample text remain.
+3. Immediately replace scaffold placeholders or preset demo values that do not match the requirement. A card is not implemented while generic sample text remains.
 4. Design `contract/data.schema.json` first:
    - Define a display-ready Card ViewModel, not the backend's domain model.
    - Let the business backend decide where each value comes from and map it manually.
@@ -178,7 +180,7 @@ For repo-free authoring, run:
 octo-card check --card ./<card-id> --format json
 octo-card lint --card ./<card-id> --format json
 octo-card inspect --card ./<card-id> --format json
-octo-card handoff --card ./<card-id> --output dist --format json
+octo-card handoff --card ./<card-id> --output handoff --format json
 octo-card emit --card ./<card-id> --sample <sample-name>
 octo-card dev --card ./<card-id>
 ```
@@ -191,7 +193,7 @@ pnpm test
 pnpm cli check <card-id> --format json
 pnpm cli lint <card-id> --format json
 pnpm cli inspect <card-id> --format json
-pnpm cli handoff <card-id> --output dist --format json
+pnpm cli handoff <card-id> --output handoff --format json
 pnpm cli render <card-id> --sample <sample-name>
 ```
 
