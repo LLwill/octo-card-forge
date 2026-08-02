@@ -85,23 +85,24 @@ run("pnpm", [
   "--format",
   "json",
 ], { cwd: workspace });
-const check = JSON.parse(octo("check", "--card", cardRoot, "--format", "json"));
-const lint = JSON.parse(octo("lint", "--card", cardRoot, "--format", "json"));
-const card = JSON.parse(octo("emit", "--card", cardRoot, "--sample", "default"));
-const handoff = JSON.parse(octo(
-  "handoff",
+const verify = JSON.parse(octo(
+  "verify",
   "--card",
   cardRoot,
-  "--output",
+  "--emit-dir",
+  path.join(workspace, "compiled"),
+  "--handoff",
   path.join(workspace, "handoff"),
   "--format",
   "json"
 ));
+const card = JSON.parse(octo("emit", "--card", cardRoot, "--sample", "default"));
 
-if (!check.valid) throw new Error("octo-card check failed");
-if (!lint.valid) throw new Error("octo-card lint failed");
+if (!verify.valid) throw new Error("octo-card verify failed");
 if (card.type !== "AdaptiveCard") throw new Error("render did not output AdaptiveCard JSON");
-if (!handoff.bytes || handoff.bytes <= 0) throw new Error("handoff package was empty");
+if (!verify.handoff?.bytes || verify.handoff.bytes <= 0) {
+  throw new Error("handoff package was empty");
+}
 
 console.log(JSON.stringify({
   workspace,
@@ -109,5 +110,5 @@ console.log(JSON.stringify({
   presets: presets.presets.map((preset) => preset.id),
   card: "bot.token-view",
   valid: true,
-  handoffBytes: handoff.bytes,
+  handoffBytes: verify.handoff.bytes,
 }, null, 2));

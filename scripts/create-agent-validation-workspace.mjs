@@ -162,10 +162,8 @@ Open a new Codex task in this directory and ask it to complete \`TASK.md\`.
 Useful local checks after the task:
 
 \`\`\`bash
-pnpm exec octo-card check --card ./<card-dir> --format json
-pnpm exec octo-card lint --card ./<card-dir> --format json
+pnpm exec octo-card verify --card ./<card-dir> --emit-dir compiled --handoff handoff --format json
 pnpm exec octo-card emit --card ./<card-dir> --sample <sample-name> > card.json
-pnpm exec octo-card handoff --card ./<card-dir> --output handoff --format json
 \`\`\`
 
 Suggested starting preset for this scenario: \`${presetHintFor(scenario) ?? "none"}\`.

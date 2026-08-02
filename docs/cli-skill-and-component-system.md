@@ -26,7 +26,7 @@ Card Forge 采用两层协作模型：
 
 | 层 | 负责 | 不负责 |
 | --- | --- | --- |
-| CLI | 确定性能力：`init` / `check` / `inspect` / `render` / `handoff` / `profile` | 业务语义猜测、版本策略解释之外的产品取舍 |
+| CLI | 确定性能力：`init` / `verify` / `check` / `inspect` / `render` / `handoff` / `profile` | 业务语义猜测、版本策略解释之外的产品取舍 |
 | Skill | 工作流、禁令、semver 判断、交付清单、何时停下来提问 | 重复实现 CLI 已能断言的规则 |
 
 这个拆分对应 Agent 协作的两种需求：
@@ -37,6 +37,8 @@ Card Forge 采用两层协作模型：
 ### 2.2 防腐化原则
 
 **凡是能写成断言的，写进 `cli check`；凡是需要业务上下文才能决定的，留在 Skill。**
+
+`verify` 是 Agent 的收尾入口：组合 check、lint、逐 sample 编译，并可选输出编译卡片和 handoff；`check`、`lint` 仍保留给平台开发和局部排错。
 
 允许 Skill 复述 blocker，例如 unresolved `${...}`、duplicate IDs、insecure URLs；但新增机检规则时，必须先或同时进入 `check`，不能只写进 Skill。
 

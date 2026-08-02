@@ -33,10 +33,26 @@ For Forge platform work or existing Forge card maintenance:
 
 Do not commit, push, publish, or open a pull request unless the task authorizes it.
 
+## Read screenshots and fuzzy requests
+
+Treat a screenshot and natural-language request as evidence, not as a complete
+backend contract.
+
+- Extract visible facts from the screenshot: hierarchy, content density, states,
+  controls, and obvious interaction affordances.
+- Ask only about missing decisions that change the data contract, action behavior,
+  permissions/security, or acceptance criteria. Ask a small grouped set of
+  questions, then wait for the answer.
+- Do not ask for exact spacing, colors, or element choices when the screenshot and
+  the active Render Profile provide a reasonable default.
+- If a missing detail is non-blocking, choose the closest standard/preset behavior
+  and record the assumption in the handoff report.
+- If the request and screenshot conflict, ask which source has priority.
+
 ## Create a card
 
 1. Derive a lowercase namespaced ID, display name, initial view, Wire Profile, and existing Render Profile from the requirement.
-2. Run:
+2. If the contract, interaction, security, or acceptance target is still blocked by missing information, ask before creating files. Otherwise run:
 
    ```bash
    octo-card presets --format json
@@ -177,10 +193,8 @@ Keep the scaffold's initial versions for a card's first release. After a version
 For repo-free authoring, run:
 
 ```bash
-octo-card check --card ./<card-id> --format json
-octo-card lint --card ./<card-id> --format json
+octo-card verify --card ./<card-id> --emit-dir compiled --handoff handoff --format json
 octo-card inspect --card ./<card-id> --format json
-octo-card handoff --card ./<card-id> --output handoff --format json
 octo-card emit --card ./<card-id> --sample <sample-name>
 octo-card dev --card ./<card-id>
 ```
@@ -197,7 +211,10 @@ pnpm cli handoff <card-id> --output handoff --format json
 pnpm cli render <card-id> --sample <sample-name>
 ```
 
-Render every sample, not only the happy path. Open the local preview URL printed by `octo-card dev --card` or `pnpm dev`, and inspect every sample at desktop and mobile widths. Exercise local toggles and inputs and inspect the final JSON.
+`verify` checks every sample, compiles each one, and can write compiled JSON and
+the handoff archive. Open the local preview URL printed by `octo-card dev --card`
+or `pnpm dev`, and inspect every sample at desktop and mobile widths. Exercise
+local toggles and inputs and inspect the final JSON.
 
 Treat CLI errors, unresolved `${...}` expressions, unsupported host capabilities, contract failures, broken toggle targets, duplicate IDs, or insecure URLs as blockers. Never accept a visual preview as proof of correctness when validation fails.
 

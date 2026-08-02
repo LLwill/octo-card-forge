@@ -91,6 +91,7 @@ octo-card explain utility line-skeleton [--profile octo-chat@latest] [--format j
 octo-card lint [docs.access-request] [--card ./docs.access-request] [--format json]
 octo-card presets [--format json]
 octo-card init docs.share-notification --name "文档分享通知" [--out ./docs.share-notification] [--preset docs-forward]
+octo-card verify --card ./docs.share-notification [--emit-dir compiled] [--handoff handoff] [--format json]
 octo-card contract docs.access-request
 octo-card inspect docs.access-request [--card ./docs.access-request] [--sample pending]
 octo-card handoff docs.access-request [--output handoff]
@@ -178,10 +179,8 @@ pnpm exec octo-card discover skeleton --format json
 pnpm exec octo-card presets --format json
 pnpm exec octo-card init bot.token-view --name "Bot Token 查看" --out ./bot.token-view --preset bot-token
 pnpm exec octo-card dev --card ./bot.token-view
-pnpm exec octo-card check --card ./bot.token-view --format json
-pnpm exec octo-card lint --card ./bot.token-view --format json
+pnpm exec octo-card verify --card ./bot.token-view --emit-dir compiled --handoff handoff --format json
 pnpm exec octo-card emit --card ./bot.token-view --sample default > card.json
-pnpm exec octo-card handoff --card ./bot.token-view --output handoff
 ```
 
 这里 `--out` 创建的是一个独立 Card Package 目录；后续 `--card` 都指向这个目录。

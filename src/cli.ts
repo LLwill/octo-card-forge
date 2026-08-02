@@ -33,6 +33,7 @@ import {
 import { getCard, listCards, loadCardPackage } from "./registry.js";
 import { startServer } from "./server.js";
 import type { JsonObject } from "./types.js";
+import { verifyCardPackage, verifySummary } from "./verify.js";
 
 const args = process.argv.slice(2);
 const command = args.shift() ?? "help";
@@ -40,8 +41,10 @@ const DEFAULT_HANDOFF_OUTPUT = "handoff";
 const VALUE_FLAGS = new Set([
   "--card",
   "--data",
+  "--emit-dir",
   "--format",
   "--host",
+  "--handoff",
   "--name",
   "--output",
   "--out",
@@ -71,6 +74,7 @@ function usage(): void {
   lint [card-id] [--card <dir>] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
   contract <card-id> [--format json]
   inspect <card-id> [--card <dir>] [--profile-dir <dir> | --profile-package <pkg>] [--sample <name>] [--format json]
+  verify --card <dir> [--sample <name>] [--emit-dir <dir>] [--handoff <dir>] [--format json]
   handoff <card-id> [--output handoff] [--format json]
   handoff --card <dir> [--profile-dir <dir> | --profile-package <pkg>] [--output handoff] [--format json]
   handoff <card-id> --output -  # print the aggregate JSON to stdout
@@ -338,6 +342,39 @@ try {
       }
       console.log(JSON.stringify({ cardId: card.manifest.id, samples }, null, 2));
     }
+  } else if (command === "verify") {
+    const cardRoot = flag("--card");
+    if (!cardRoot) throw new Error("verify requires --card <dir>");
+    const profileSource = await explicitProfileForCardCommand(cardRoot);
+    const report = await verifyCardPackage({
+      cardRoot,
+      profile: profileSource,
+      sample: flag("--sample"),
+      emitDir: flag("--emit-dir"),
+      handoffDir: flag("--handoff"),
+    });
+    if (flag("--format") === "json") {
+      console.log(JSON.stringify(verifySummary(report), null, 2));
+    } else {
+      console.log(
+        `${report.valid ? "✓" : "✗"} ${report.card.id}@${report.card.version} · ` +
+          `${report.samples.length} samples · ` +
+          `${report.lint.summary.errors} errors · ${report.lint.summary.warnings} warnings`
+      );
+      for (const sample of report.samples) {
+        console.log(
+          `  ${sample.valid ? "✓" : "✗"} ${sample.view}/${sample.name} (${sample.bytes} bytes)`
+        );
+        for (const issue of sample.issues) {
+          console.log(`    ${issue.severity}: ${issue.code} ${issue.path} ${issue.message}`);
+        }
+      }
+      if (report.handoff) console.log(`Handoff: ${report.handoff.filePath}`);
+      if (report.samples.some((sample) => sample.output)) {
+        console.log(`Compiled cards: ${flag("--emit-dir")}`);
+      }
+    }
+    if (!report.valid) process.exitCode = 1;
   } else if (command === "handoff") {
     const cardRoot = flag("--card");
     const output = flag("--output") ?? DEFAULT_HANDOFF_OUTPUT;

@@ -110,10 +110,8 @@ octo-card init bot.token-view \
   --preset bot-token \
   --render-profile octo-chat@latest
 
-octo-card check --card ./bot.token-view
-octo-card lint --card ./bot.token-view
+octo-card verify --card ./bot.token-view --emit-dir compiled --handoff handoff
 octo-card render --card ./bot.token-view --sample pending > card.json
-octo-card handoff --card ./bot.token-view --output handoff
 ```
 
 Agent 的工作目录只包含这张卡：
@@ -371,6 +369,7 @@ octo-card discover [query] [--profile octo-chat@latest]
 octo-card explain utility <token> [--profile octo-chat@latest]
 octo-card check --card <dir>
 octo-card lint --card <dir>
+octo-card verify --card <dir> [--emit-dir <dir>] [--handoff <dir>]
 octo-card inspect --card <dir> [--sample <name>]
 octo-card render --card <dir> --sample <name>
 octo-card render --template <file> --data <file> --profile <profile> --wire-profile <wire>
@@ -556,8 +555,7 @@ Skill 应要求 Agent：
 octo-card discover --format json
 octo-card presets --format json
 octo-card init <card-id> --name "<name>" --out ./<card-id> [--preset <preset-id>]
-octo-card check --card ./<card-id> --format json
-octo-card lint --card ./<card-id> --format json
+octo-card verify --card ./<card-id> --emit-dir compiled --handoff handoff --format json
 octo-card inspect --card ./<card-id> --format json
 octo-card render --card ./<card-id> --sample <sample> > card.json
 ```
