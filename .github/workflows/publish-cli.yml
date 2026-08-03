@@ -110,18 +110,18 @@ jobs:
         run: |
           set -euo pipefail
           test -f ".release/$TARBALL"
-          tar -tzf ".release/$TARBALL" | sort
-          tar -tzf ".release/$TARBALL" | grep -q '^package/dist/cli.js$'
-          tar -tzf ".release/$TARBALL" | grep -q '^package/skills/octo-design-cards/SKILL.md$'
-          if tar -tzf ".release/$TARBALL" | grep -q '\.handoff\.zip$'; then
+          tar -tzf ".release/$TARBALL" | sort | tee package-contents.txt
+          grep -Fqx 'package/dist/cli.js' package-contents.txt
+          grep -Fqx 'package/skills/octo-design-cards/SKILL.md' package-contents.txt
+          if grep -q '\.handoff\.zip$' package-contents.txt; then
             echo "CLI package must not include handoff ZIP artifacts." >&2
             exit 1
           fi
-          if tar -tzf ".release/$TARBALL" | grep -q '^package/cards/'; then
+          if grep -q '^package/cards/' package-contents.txt; then
             echo "CLI package must not include card fixtures." >&2
             exit 1
           fi
-          if tar -tzf ".release/$TARBALL" | grep -q '^package/render-profiles/'; then
+          if grep -q '^package/render-profiles/' package-contents.txt; then
             echo "CLI package must not include Render Profile source." >&2
             exit 1
           fi
