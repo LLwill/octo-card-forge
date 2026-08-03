@@ -31,6 +31,7 @@ describe("versioned Card Package registry", () => {
     expect(cards.map((card) => card.reference)).toEqual([
       "ai.decision-action@0.2.0",
       "ai.reasoning-process",
+      "ai.reasoning-process@0.2.0",
       "docs.access-request@0.3.0",
     ]);
   });

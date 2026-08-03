@@ -105,6 +105,31 @@ describe("docs.access-request 0.3 compiler", () => {
 });
 
 describe("new Card Package versions", () => {
+  it.each([
+    ["reasoning", "active", "octo/v2"],
+    ["answering", "active", "octo/v2"],
+    ["completed", "result", "octo/v1"],
+    ["stopped", "result", "octo/v1"],
+    ["error", "error", "octo/v2"],
+  ])("compiles reasoning process 0.2 %s without server actions", async (sample, view, wireProfile) => {
+    const result = await compileSample({
+      cardId: "ai.reasoning-process@0.2.0",
+      sample,
+    });
+
+    expect(result.issues).toEqual([]);
+    expect(result.cardVersion).toBe("0.2.0");
+    expect(result.contractVersion).toBe("1.0.0");
+    expect(result.renderProfile).toBe("octo-chat@1.2.0-rc.2");
+    expect(result.view).toBe(view);
+    expect(result.wireProfile).toBe(wireProfile);
+    expect(findById(result.payload, "reasoning_stop")).toBeUndefined();
+    expect(findById(result.payload, "reasoning_retry")).toBeUndefined();
+    expect(findById(result.payload, "reasoning_toggle")).toMatchObject({
+      type: "Action.ToggleVisibility",
+    });
+  });
+
   it("compiles the AI decision 0.2 choice", async () => {
     const next = await compileSample({
       cardId: "ai.decision-action@0.2.0",
