@@ -30,6 +30,8 @@
   "scripts": {
     "prebuild": "node scripts/clean-build-output.mjs",
     "build": "tsc -p tsconfig.build.json",
+    "package:deploy": "pnpm build && node scripts/package-deploy.mjs",
+    "start": "node scripts/start-service.mjs",
     "cli": "tsx src/cli.ts",
     "cli:dist": "node dist/cli.js",
     "dev": "tsx src/cli.ts dev docs.access-request",

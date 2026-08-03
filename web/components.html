@@ -3,51 +3,98 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>组件基线 · Octo Card Forge</title>
+    <meta name="theme-color" content="#f7f8fa" />
+    <title>Components · Octo Card Forge</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
-  <body class="baseline-page">
-    <header class="topbar">
-      <div>
-        <strong>Octo Card Forge</strong>
-        <span>组件基线</span>
-      </div>
-      <div class="topbar-actions">
-        <a href="/">返回 Card Preview</a>
-        <span id="baselineVersion"></span>
+  <body class="component-page">
+    <header class="component-header">
+      <div class="component-header-inner">
+        <div class="brand-nav">
+          <a class="brand" href="/" aria-label="Octo Card Forge home">
+            <span class="brand-mark" aria-hidden="true"><i></i><i></i></span><span class="brand-name"><span>octo</span><span class="brand-accent">card</span></span><span class="brand-product">FORGE</span>
+          </a>
+          <nav aria-label="Primary navigation">
+            <a data-nav="cards" href="/">Cards</a>
+            <a class="active" data-nav="components" href="/components">Components</a>
+          </nav>
+        </div>
+        <div class="header-actions">
+          <div class="locale-switcher" role="group" aria-label="Language">
+            <button type="button" data-locale="zh">中</button>
+            <span class="locale-divider" aria-hidden="true">/</span>
+            <button type="button" data-locale="en">EN</button>
+          </div>
+          <button id="searchTrigger" class="search-trigger" type="button" aria-label="Search components">
+            <span class="search-icon" aria-hidden="true"></span>
+            <span class="search-trigger-label">Search components</span>
+            <kbd>⌘ K</kbd>
+          </button>
+          <button id="themeToggle" class="icon-button" type="button" aria-label="切换页面主题" title="切换页面主题">
+            <span class="theme-icon" data-theme-icon aria-hidden="true"></span>
+          </button>
+        </div>
       </div>
     </header>
-    <main class="baseline-workspace">
-      <aside class="baseline-sidebar">
-        <div>
-          <span class="eyebrow">CURRENT BASELINE</span>
-          <h1>Card UI 基线</h1>
-          <p>分开展示标准 Adaptive Cards 默认美化效果，以及 Octo utility token 样式目录。</p>
+
+    <main class="component-main">
+      <section class="component-hero" aria-labelledby="pageTitle">
+        <p class="eyebrow">COMPONENT DICTIONARY</p>
+        <h1 id="pageTitle">标准卡片组件</h1>
+        <p class="hero-copy">把 Adaptive Card 的元素、语义和 utility 收进一套可检索的视觉词典。每个条目都由当前 Render Profile 实时渲染。</p>
+        <div class="hero-meta" aria-label="基线信息">
+          <span><i class="live-dot" aria-hidden="true"></i><strong>LIVE PROFILE</strong><span id="baselineVersion">—</span></span>
+          <span><strong id="groupCount">—</strong> sections</span>
+          <span><strong id="sectionCount">—</strong> specimens</span>
+          <span><strong id="utilityCount">—</strong> utilities</span>
         </div>
-        <nav id="baselineNav" aria-label="组件类别"></nav>
-        <dl class="baseline-meta">
-          <div><dt>Render Profile</dt><dd id="profileReference">—</dd></div>
-          <div><dt>Adaptive Cards SDK</dt><dd id="sdkVersion">—</dd></div>
-          <div><dt>最大 Card 版本</dt><dd id="cardVersion">—</dd></div>
-        </dl>
-      </aside>
-      <section class="baseline-content">
-        <div class="baseline-toolbar">
-          <div>
-            <strong>预览宽度</strong>
-            <span>所有组件使用同一 HostConfig 与 Profile CSS</span>
+      </section>
+
+      <section class="component-toolbar" aria-label="组件筛选">
+        <div class="component-search">
+          <label for="componentSearch" class="sr-only">搜索组件</label>
+          <span class="search-icon" aria-hidden="true"></span>
+          <input id="componentSearch" type="search" placeholder="Search by component name, token, or description…" autocomplete="off" />
+          <kbd>⌘ K</kbd>
+        </div>
+        <div class="filter-row">
+          <div id="componentFilters" class="filter-tabs" role="tablist" aria-label="组件类别">
+            <button class="active" type="button" role="tab" aria-selected="true" data-filter="all">All</button>
+            <button type="button" role="tab" aria-selected="false" data-filter="foundation">Foundation</button>
+            <button type="button" role="tab" aria-selected="false" data-filter="components">Adaptive Cards</button>
+            <button type="button" role="tab" aria-selected="false" data-filter="utilities">Utilities</button>
+            <button type="button" role="tab" aria-selected="false" data-filter="patterns">Patterns</button>
           </div>
           <div class="baseline-widths" aria-label="预览宽度">
+            <span class="width-label">Card width</span>
             <button type="button" data-baseline-width="640" class="active">640</button>
             <button type="button" data-baseline-width="480">480</button>
             <button type="button" data-baseline-width="320">320</button>
           </div>
         </div>
-        <div id="baselineStatus" class="baseline-status">正在加载组件基线…</div>
-        <div id="baselineSections" class="baseline-sections"></div>
       </section>
+
+      <div id="baselineStatus" class="baseline-status" role="status">正在加载组件基线…</div>
+
+      <section class="system-strip" aria-labelledby="systemHeading">
+        <div class="section-intro">
+          <p class="eyebrow">PROFILE SYSTEM</p>
+          <h2 id="systemHeading">当前 Render Profile</h2>
+          <p>所有标准卡片和 utility specimen 共用同一份 HostConfig 与 Profile CSS。</p>
+        </div>
+        <div class="profile-overview">
+          <div><span>Adaptive Cards SDK</span><strong id="sdkVersion">—</strong></div>
+          <div><span>Max card version</span><strong id="cardVersion">—</strong></div>
+          <div><span>Allowed elements</span><strong id="elementCount">—</strong></div>
+          <div><span>Allowed actions</span><strong id="actionCount">—</strong></div>
+        </div>
+      </section>
+
+      <section id="baselineSections" class="baseline-sections" aria-live="polite"></section>
     </main>
+
     <script src="https://cdn.jsdelivr.net/npm/adaptivecards@3.0.6/dist/adaptivecards.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js"></script>
     <script src="/components.js" type="module"></script>
   </body>
 </html>
