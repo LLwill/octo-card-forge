@@ -26,8 +26,8 @@ describe("backend handoff package", () => {
         schemaVersion: 2,
       },
       renderProfile: {
-        requested: "octo-chat@1.2.0-rc.1",
-        resolved: "octo-chat@1.2.0-rc.1",
+        requested: "octo-chat@1.2.0-rc.2",
+        resolved: "octo-chat@1.2.0-rc.2",
         server: { required: true },
         web: { required: true },
       },
@@ -105,7 +105,7 @@ describe("backend handoff package", () => {
           version: "0.1.0",
         },
         renderProfile: {
-          resolved: "octo-chat@1.2.0-rc.1",
+          resolved: "octo-chat@1.2.0-rc.2",
         },
       });
 

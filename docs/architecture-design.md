@@ -344,14 +344,14 @@ Card Forge 修改 Profile
 ```
 
 Card Manifest 的 `renderProfile` 固定 Forge 设计与验证使用的精确制品版本，例如
-`octo-chat@1.2.0-rc.1`。消息信封只发送稳定兼容代际，例如 `octo-chat/v1`；无该字段
+`octo-chat@1.2.0-rc.2`。消息信封只发送稳定兼容代际，例如 `octo-chat/v1`；无该字段
 永久走 legacy，未知非空值进入升级提示。Web 将稳定代际映射到一个审核通过的精确包。
 
 ### 6.4 Profile CLI
 
 ```bash
-octo-card profile bundle octo-chat@1.2.0-rc.1 --output .release
-octo-card profile pack octo-chat@1.2.0-rc.1 --output .release
+octo-card profile bundle octo-chat@1.2.0-rc.2 --output .release
+octo-card profile pack octo-chat@1.2.0-rc.2 --output .release
 ```
 
 `validate`、`diff`、`publish` 是目标 CLI 能力；当前发布由 Bundle/Pack 与 CI workflow

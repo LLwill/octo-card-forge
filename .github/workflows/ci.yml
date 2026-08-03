@@ -16,7 +16,7 @@ concurrency:
 env:
   NODE_VERSION: "22"
   PNPM_VERSION: "10.32.0"
-  PROFILE_REF: octo-chat@1.2.0-rc.1
+  PROFILE_REF: octo-chat@1.2.0-rc.2
 
 jobs:
   verify:
@@ -64,12 +64,22 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -euo pipefail
-          while IFS= read -r file; do
-            if git cat-file -e "$BASE_SHA:$file" 2>/dev/null; then
-              echo "Existing Render Profile files are immutable: $file" >&2
-              exit 1
-            fi
-          done < <(git diff --name-only "$BASE_SHA"...HEAD -- render-profiles)
+          manifest=render-profiles/octo-chat/manifest.json
+          changed_files="$(git diff --name-only "$BASE_SHA"...HEAD -- render-profiles)"
+          if [ -z "$changed_files" ]; then
+            exit 0
+          fi
+          if ! printf '%s\n' "$changed_files" | grep -Fqx "$manifest"; then
+            echo "Render Profile changes must include a versioned manifest update" >&2
+            exit 1
+          fi
+          base_version="$(git show "$BASE_SHA:$manifest" | node -e 'let input=""; process.stdin.on("data", chunk => input += chunk); process.stdin.on("end", () => process.stdout.write(JSON.parse(input).version));')"
+          head_version="$(node -p "require('./$manifest').version")"
+          if [ "$base_version" = "$head_version" ]; then
+            echo "Existing Render Profile version is immutable: $base_version" >&2
+            exit 1
+          fi
+          echo "Render Profile version changed: $base_version -> $head_version"
 
   package:
     name: package
@@ -100,11 +110,11 @@ jobs:
       - name: Inspect package contents
         run: |
           set -euo pipefail
-          package_dir=.release/octo-chat-1.2.0-rc.1/package
-          tarball=.release/mlt-org-octo-card-profile-octo-chat-1.2.0-rc.1.tgz
+          package_dir=.release/octo-chat-1.2.0-rc.2/package
+          tarball=.release/mlt-org-octo-card-profile-octo-chat-1.2.0-rc.2.tgz
           test -f "$tarball"
           test "$(node -p "require('./$package_dir/package.json').name")" = "@mlt-org/octo-card-profile-octo-chat"
-          test "$(node -p "require('./$package_dir/package.json').version")" = "1.2.0-rc.1"
+          test "$(node -p "require('./$package_dir/package.json').version")" = "1.2.0-rc.2"
           tar -tzf "$tarball" | sort
           sha256sum "$tarball"
           (cd "$package_dir" && npm pack --dry-run)
@@ -112,9 +122,9 @@ jobs:
       - name: Upload candidate artifact
         uses: actions/upload-artifact@v4
         with:
-          name: octo-chat-1.2.0-rc.1
+          name: octo-chat-1.2.0-rc.2
           path: |
-            .release/mlt-org-octo-card-profile-octo-chat-1.2.0-rc.1.tgz
-            .release/octo-chat-1.2.0-rc.1/package/dist/bundle-manifest.json
+            .release/mlt-org-octo-card-profile-octo-chat-1.2.0-rc.2.tgz
+            .release/octo-chat-1.2.0-rc.2/package/dist/bundle-manifest.json
           if-no-files-found: error
           retention-days: 30

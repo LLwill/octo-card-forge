@@ -10,7 +10,7 @@ import type {
 } from "./types.js";
 
 /** 仓库当前唯一的组件基线。历史 Profile 由制品库负责复现。 */
-export const CURRENT_RENDER_PROFILE = "octo-chat@1.2.0-rc.1";
+export const CURRENT_RENDER_PROFILE = "octo-chat@1.2.0-rc.2";
 const ACTIVE_RENDER_PROFILE_ROOT = "render-profiles";
 
 const RENDER_PROFILE_REFERENCE =

@@ -38,7 +38,7 @@ async function chooseCard() {
   version.textContent = `${selected.id}@${selected.version} · ${selected.renderProfile}`;
   preview.classList.toggle(
     "octo-card-profile",
-    currentContext.renderProfile.version === "1.2.0-rc.1"
+    currentContext.renderProfile.version === "1.2.0-rc.2"
   );
   if (hostStyle) hostStyle.remove();
   hostStyle = document.createElement("link");
