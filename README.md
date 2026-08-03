@@ -226,6 +226,23 @@ profile 可渲染的 Card Package；历史 Card Package 由制品库负责重渲
 
 ## 发布
 
+### 部署构建产物
+
+CI 的 `deploy-artifact` job 会生成一个可交给部署服务的应用包，并上传为 GitHub Actions artifact：
+
+```bash
+pnpm package:deploy
+```
+
+产物位于 `.release/octo-card-forge-deploy-<version>.tgz`，包含 `dist`、`web`、`cards`、当前 Render Profile 和生产依赖锁文件。部署服务解压后执行：
+
+```bash
+pnpm install --prod --frozen-lockfile
+pnpm start
+```
+
+服务从 `PORT` 环境变量读取端口，默认监听 `0.0.0.0:4318`。同目录的 manifest 文件包含入口、Profile 和 SHA-256 校验值。
+
 普通分支 push 和 PR 不会发布 npm 包。PR 只运行验证；合并到 `main` 也只运行 CI 和
 候选 artifact 打包。真正发布需要手动 workflow，或在已经合入 `main` 的 commit 上打 tag。
 

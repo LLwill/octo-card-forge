@@ -3,57 +3,137 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Octo Card Forge</title>
+    <meta name="theme-color" content="#f7f8fa" />
+    <title>Cards · Octo Card Forge</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
-  <body>
-    <header class="topbar">
-      <div>
-        <strong>Octo Card Forge</strong>
-        <span>Card Package · Contract · Render Profile</span>
-      </div>
-      <div class="topbar-actions">
-        <a href="/components">组件基线</a>
-        <span id="version"></span>
+  <body class="home-page">
+    <header class="component-header">
+      <div class="component-header-inner">
+        <div class="brand-nav">
+          <a class="brand" href="/" aria-label="Octo Card Forge home">
+            <span class="brand-mark" aria-hidden="true"><i></i><i></i></span><span class="brand-name"><span>octo</span><span class="brand-accent">card</span></span><span class="brand-product">FORGE</span>
+          </a>
+          <nav aria-label="Primary navigation">
+            <a class="active" data-nav="cards" href="/">Cards</a>
+            <a data-nav="components" href="/components">Components</a>
+          </nav>
+        </div>
+        <div class="header-actions">
+          <div class="locale-switcher" role="group" aria-label="Language">
+            <button type="button" data-locale="zh">中</button>
+            <span class="locale-divider" aria-hidden="true">/</span>
+            <button type="button" data-locale="en">EN</button>
+          </div>
+          <button id="homeThemeToggle" class="icon-button" type="button" aria-label="切换页面主题" title="切换页面主题">
+            <span class="theme-icon" data-theme-icon aria-hidden="true"></span>
+          </button>
+        </div>
       </div>
     </header>
-    <main class="workspace">
-      <aside class="sidebar">
-        <label>卡片<select id="cardSelect"></select></label>
-        <label>示例状态<select id="sampleSelect"></select></label>
-        <label>业务数据<textarea id="dataEditor" spellcheck="false"></textarea></label>
-        <div class="primary-actions">
-          <button id="renderButton" type="button">重新组装</button>
-          <button id="exportButton" type="button">导出后端交付包</button>
-        </div>
-        <details>
-          <summary>数据契约</summary>
-          <pre id="contract"></pre>
-        </details>
-      </aside>
-      <section class="content">
-        <div class="toolbar">
-          <div>
-            <button class="width active" data-width="640">640</button>
-            <button class="width" data-width="480">480</button>
-            <button class="width" data-width="320">320</button>
+
+    <main class="home-main">
+      <section id="catalogView" aria-labelledby="catalogTitle">
+        <div class="home-hero">
+          <div class="home-hero-copy">
+            <p class="eyebrow">CARD CATALOG</p>
+            <h1 id="catalogTitle">成品卡片</h1>
+            <p>浏览当前 Render Profile 下可交付的卡片成品。点击任意卡片，查看样例状态、编辑业务数据并实时验证最终 JSON。</p>
           </div>
-          <span id="status"></span>
+          <div class="home-stats" aria-label="卡片目录统计">
+            <span class="home-stat"><strong id="catalogCount">—</strong><span data-stat-label="cards">cards</span></span>
+            <span class="home-stat"><strong id="viewCount">—</strong><span data-stat-label="views">views</span></span>
+            <span class="home-stat"><strong id="sampleCount">—</strong><span data-stat-label="samples">samples</span></span>
+          </div>
         </div>
-        <div class="preview-shell"><div id="preview"></div></div>
-        <div class="json-panels">
-          <details open>
-            <summary>Adaptive Card 模板</summary>
+
+        <div class="catalog-toolbar" aria-label="卡片筛选">
+          <div class="component-search">
+            <label for="cardSearch" class="sr-only">搜索卡片</label>
+            <span class="search-icon" aria-hidden="true"></span>
+            <input id="cardSearch" type="search" placeholder="Search cards by name or ID…" autocomplete="off" />
+            <kbd>⌘ K</kbd>
+          </div>
+          <div id="cardFilters" class="filter-tabs" role="tablist" aria-label="卡片类别">
+            <button class="active" type="button" role="tab" aria-selected="true" data-filter="all">All</button>
+            <button type="button" role="tab" aria-selected="false" data-filter="ai">AI</button>
+            <button type="button" role="tab" aria-selected="false" data-filter="docs">Documents</button>
+          </div>
+        </div>
+        <div id="catalogStatus" class="catalog-status" role="status">正在加载成品卡片…</div>
+        <section id="cardGrid" class="card-catalog-grid" aria-live="polite"></section>
+      </section>
+
+      <section id="detailView" class="detail-view" hidden aria-labelledby="detailTitle">
+        <div class="detail-navigation">
+          <button id="backToCatalog" class="back-link" type="button"><span aria-hidden="true">←</span> All cards</button>
+          <div class="detail-navigation-right">
+            <label class="detail-switcher">Card<select id="detailCardSelect" aria-label="切换卡片"></select></label>
+            <span id="detailStatus" class="detail-status" role="status"></span>
+          </div>
+        </div>
+        <header class="detail-heading">
+          <div>
+            <p class="eyebrow" id="detailEyebrow">CARD DETAIL</p>
+            <h1 id="detailTitle">—</h1>
+            <p id="detailDescription" class="detail-description">—</p>
+          </div>
+          <div class="detail-heading-actions">
+            <span id="detailReference" class="detail-reference">—</span>
+            <button id="exportButton" class="secondary-button" type="button">Export handoff</button>
+          </div>
+        </header>
+        <div class="detail-meta" id="detailMeta"></div>
+
+        <div class="detail-layout">
+          <section class="detail-preview-panel" aria-labelledby="previewHeading">
+            <div class="panel-heading">
+              <div><p class="eyebrow">LIVE OUTPUT</p><h2 id="previewHeading">Card preview</h2></div>
+              <div class="detail-widths" aria-label="预览宽度">
+                <button type="button" data-detail-width="640" class="active">640</button>
+                <button type="button" data-detail-width="480">480</button>
+                <button type="button" data-detail-width="320">320</button>
+              </div>
+            </div>
+            <div class="sample-switcher">
+              <span>Render state</span>
+              <div id="sampleTabs" class="sample-tabs" role="tablist" aria-label="切换卡片渲染状态"></div>
+            </div>
+            <div class="detail-preview-stage"><div id="detailPreview" class="octo-card-profile"></div></div>
+          </section>
+
+          <aside class="detail-editor-panel" aria-labelledby="editorHeading">
+            <div class="panel-heading">
+              <div><p class="eyebrow">VIEW MODEL</p><h2 id="editorHeading">Edit sample data</h2></div>
+            </div>
+            <select id="sampleSelect" class="sr-only" aria-label="样例状态"></select>
+            <textarea id="dataEditor" spellcheck="false" aria-label="业务数据"></textarea>
+            <div class="editor-actions">
+              <button id="renderButton" class="primary-button" type="button">Reassemble card</button>
+              <span id="editorMessage" class="editor-message"></span>
+            </div>
+            <details class="contract-details">
+              <summary>View data contract</summary>
+              <pre id="contract"></pre>
+            </details>
+          </aside>
+        </div>
+
+        <div class="detail-json-panels">
+          <details>
+            <summary>Adaptive Card template</summary>
             <pre id="template"></pre>
           </details>
-          <details open>
-            <summary>最终 Adaptive Card JSON</summary>
+          <details>
+            <summary>Final Adaptive Card JSON</summary>
             <pre id="payload"></pre>
           </details>
         </div>
       </section>
     </main>
+
     <script src="https://cdn.jsdelivr.net/npm/adaptivecards@3.0.6/dist/adaptivecards.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js"></script>
     <script src="/app.js" type="module"></script>
   </body>
 </html>
