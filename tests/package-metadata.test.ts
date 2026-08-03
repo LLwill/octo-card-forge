@@ -5,6 +5,7 @@ describe("CLI package metadata", () => {
   it("publishes a buildable octo-card command without requiring tsx at runtime", async () => {
     const manifest = JSON.parse(await readFile("package.json", "utf8")) as {
       name: string;
+      repository?: string;
       bin?: Record<string, string>;
       files?: string[];
       scripts?: Record<string, string>;
@@ -13,6 +14,7 @@ describe("CLI package metadata", () => {
     };
 
     expect(manifest.name).toBe("@mlt-org/octo-card-cli");
+    expect(manifest.repository).toBe("https://github.com/LLwill/octo-card-forge");
     expect(manifest.bin).toEqual({ "octo-card": "./dist/cli.js" });
     expect(manifest.files).toContain("dist");
     expect(manifest.files).not.toContain("cards");

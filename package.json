@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": false,
   "description": "Repo-free Adaptive Card authoring CLI for Octo card packages.",
+  "repository": "https://github.com/LLwill/octo-card-forge",
   "type": "module",
   "packageManager": "pnpm@10.32.0",
   "bin": {
