@@ -171,8 +171,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: octo-card-forge-deploy-${{ github.sha }}
-          path: |
-            .release/octo-card-forge-deploy-*.tgz
-            .release/octo-card-forge-deploy-*.manifest.json
+          path: .release
           if-no-files-found: error
           retention-days: 30

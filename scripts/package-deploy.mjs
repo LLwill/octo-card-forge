@@ -59,4 +59,5 @@ execFileSync("tar", ["-czf", artifactPath, "-C", stagingDir, "."], {
 
 const checksum = createHash("sha256").update(await readFile(artifactPath)).digest("hex");
 await writeFile(manifestPath, `${JSON.stringify({ ...deploymentManifest, artifact: artifactName, sha256: checksum }, null, 2)}\n`);
+await rm(stagingDir, { recursive: true, force: true });
 console.log(JSON.stringify({ artifact: artifactPath, manifest: manifestPath, sha256: checksum }, null, 2));
