@@ -1,7 +1,7 @@
 import { access } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
-import { readJson, readText } from "./fs.js";
+import { readJson, readText, resolveInProject } from "./fs.js";
 import {
   getRenderProfile,
   parseRenderProfileReference,
@@ -130,6 +130,13 @@ export async function loadRenderProfileForReference(
   const requested = reference
     ? parseRenderProfileReference(reference)
     : parseRenderProfileReference(resolveRenderProfileReference());
+  const localRoot = resolveInProject("render-profiles", requested.id);
+  if (await exists(path.join(localRoot, "manifest.json"))) {
+    const profile = await getRenderProfile(reference);
+    assertProfileMatchesRequest(profile, reference);
+    return profile;
+  }
+
   const packageName = DEFAULT_RENDER_PROFILE_PACKAGES[requested.id];
   if (packageName) {
     try {

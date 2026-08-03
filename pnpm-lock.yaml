@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@mlt-org/octo-card-profile-octo-chat':
+        specifier: ^1.2.0-rc.1
+        version: 1.2.0-rc.1
       adaptive-expressions:
         specifier: 4.23.3
         version: 4.23.3
@@ -357,6 +360,9 @@ packages:
   '@microsoft/recognizers-text-data-types-timex-expression@1.3.1':
     resolution: {integrity: sha512-jarJIFIJZBqeofy3hh0vdQo1yOmTM+jCjj6/zmo9JunsQ6LO750eZHCg9eLptQhsvq321XCt5xdRNLCwU8YeNA==}
     engines: {node: '>=10.3.0'}
+
+  '@mlt-org/octo-card-profile-octo-chat@1.2.0-rc.1':
+    resolution: {integrity: sha512-rzaO97RpRgGStMKEVBOsxt1F2/v7MTQOZwN64vkPIgi37090ng125XNNfB9D9TD+pOF46I4OBmPo/rjrNcQl6A==}
 
   '@rollup/rollup-android-arm-eabi@4.62.2':
     resolution: {integrity: sha512-6o7ZLZK+BeenkZCFNDXqpbjw9bD6nuWonvS/lwQJp7NoVVxm6p3qE7qQ5jGuBjiFsgvqjD8mZAU5oWxTmbOeOg==}
@@ -1075,6 +1081,8 @@ snapshots:
   '@jridgewell/sourcemap-codec@1.5.5': {}
 
   '@microsoft/recognizers-text-data-types-timex-expression@1.3.1': {}
+
+  '@mlt-org/octo-card-profile-octo-chat@1.2.0-rc.1': {}
 
   '@rollup/rollup-android-arm-eabi@4.62.2':
     optional: true
