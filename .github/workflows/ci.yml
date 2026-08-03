@@ -173,4 +173,5 @@ jobs:
           name: octo-card-forge-deploy-${{ github.sha }}
           path: .release
           if-no-files-found: error
+          include-hidden-files: true
           retention-days: 30
