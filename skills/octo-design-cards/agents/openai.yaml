@@ -1,4 +1,4 @@
 interface:
   display_name: "Octo Design Cards"
-  short_description: "Create and validate versioned Octo card packages"
-  default_prompt: "Use $octo-design-cards to create or update an Octo Adaptive Card package and verify every sample."
+  short_description: "Create repo-free Octo Adaptive Card packages"
+  default_prompt: "Use $octo-design-cards to create or update an Octo Adaptive Card package. Default to repo-free authoring with the octo-card CLI, interpret screenshots and fuzzy requirements, ask only blocking contract/interaction/security questions, then run octo-card verify and emit final Adaptive Card JSON."

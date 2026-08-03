@@ -45,16 +45,42 @@ export interface RenderComponentDefinition {
   variants: Record<string, RenderComponentVariant>;
 }
 
+export interface RenderUtilityDefinition {
+  group: string;
+  appliesTo: string[];
+  fallback?: JsonObject;
+  description: string;
+  useWhen?: string[];
+  avoidWhen?: string[];
+  cssRequired?: boolean;
+  deprecated?: boolean;
+}
+
+export interface RenderUtilityRules {
+  maxTokensPerElement?: number;
+}
+
 export interface RenderCapabilities {
   maxAdaptiveCardVersion: string;
   allowedElements: string[];
   allowedActions: string[];
   components?: Record<string, RenderComponentDefinition>;
+  utilities?: Record<string, RenderUtilityDefinition>;
+  utilityRules?: RenderUtilityRules;
   maxNodes: number;
   maxDepth: number;
   maxPayloadBytes: number;
   imageUrlSchemes: string[];
   openUrlSchemes: string[];
+}
+
+export interface RenderProfileSource {
+  root: string;
+  reference: string;
+  manifest: RenderProfileManifest;
+  capabilities: RenderCapabilities;
+  hostConfig: Record<string, unknown>;
+  stylesheets?: string[];
 }
 
 export interface InspectedAction {

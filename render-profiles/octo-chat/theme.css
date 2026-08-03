@@ -21,4 +21,8 @@
   --octo-card-badge-fg-warning: #a95500;
   --octo-card-badge-bg-attention: rgba(245, 74, 69, .10);
   --octo-card-badge-fg-attention: var(--octo-card-color-attention);
+  --octo-card-skeleton-bg: rgba(28, 28, 35, .08);
+  --octo-card-skeleton-shimmer: rgba(28, 28, 35, .14);
+  --octo-card-motion-duration-base: 180ms;
+  --octo-card-motion-ease-out: cubic-bezier(.2, 0, 0, 1);
 }

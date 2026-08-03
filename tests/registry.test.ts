@@ -15,7 +15,7 @@ describe("render profile resolution", () => {
     expect(resolveRenderProfileReference("octo-chat@1.0.0")).toBe("octo-chat@1.0.0");
     const latest = await getRenderProfile("octo-chat@latest");
     expect(latest.reference).toBe(CURRENT_RENDER_PROFILE);
-    expect(latest.manifest.version).toBe("1.2.0-rc.1");
+    expect(latest.manifest.version).toBe("1.2.0-rc.2");
   });
 
   it("does not load historical profile artifacts from the workspace", async () => {

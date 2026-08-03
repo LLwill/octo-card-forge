@@ -5,9 +5,13 @@ import JSZip from "jszip";
 import { describe, expect, it } from "vitest";
 import {
   buildHandoffArchive,
+  buildHandoffArchiveForCard,
   buildHandoffPackage,
+  buildHandoffPackageForCard,
   writeHandoffPackage,
 } from "../src/handoff.js";
+import { initCard } from "../src/init.js";
+import { loadCardPackage } from "../src/registry.js";
 import type { JsonObject } from "../src/types.js";
 
 describe("backend handoff package", () => {
@@ -22,8 +26,8 @@ describe("backend handoff package", () => {
         schemaVersion: 2,
       },
       renderProfile: {
-        requested: "octo-chat@1.2.0-rc.1",
-        resolved: "octo-chat@1.2.0-rc.1",
+        requested: "octo-chat@1.2.0-rc.2",
+        resolved: "octo-chat@1.2.0-rc.2",
         server: { required: true },
         web: { required: true },
       },
@@ -82,5 +86,40 @@ describe("backend handoff package", () => {
     const archive = await buildHandoffArchive("docs.access-request@0.3.0");
     expect(archive.fileName).toBe("docs.access-request@0.3.0.handoff.zip");
     expect(archive.buffer.byteLength).toBeGreaterThan(0);
+  });
+
+  it("builds a handoff archive from a standalone card directory", async () => {
+    const output = await mkdtemp(path.join(os.tmpdir(), "octo-card-standalone-"));
+    try {
+      const cardRoot = path.join(output, "docs.repo-free-handoff");
+      await initCard({
+        cardId: "docs.repo-free-handoff",
+        name: "Repo Free Handoff",
+        outputRoot: cardRoot,
+      });
+      const card = await loadCardPackage(cardRoot);
+      const handoff = await buildHandoffPackageForCard(card);
+      expect(handoff).toMatchObject({
+        card: {
+          id: "docs.repo-free-handoff",
+          version: "0.1.0",
+        },
+        renderProfile: {
+          resolved: "octo-chat@1.2.0-rc.2",
+        },
+      });
+
+      const archive = await buildHandoffArchiveForCard(card);
+      expect(archive.fileName).toBe("docs.repo-free-handoff@0.1.0.handoff.zip");
+      const zip = await JSZip.loadAsync(archive.buffer);
+      expect(Object.keys(zip.files)).toEqual(
+        expect.arrayContaining([
+          "docs.repo-free-handoff@0.1.0/manifest.json",
+          "docs.repo-free-handoff@0.1.0/goldens/default.card.json",
+        ])
+      );
+    } finally {
+      await rm(output, { recursive: true, force: true });
+    }
   });
 });

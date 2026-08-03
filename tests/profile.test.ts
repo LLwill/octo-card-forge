@@ -5,17 +5,19 @@ import { describe, expect, it } from "vitest";
 import {
   bundleRenderProfile,
   packRenderProfile,
+  validateRenderProfileCss,
   validateRenderProfile,
 } from "../src/profile.js";
+import type { RenderCapabilities } from "../src/types.js";
 
-const REFERENCE = "octo-chat@1.2.0-rc.1";
+const REFERENCE = "octo-chat@1.2.0-rc.2";
 
 describe("render profile bundle", () => {
   it("validates a profile without creating a bundle", async () => {
     await expect(validateRenderProfile(REFERENCE)).resolves.toMatchObject({
       reference: REFERENCE,
       packageName: "@mlt-org/octo-card-profile-octo-chat",
-      version: "1.2.0-rc.1",
+      version: "1.2.0-rc.2",
       compatibility: "octo-chat/v1",
     });
   });
@@ -42,7 +44,7 @@ describe("render profile bundle", () => {
 
     expect(packageJson).toMatchObject({
       name: "@mlt-org/octo-card-profile-octo-chat",
-      version: "1.2.0-rc.1",
+      version: "1.2.0-rc.2",
       publishConfig: {
         access: "public",
         registry: "https://registry.npmjs.org/",
@@ -76,5 +78,103 @@ describe("render profile bundle", () => {
     const result = await packRenderProfile(REFERENCE, output);
     expect(result.tarball).toMatch(/\.tgz$/);
     expect(await readFile(result.tarball)).not.toHaveLength(0);
+  });
+});
+
+describe("render profile utility CSS validation", () => {
+  const utilityCapabilities: RenderCapabilities = {
+    maxAdaptiveCardVersion: "1.5",
+    allowedElements: ["Container", "TextBlock"],
+    allowedActions: [],
+    utilities: {
+      "surface-subtle": {
+        group: "surface",
+        appliesTo: ["Container"],
+        fallback: { style: "emphasis" },
+        description: "Subtle surface",
+      },
+      "inset-md": {
+        group: "inset",
+        appliesTo: ["Container"],
+        description: "Medium inset",
+      },
+      "semantic-only": {
+        group: "semantic",
+        appliesTo: ["*"],
+        description: "Semantic marker without CSS",
+        cssRequired: false,
+      },
+    },
+    utilityRules: {
+      maxTokensPerElement: 3,
+    },
+    maxNodes: 20,
+    maxDepth: 20,
+    maxPayloadBytes: 10_000,
+    imageUrlSchemes: ["https"],
+    openUrlSchemes: ["https"],
+  };
+
+  it("accepts declared utility selectors and skips the octo-- namespace for legacy component checks", () => {
+    expect(() =>
+      validateRenderProfileCss(
+        utilityCapabilities,
+        `
+          .octo-card-profile [id^="octo--"][id*="--surface-subtle--"] {}
+          .octo-card-profile [id^="octo--"][id*="--inset-md--"] {}
+        `,
+        "styles.css"
+      )
+    ).not.toThrow();
+  });
+
+  it("rejects utility selectors that are not declared by capabilities", () => {
+    expect(() =>
+      validateRenderProfileCss(
+        utilityCapabilities,
+        `
+          .octo-card-profile [id^="octo--"][id*="--surface-subtle--"] {}
+          .octo-card-profile [id^="octo--"][id*="--inset-md--"] {}
+          .octo-card-profile [id^="octo--"][id*="--surface-magic--"] {}
+        `,
+        "styles.css"
+      )
+    ).toThrow(/surface-magic is not declared/);
+  });
+
+  it("rejects utility capabilities without required CSS", () => {
+    expect(() =>
+      validateRenderProfileCss(
+        utilityCapabilities,
+        '.octo-card-profile [id^="octo--"][id*="--surface-subtle--"] {}',
+        "styles.css"
+      )
+    ).toThrow(/missing CSS rule for utility token inset-md/);
+  });
+
+  it("rejects invalid utility capability declarations", () => {
+    const invalidCapabilities: RenderCapabilities = {
+      ...utilityCapabilities,
+      utilities: {
+        ...utilityCapabilities.utilities,
+        "surface": {
+          group: "surface",
+          appliesTo: ["Container"],
+          description: "Prefix-compatible token",
+        },
+      },
+    };
+
+    expect(() =>
+      validateRenderProfileCss(
+        invalidCapabilities,
+        `
+          .octo-card-profile [id^="octo--"][id*="--surface--"] {}
+          .octo-card-profile [id^="octo--"][id*="--surface-subtle--"] {}
+          .octo-card-profile [id^="octo--"][id*="--inset-md--"] {}
+        `,
+        "styles.css"
+      )
+    ).toThrow(/prefix-compatible/);
   });
 });

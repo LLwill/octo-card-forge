@@ -26,6 +26,9 @@ pnpm cli list
 pnpm cli check docs.access-request
 pnpm cli inspect docs.access-request --sample pending
 pnpm cli render docs.access-request --sample pending
+pnpm cli discover skeleton
+pnpm cli explain utility line-skeleton
+pnpm cli lint docs.access-request --format json
 pnpm dev
 ```
 
@@ -47,11 +50,11 @@ pnpm cli render docs.access-request@0.3.0 --sample pending
 当前候选 Render Profile 可生成 Web 直接安装的不可变制品：
 
 ```bash
-pnpm cli profile bundle octo-chat@1.2.0-rc.1 --output .release
-pnpm cli profile pack octo-chat@1.2.0-rc.1 --output .release
+pnpm cli profile bundle octo-chat@1.2.0-rc.2 --output .release
+pnpm cli profile pack octo-chat@1.2.0-rc.2 --output .release
 ```
 
-打包结果为 `.release/mlt-org-octo-card-profile-octo-chat-1.2.0-rc.1.tgz`。
+打包结果为 `.release/mlt-org-octo-card-profile-octo-chat-1.2.0-rc.2.tgz`。
 `render-profiles/octo-chat/` 只保存当前候选 Profile 源码；历史精确版本由制品库保存，
 需要复现旧卡时从对应 card/profile 制品重新渲染，不在本仓预览。
 
@@ -72,6 +75,9 @@ pnpm cli profile pack octo-chat@1.2.0-rc.1 --output .release
 - [`docs/shared-go-renderer-design.md`](docs/shared-go-renderer-design.md)：同源 Go/WASM Template Renderer Proposal。
 - [`docs/render-profile-integration-rollout.md`](docs/render-profile-integration-rollout.md)：Web Render Profile、CSS 隔离与跨仓上线顺序。
 - [`docs/cli-skill-and-component-system.md`](docs/cli-skill-and-component-system.md)：CLI/Skill 边界、平台组件词汇表、晋升制与发布节奏。
+- [`docs/octo-card-utility-system-development-plan.md`](docs/octo-card-utility-system-development-plan.md)：Tailwind-like `id` utility、Profile 超集、校验、CSS 对账和发布边界的开发落地计划。
+- [`docs/octo-card-utility-core-development.md`](docs/octo-card-utility-core-development.md)：Utility Core 的文件级开发任务、函数签名、错误码、测试和验收标准。
+- [`docs/repo-free-card-authoring-implementation.md`](docs/repo-free-card-authoring-implementation.md)：让 Agent 不 clone Forge、只用可分发 CLI/Profile 开发卡片的实施方案。
 
 术语约定：Template Renderer 生成 Card JSON；Web Renderer 使用 Card JSON 和 Render
 Profile 生成 DOM。两者不是同一个组件。
@@ -80,13 +86,21 @@ Profile 生成 DOM。两者不是同一个组件。
 
 ```text
 octo-card list
-octo-card init docs.share-notification --name "文档分享通知"
+octo-card discover [skeleton] [--profile octo-chat@latest] [--format json]
+octo-card explain utility line-skeleton [--profile octo-chat@latest] [--format json]
+octo-card lint [docs.access-request] [--card ./docs.access-request] [--format json]
+octo-card presets [--format json]
+octo-card init docs.share-notification --name "文档分享通知" [--out ./docs.share-notification] [--preset docs-forward]
+octo-card verify --card ./docs.share-notification [--emit-dir compiled] [--handoff handoff] [--format json]
 octo-card contract docs.access-request
-octo-card inspect docs.access-request [--sample pending]
-octo-card handoff docs.access-request [--output dist]
+octo-card inspect docs.access-request [--card ./docs.access-request] [--sample pending]
+octo-card handoff docs.access-request [--output handoff]
+octo-card handoff --card ./docs.access-request [--output handoff]
 octo-card render docs.access-request --sample pending
-octo-card check [docs.access-request] [--format json]
-octo-card dev [docs.access-request] [--host 127.0.0.1] [--port 4318]
+octo-card render --card ./docs.access-request --sample pending
+octo-card emit --card ./docs.access-request --sample pending
+octo-card check [docs.access-request] [--card ./docs.access-request] [--format json]
+octo-card dev [docs.access-request] [--card ./docs.access-request] [--host 127.0.0.1] [--port 4318]
 ```
 
 需要让同一局域网设备访问 Catalog 时，显式监听全部网卡：
@@ -108,7 +122,7 @@ pnpm cli contract docs.access-request
 也可以从页面点击“导出后端交付包”，或使用 CLI 生成同一份 ZIP：
 
 ```bash
-pnpm cli handoff docs.access-request --output dist
+pnpm cli handoff docs.access-request --output handoff
 ```
 
 ZIP 解压后包含 `manifest.json`、数据契约、模板、Samples、Goldens、交互诊断报告、
@@ -142,19 +156,61 @@ Content-Type: application/json
 
 仓库内置 [`octo-design-cards`](skills/octo-design-cards/SKILL.md) Skill。外部 Agent 使用该 Skill 创建或修改 Card Package，并理解数据契约、标准 Action/Input、Render Profile、版本规则和必跑校验；Card Forge 自身不运行 Agent。
 
+Agent 不应凭提示词记忆 Profile 能力。需要查找样式能力时使用：
+
+```bash
+pnpm cli discover [query] --format json
+pnpm cli explain utility <token> --format json
+pnpm cli lint [card-id] --format json
+```
+
+`discover` 从当前 Render Profile 的 `capabilities.utilities` 返回可用 token、适用元素、
+fallback 和 `octo--<token>--uid-*` 写法；`explain` 给出单个 token 的组合规则和标准
+Adaptive Card 示例；`lint` 在常规校验之外列出每个 sample 实际使用的 utility id/token。
+Repo-free 试点路径可用 `--card <dir>` 指向单卡目录，并用 `--profile-package <dir-or-package>`
+或 `--profile-dir <dir>` 显式指定 Render Profile 来源。
+
+Agent 侧不需要 clone 本仓库即可完成单卡开发闭环。典型流程是安装 CLI 与目标
+Render Profile 包后，在自己的工作目录中生成、预览、校验和交付：
+
+```bash
+pnpm add -D @mlt-org/octo-card-cli @mlt-org/octo-card-profile-octo-chat
+pnpm exec octo-card discover skeleton --format json
+pnpm exec octo-card presets --format json
+pnpm exec octo-card init bot.token-view --name "Bot Token 查看" --out ./bot.token-view --preset bot-token
+pnpm exec octo-card dev --card ./bot.token-view
+pnpm exec octo-card verify --card ./bot.token-view --emit-dir compiled --handoff handoff --format json
+pnpm exec octo-card emit --card ./bot.token-view --sample default > card.json
+```
+
+这里 `--out` 创建的是一个独立 Card Package 目录；后续 `--card` 都指向这个目录。
+CLI 会优先读取已安装的 profile package，找不到时才回退到 Forge 仓库源码，方便平台开发。
+
 ## 质量检查
 
 ```bash
 pnpm typecheck
 pnpm test
 pnpm cli check --format json
+pnpm smoke:repo-free-agent
 ```
+
+创建真实 Agent 验证用的消费者工作区：
+
+```bash
+pnpm prepare:agent-validation -- --scenario bot-token
+pnpm prepare:agent-validation -- --scenario docs-forward
+```
+
+脚本会打包当前 CLI/Profile，本地安装到临时目录，并写入 `AGENTS.md` 与 `TASK.md`。
+随后在该临时目录新开 Codex task，只让 Agent 完成 `TASK.md`，才能验证它是否自然使用
+`octo-card` 而不是回到 Forge 仓库工作流。
 
 ## Render Profile
 
 卡片 `manifest.renderProfile` 支持：
 
-- 具体版本（如 `octo-chat@1.0.0` / `octo-chat@1.2.0-rc.1`）：钉死，用于历史复现
+- 具体版本（如 `octo-chat@1.0.0` / `octo-chat@1.2.0-rc.2`）：钉死，用于历史复现
 - `octo-chat@latest`：跟随仓库当前基线 `CURRENT_RENDER_PROFILE`
 - 省略字段：等价于 `@latest`
 
@@ -167,6 +223,35 @@ pnpm cli check --format json
 `render-profiles/octo-chat/` 当前源码，通过 `pnpm cli profile bundle/pack` 生成不可变制品；
 已发布版本由 npm / 制品库保存。Forge Catalog 和默认 `cli check` 只覆盖当前 workspace
 profile 可渲染的 Card Package；历史 Card Package 由制品库负责重渲染。
+
+## 发布
+
+普通分支 push 和 PR 不会发布 npm 包。PR 只运行验证；合并到 `main` 也只运行 CI 和
+候选 artifact 打包。真正发布需要手动 workflow，或在已经合入 `main` 的 commit 上打 tag。
+
+发布 Agent 侧 CLI：
+
+```bash
+git tag octo-card-cli/v0.1.0
+git push origin octo-card-cli/v0.1.0
+```
+
+这会触发 `publish-octo-card-cli`，验证 `package.json` 中的
+`@mlt-org/octo-card-cli@0.1.0`，运行 `typecheck/test/check/smoke:repo-free-agent`，
+打包并发布 `@mlt-org/octo-card-cli`。
+
+发布 Render Profile：
+
+```bash
+git tag render-profile/octo-chat/v1.2.0-rc.2
+git push origin render-profile/octo-chat/v1.2.0-rc.2
+```
+
+这会触发 `publish-render-profile`，验证 `render-profiles/octo-chat/manifest.json` 中的
+`@mlt-org/octo-card-profile-octo-chat@1.2.0-rc.2`，打包并以 `next` tag 发布。
+
+两个发布 workflow 都要求 tag 指向已经合入 `main` 的 commit，并使用 `npm-publish`
+environment 与 `NPM_TOKEN`。
 
 ## 版本说明
 

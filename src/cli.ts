@@ -1,21 +1,63 @@
 #!/usr/bin/env node
 import path from "node:path";
-import { checkCards } from "./check.js";
-import { compileCard, compileSample } from "./compiler.js";
+import {
+  discoverUtilities,
+  explainUtility,
+  lintCardPackageForAgent,
+  lintCardsForAgent,
+} from "./agent.js";
+import { checkCardPackage, checkCards } from "./check.js";
+import {
+  compileCard,
+  compileCardDirectory,
+  compileSample,
+  compileSampleFromDirectory,
+} from "./compiler.js";
 import { readJson } from "./fs.js";
-import { buildHandoffPackage, writeHandoffPackage } from "./handoff.js";
-import { initCard } from "./init.js";
+import {
+  buildHandoffPackage,
+  buildHandoffPackageForCard,
+  writeHandoffPackage,
+  writeHandoffPackageForCard,
+} from "./handoff.js";
+import { initCard, listInitPresets } from "./init.js";
 import {
   bundleRenderProfile,
   packRenderProfile,
   validateRenderProfile,
 } from "./profile.js";
-import { getCard, listCards } from "./registry.js";
+import {
+  loadRenderProfileFromDirectory,
+  loadRenderProfileFromPackage,
+} from "./profile-source.js";
+import { getCard, listCards, loadCardPackage } from "./registry.js";
 import { startServer } from "./server.js";
 import type { JsonObject } from "./types.js";
+import { verifyCardPackage, verifySummary } from "./verify.js";
 
 const args = process.argv.slice(2);
 const command = args.shift() ?? "help";
+const DEFAULT_HANDOFF_OUTPUT = "handoff";
+const VALUE_FLAGS = new Set([
+  "--card",
+  "--data",
+  "--emit-dir",
+  "--format",
+  "--host",
+  "--handoff",
+  "--name",
+  "--output",
+  "--out",
+  "--port",
+  "--profile",
+  "--profile-dir",
+  "--profile-package",
+  "--preset",
+  "--render-profile",
+  "--sample",
+  "--view",
+  "--wire-profile",
+]);
 
 function flag(name: string): string | undefined {
   const index = args.indexOf(name);
@@ -24,19 +66,115 @@ function flag(name: string): string | undefined {
 
 function usage(): void {
   console.log(`octo-card commands:
-  init <card-id> --name <name> [--view default] [--wire-profile octo/v1] [--render-profile octo-chat@latest] [--format json]
+  init <card-id> --name <name> [--out <dir>] [--preset blank|bot-token|docs-forward] [--view default] [--wire-profile octo/v1|octo/v2] [--render-profile octo-chat@latest] [--format json]
+  presets [--format json]
   list
+  discover [query] [--profile octo-chat@latest] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
+  explain utility <token> [--profile octo-chat@latest] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
+  lint [card-id] [--card <dir>] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
   contract <card-id> [--format json]
-  inspect <card-id> [--sample <name>] [--format json]
-  handoff <card-id> [--output dist] [--format json]
+  inspect <card-id> [--card <dir>] [--profile-dir <dir> | --profile-package <pkg>] [--sample <name>] [--format json]
+  verify --card <dir> [--sample <name>] [--emit-dir <dir>] [--handoff <dir>] [--format json]
+  handoff <card-id> [--output handoff] [--format json]
+  handoff --card <dir> [--profile-dir <dir> | --profile-package <pkg>] [--output handoff] [--format json]
   handoff <card-id> --output -  # print the aggregate JSON to stdout
+  handoff --card <dir> --output -  # print the aggregate JSON to stdout
   render <card-id> --sample <name>
   render <card-id> --view <view> --data <file>
-  check [card-id] [--format json]
+  render --card <dir> [--profile-dir <dir> | --profile-package <pkg>] --sample <name>
+  render --card <dir> [--profile-dir <dir> | --profile-package <pkg>] --view <view> --data <file>
+  emit <card-id|--card dir> --sample <name>  # alias for render
+  check [card-id] [--card <dir>] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
   profile validate <profile@version>
   profile bundle <profile@version> [--output .release]
   profile pack <profile@version> [--output .release]
-  dev [card-id] [--host 127.0.0.1] [--port 4318]`);
+  dev [card-id] [--card <dir>] [--profile-dir <dir> | --profile-package <pkg>] [--host 127.0.0.1] [--port 4318]`);
+}
+
+function positional(index: number): string | undefined {
+  const values: string[] = [];
+  for (let i = 0; i < args.length; i++) {
+    if (args[i].startsWith("--")) {
+      if (VALUE_FLAGS.has(args[i])) i++;
+      continue;
+    }
+    values.push(args[i]);
+  }
+  return values[index];
+}
+
+async function loadExplicitProfileSource() {
+  const profileDir = flag("--profile-dir");
+  const profilePackage = flag("--profile-package");
+  if (profileDir && profilePackage) {
+    throw new Error("--profile-dir and --profile-package cannot be used together");
+  }
+  if (profileDir) return loadRenderProfileFromDirectory(profileDir);
+  if (profilePackage) return loadRenderProfileFromPackage(profilePackage);
+  return undefined;
+}
+
+async function explicitProfileForCardCommand(cardRoot?: string) {
+  const profile = await loadExplicitProfileSource();
+  if (profile && !cardRoot) {
+    throw new Error("--profile-dir/--profile-package currently require --card <dir>");
+  }
+  return profile;
+}
+
+function printDiscoverText(report: Awaited<ReturnType<typeof discoverUtilities>>): void {
+  console.log(`Profile: ${report.profile}`);
+  console.log(`ID syntax: ${report.idSyntax}`);
+  console.log(`Max tokens per element: ${report.maxTokensPerElement}`);
+  for (const group of report.groups) {
+    console.log(`\n${group.group}`);
+    for (const token of group.tokens) {
+      const fallback = token.fallback
+        ? ` fallback=${JSON.stringify(token.fallback)}`
+        : "";
+      console.log(
+        `  ${token.token}\t${token.appliesTo.join(", ")}\t${token.description}${fallback}`
+      );
+    }
+  }
+}
+
+function printExplainText(report: Awaited<ReturnType<typeof explainUtility>>): void {
+  console.log(`${report.token} (${report.group})`);
+  console.log(report.description);
+  console.log(`Profile: ${report.profile}`);
+  console.log(`Applies to: ${report.appliesTo.join(", ")}`);
+  if (report.fallback) console.log(`Fallback: ${JSON.stringify(report.fallback)}`);
+  console.log(`ID: ${report.idExample}`);
+  console.log(`Rule: ${report.groupConflictRule}`);
+  if (report.recommendedCombinations.length > 0) {
+    console.log(`Can combine with: ${report.recommendedCombinations.join(", ")}`);
+  }
+  console.log(`Example:\n${JSON.stringify(report.cardExample, null, 2)}`);
+}
+
+function printLintText(report: Awaited<ReturnType<typeof lintCardsForAgent>>): void {
+  console.log(
+    `${report.valid ? "✓" : "✗"} ${report.summary.cards} cards · ${report.summary.samples} samples · ${report.summary.errors} errors · ${report.summary.warnings} warnings`
+  );
+  if (report.summary.tokens.length > 0) {
+    console.log(`Utility tokens: ${report.summary.tokens.join(", ")}`);
+  }
+  for (const card of report.cards) {
+    console.log(`\n${card.cardId}@${card.version}`);
+    for (const sample of card.samples) {
+      const tokens =
+        sample.utilities.tokens.length > 0
+          ? ` utilities=${sample.utilities.tokens.join(",")}`
+          : "";
+      console.log(
+        `  ${sample.valid ? "✓" : "✗"} ${sample.name} (${sample.view}, ${sample.wireProfile})${tokens}`
+      );
+      for (const issue of sample.issues) {
+        console.log(`    ${issue.severity}: ${issue.code} ${issue.path} ${issue.message}`);
+      }
+    }
+  }
 }
 
 try {
@@ -48,16 +186,31 @@ try {
     const result = await initCard({
       cardId,
       name,
+      preset: flag("--preset"),
       view: flag("--view"),
       renderProfile: flag("--render-profile"),
       wireProfile: flag("--wire-profile") as "octo/v1" | "octo/v2" | undefined,
+      outputRoot: flag("--out"),
     });
     if (flag("--format") === "json") {
       console.log(JSON.stringify(result, null, 2));
     } else {
       console.log(`Created ${result.cardId} (${result.name})`);
+      console.log(`Preset: ${result.preset}`);
       for (const file of result.files) console.log(`  ${file}`);
-      console.log(`Next: pnpm cli check ${result.cardId}`);
+      const next = flag("--out")
+        ? `pnpm cli check --card ${result.root}`
+        : `pnpm cli check ${result.cardId}`;
+      console.log(`Next: ${next}`);
+    }
+  } else if (command === "presets") {
+    const presets = listInitPresets();
+    if (flag("--format") === "json") {
+      console.log(JSON.stringify({ presets }, null, 2));
+    } else {
+      for (const preset of presets) {
+        console.log(`${preset.id}\t${preset.wireProfile}\t${preset.description}`);
+      }
     }
   } else if (command === "list") {
     const cards = await listCards();
@@ -69,6 +222,47 @@ try {
         )
         .join("\n")
     );
+  } else if (command === "discover") {
+    const query = positional(0);
+    const profileSource = await loadExplicitProfileSource();
+    const report = await discoverUtilities({
+      query,
+      profile: flag("--profile"),
+      profileSource,
+    });
+    if (flag("--format") === "json") {
+      console.log(JSON.stringify(report, null, 2));
+    } else {
+      printDiscoverText(report);
+    }
+  } else if (command === "explain") {
+    const subject = positional(0);
+    const token = subject === "utility" ? positional(1) : subject;
+    if (!token) throw new Error("utility token is required");
+    const profileSource = await loadExplicitProfileSource();
+    const report = await explainUtility({
+      token,
+      profile: flag("--profile"),
+      profileSource,
+    });
+    if (flag("--format") === "json") {
+      console.log(JSON.stringify(report, null, 2));
+    } else {
+      printExplainText(report);
+    }
+  } else if (command === "lint") {
+    const cardRoot = flag("--card");
+    const profileSource = await explicitProfileForCardCommand(cardRoot);
+    const cardId = cardRoot ? undefined : positional(0);
+    const report = cardRoot
+      ? await lintCardPackageForAgent(cardRoot, profileSource)
+      : await lintCardsForAgent(cardId);
+    if (flag("--format") === "json") {
+      console.log(JSON.stringify(report, null, 2));
+    } else {
+      printLintText(report);
+    }
+    if (!report.valid) process.exitCode = 1;
   } else if (command === "contract") {
     const cardId = args[0];
     if (!cardId) throw new Error("card-id is required");
@@ -98,18 +292,22 @@ try {
       )
     );
   } else if (command === "inspect") {
-    const cardId = args[0];
-    if (!cardId) throw new Error("card-id is required");
+    const cardRoot = flag("--card");
+    const profileSource = await explicitProfileForCardCommand(cardRoot);
+    const cardId = cardRoot ? undefined : positional(0);
+    if (!cardRoot && !cardId) throw new Error("card-id or --card is required");
     const sample = flag("--sample");
     if (sample) {
-      const result = await compileSample({ cardId, sample });
+      const result = cardRoot
+        ? await compileSampleFromDirectory({ cardRoot, sample, profile: profileSource })
+        : await compileSample({ cardId: cardId!, sample });
       if (result.issues.some((issue) => issue.severity === "error")) {
         throw new Error(`Cannot inspect invalid sample ${sample}`);
       }
       console.log(
         JSON.stringify(
           {
-            cardId,
+            cardId: result.cardId,
             cardVersion: result.cardVersion,
             sample,
             view: result.view,
@@ -121,12 +319,18 @@ try {
         )
       );
     } else {
-      const card = await getCard(cardId);
+      const card = cardRoot ? await loadCardPackage(cardRoot) : await getCard(cardId!);
       const samples = [];
       for (const [view, definition] of Object.entries(card.manifest.views)) {
         for (const samplePath of definition.samples) {
           const sampleName = path.basename(samplePath, path.extname(samplePath));
-          const result = await compileSample({ cardId, sample: sampleName });
+          const result = cardRoot
+            ? await compileSampleFromDirectory({
+                cardRoot,
+                sample: sampleName,
+                profile: profileSource,
+              })
+            : await compileSample({ cardId: cardId!, sample: sampleName });
           samples.push({
             sample: sampleName,
             view,
@@ -136,33 +340,95 @@ try {
           });
         }
       }
-      console.log(JSON.stringify({ cardId, samples }, null, 2));
+      console.log(JSON.stringify({ cardId: card.manifest.id, samples }, null, 2));
     }
-  } else if (command === "handoff") {
-    const cardId = args[0];
-    if (!cardId) throw new Error("card-id is required");
-    const output = flag("--output") ?? "dist";
-    if (output === "-") {
-      console.log(JSON.stringify(await buildHandoffPackage(cardId), null, 2));
+  } else if (command === "verify") {
+    const cardRoot = flag("--card");
+    if (!cardRoot) throw new Error("verify requires --card <dir>");
+    const profileSource = await explicitProfileForCardCommand(cardRoot);
+    const report = await verifyCardPackage({
+      cardRoot,
+      profile: profileSource,
+      sample: flag("--sample"),
+      emitDir: flag("--emit-dir"),
+      handoffDir: flag("--handoff"),
+    });
+    if (flag("--format") === "json") {
+      console.log(JSON.stringify(verifySummary(report), null, 2));
     } else {
-      const result = await writeHandoffPackage(cardId, output);
-      if (flag("--format") === "json") {
-        console.log(JSON.stringify({ cardId, ...result }, null, 2));
-      } else {
-        console.log(`Created backend handoff package: ${result.filePath}`);
+      console.log(
+        `${report.valid ? "✓" : "✗"} ${report.card.id}@${report.card.version} · ` +
+          `${report.samples.length} samples · ` +
+          `${report.lint.summary.errors} errors · ${report.lint.summary.warnings} warnings`
+      );
+      for (const sample of report.samples) {
+        console.log(
+          `  ${sample.valid ? "✓" : "✗"} ${sample.view}/${sample.name} (${sample.bytes} bytes)`
+        );
+        for (const issue of sample.issues) {
+          console.log(`    ${issue.severity}: ${issue.code} ${issue.path} ${issue.message}`);
+        }
+      }
+      if (report.handoff) console.log(`Handoff: ${report.handoff.filePath}`);
+      if (report.samples.some((sample) => sample.output)) {
+        console.log(`Compiled cards: ${flag("--emit-dir")}`);
       }
     }
-  } else if (command === "render") {
-    const cardId = args[0];
-    if (!cardId) throw new Error("card-id is required");
+    if (!report.valid) process.exitCode = 1;
+  } else if (command === "handoff") {
+    const cardRoot = flag("--card");
+    const output = flag("--output") ?? DEFAULT_HANDOFF_OUTPUT;
+    if (cardRoot) {
+      const profileSource = await explicitProfileForCardCommand(cardRoot);
+      const card = await loadCardPackage(cardRoot);
+      if (output === "-") {
+        console.log(JSON.stringify(await buildHandoffPackageForCard(card, profileSource), null, 2));
+      } else {
+        const result = await writeHandoffPackageForCard(card, output, profileSource);
+        if (flag("--format") === "json") {
+          console.log(JSON.stringify({ cardId: card.manifest.id, ...result }, null, 2));
+        } else {
+          console.log(`Created backend handoff package: ${result.filePath}`);
+        }
+      }
+    } else {
+      const cardId = args[0];
+      if (!cardId) throw new Error("card-id or --card is required");
+      if (output === "-") {
+        console.log(JSON.stringify(await buildHandoffPackage(cardId), null, 2));
+      } else {
+        const result = await writeHandoffPackage(cardId, output);
+        if (flag("--format") === "json") {
+          console.log(JSON.stringify({ cardId, ...result }, null, 2));
+        } else {
+          console.log(`Created backend handoff package: ${result.filePath}`);
+        }
+      }
+    }
+  } else if (command === "render" || command === "emit") {
+    const cardRoot = flag("--card");
+    const profileSource = await explicitProfileForCardCommand(cardRoot);
+    const cardId = cardRoot ? undefined : positional(0);
+    if (!cardRoot && !cardId) throw new Error("card-id or --card is required");
     const sample = flag("--sample");
+    const dataPath = flag("--data");
+    if (!sample && !dataPath) throw new Error("--data is required without --sample");
     const result = sample
-      ? await compileSample({ cardId, sample })
-      : await compileCard({
-          cardId,
-          view: flag("--view") ?? "pending",
-          data: await readJson<JsonObject>(path.resolve(flag("--data") ?? "")),
-        });
+      ? cardRoot
+        ? await compileSampleFromDirectory({ cardRoot, sample, profile: profileSource })
+        : await compileSample({ cardId: cardId!, sample })
+      : cardRoot
+        ? await compileCardDirectory({
+            cardRoot,
+            view: flag("--view") ?? "pending",
+            data: await readJson<JsonObject>(path.resolve(dataPath!)),
+            profile: profileSource,
+          })
+        : await compileCard({
+            cardId: cardId!,
+            view: flag("--view") ?? "pending",
+            data: await readJson<JsonObject>(path.resolve(dataPath!)),
+          });
     if (result.issues.some((issue) => issue.severity === "error")) {
       console.error(JSON.stringify(result.issues, null, 2));
       process.exitCode = 1;
@@ -170,8 +436,12 @@ try {
       console.log(JSON.stringify(result.payload, null, 2));
     }
   } else if (command === "check") {
-    const cardId = args[0]?.startsWith("--") ? undefined : args[0];
-    const report = await checkCards(cardId);
+    const cardRoot = flag("--card");
+    const profileSource = await explicitProfileForCardCommand(cardRoot);
+    const cardId = cardRoot ? undefined : positional(0);
+    const report = cardRoot
+      ? await checkCardPackage(cardRoot, profileSource)
+      : await checkCards(cardId);
     if (flag("--format") === "json") {
       console.log(JSON.stringify(report, null, 2));
     } else {
@@ -205,7 +475,9 @@ try {
   } else if (command === "dev") {
     const port = Number(flag("--port") ?? "4318");
     const host = flag("--host") ?? "127.0.0.1";
-    await startServer({ host, port });
+    const cardRoot = flag("--card");
+    const profileSource = await explicitProfileForCardCommand(cardRoot);
+    await startServer({ host, port, cardRoot, profile: profileSource });
   } else {
     usage();
     if (command !== "help" && command !== "--help") process.exitCode = 1;

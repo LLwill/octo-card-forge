@@ -1,13 +1,40 @@
 {
-  "name": "octo-card-forge",
+  "name": "@mlt-org/octo-card-cli",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
+  "description": "Repo-free Adaptive Card authoring CLI for Octo card packages.",
   "type": "module",
   "packageManager": "pnpm@10.32.0",
+  "bin": {
+    "octo-card": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "web",
+    "skills",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "peerDependencies": {
+    "@mlt-org/octo-card-profile-octo-chat": "^1.2.0-rc.1"
+  },
+  "peerDependenciesMeta": {
+    "@mlt-org/octo-card-profile-octo-chat": {
+      "optional": true
+    }
+  },
   "scripts": {
+    "prebuild": "node scripts/clean-build-output.mjs",
+    "build": "tsc -p tsconfig.build.json",
     "cli": "tsx src/cli.ts",
+    "cli:dist": "node dist/cli.js",
     "dev": "tsx src/cli.ts dev docs.access-request",
     "check": "tsx src/cli.ts check",
+    "prepare:agent-validation": "node scripts/create-agent-validation-workspace.mjs",
+    "smoke:repo-free-agent": "node scripts/smoke-repo-free-agent.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

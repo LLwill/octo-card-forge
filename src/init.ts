@@ -1,7 +1,8 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { projectRoot } from "./fs.js";
-import { getRenderProfile } from "./registry.js";
+import { createBlankPreset, getInitPreset, listInitPresets } from "./presets.js";
+import { loadRenderProfileForReference } from "./profile-source.js";
 import type { WireProfile } from "./types.js";
 
 const CARD_ID = /^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$/;
@@ -11,18 +12,23 @@ const RENDER_PROFILE = /^[a-z][a-z0-9.-]*@(latest|\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]
 export interface InitCardOptions {
   cardId: string;
   name: string;
+  preset?: string;
   view?: string;
   renderProfile?: string;
   wireProfile?: WireProfile;
   root?: string;
+  outputRoot?: string;
 }
 
 export interface InitCardResult {
   cardId: string;
   name: string;
+  preset: string;
   root: string;
   files: string[];
 }
+
+export { listInitPresets };
 
 function json(value: unknown): string {
   return `${JSON.stringify(value, null, 2)}\n`;
@@ -31,10 +37,12 @@ function json(value: unknown): string {
 export async function initCard(options: InitCardOptions): Promise<InitCardResult> {
   const cardId = options.cardId.trim();
   const name = options.name.trim();
+  const presetId = options.preset?.trim() || "blank";
   const view = options.view?.trim() || "default";
   // Follow the repo baseline unless the caller pins a concrete version.
   const renderProfile = options.renderProfile?.trim() || "octo-chat@latest";
-  const wireProfile = options.wireProfile ?? "octo/v1";
+  const preset = presetId === "blank" ? createBlankPreset(name) : getInitPreset(presetId);
+  const wireProfile = options.wireProfile ?? preset?.wireProfile ?? "octo/v1";
 
   if (!CARD_ID.test(cardId)) {
     throw new Error(
@@ -42,12 +50,19 @@ export async function initCard(options: InitCardOptions): Promise<InitCardResult
     );
   }
   if (!name) throw new Error("--name is required");
+  if (!preset) {
+    throw new Error(
+      `unknown preset ${presetId}. Available presets: ${listInitPresets()
+        .map((item) => item.id)
+        .join(", ")}`
+    );
+  }
   if (!VIEW_ID.test(view)) {
     throw new Error("view must start with a lowercase letter and contain letters, numbers, _ or -");
   }
   if (!RENDER_PROFILE.test(renderProfile)) {
     throw new Error(
-      "render profile must look like octo-chat@1.2.0-rc.1 or octo-chat@latest"
+      "render profile must look like octo-chat@1.2.0-rc.2 or octo-chat@latest"
     );
   }
   if (wireProfile !== "octo/v1" && wireProfile !== "octo/v2") {
@@ -59,7 +74,7 @@ export async function initCard(options: InitCardOptions): Promise<InitCardResult
   process.env.OCTO_CARD_FORGE_ROOT = root;
   let adaptiveCardVersion: string;
   try {
-    const profile = await getRenderProfile(renderProfile);
+    const profile = await loadRenderProfileForReference(renderProfile);
     adaptiveCardVersion = profile.capabilities.maxAdaptiveCardVersion;
   } catch (error) {
     throw new Error(
@@ -69,9 +84,10 @@ export async function initCard(options: InitCardOptions): Promise<InitCardResult
     if (previousRoot === undefined) delete process.env.OCTO_CARD_FORGE_ROOT;
     else process.env.OCTO_CARD_FORGE_ROOT = previousRoot;
   }
-  const cardsRoot = path.join(root, "cards");
-  const cardRoot = path.join(cardsRoot, cardId);
-  await mkdir(cardsRoot, { recursive: true });
+  const cardRoot = options.outputRoot
+    ? path.resolve(options.outputRoot)
+    : path.join(root, "cards", cardId);
+  await mkdir(path.dirname(cardRoot), { recursive: true });
   try {
     await mkdir(cardRoot);
   } catch (error) {
@@ -100,50 +116,9 @@ export async function initCard(options: InitCardOptions): Promise<InitCardResult
         },
       },
     },
-    "contract/data.schema.json": {
-      $schema: "http://json-schema.org/draft-07/schema#",
-      title: `${name}数据契约`,
-      type: "object",
-      additionalProperties: false,
-      required: ["title", "message"],
-      properties: {
-        title: {
-          type: "string",
-          minLength: 1,
-          description: "卡片主标题，由业务后端映射",
-          examples: [name],
-        },
-        message: {
-          type: "string",
-          description: "卡片正文，由业务后端映射",
-          examples: [`这是${name}的示例内容。`],
-        },
-      },
-    },
-    [`samples/${view}.json`]: {
-      title: name,
-      message: `这是${name}的示例内容。`,
-    },
-    [`templates/${view}.template.json`]: {
-      $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
-      type: "AdaptiveCard",
-      version: adaptiveCardVersion,
-      body: [
-        {
-          type: "TextBlock",
-          text: "${title}",
-          size: "Large",
-          weight: "Bolder",
-          wrap: true,
-        },
-        {
-          type: "TextBlock",
-          text: "${message}",
-          spacing: "Medium",
-          wrap: true,
-        },
-      ],
-    },
+    "contract/data.schema.json": preset.dataSchema,
+    [`samples/${view}.json`]: preset.sample,
+    [`templates/${view}.template.json`]: preset.template(adaptiveCardVersion),
   };
 
   try {
@@ -165,6 +140,7 @@ export async function initCard(options: InitCardOptions): Promise<InitCardResult
   return {
     cardId,
     name,
+    preset: preset.id,
     root: cardRoot,
     files: Object.keys(files).sort(),
   };

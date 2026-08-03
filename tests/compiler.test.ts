@@ -28,7 +28,7 @@ describe("docs.access-request 0.3 compiler", () => {
       expect(result.issues).toEqual([]);
       expect(result.payload).toMatchObject({ type: "AdaptiveCard", version: "1.5" });
       expect(JSON.stringify(result.payload)).not.toContain("${");
-      expect(result.renderProfile).toBe("octo-chat@1.2.0-rc.1");
+      expect(result.renderProfile).toBe("octo-chat@1.2.0-rc.2");
       expect(result.wireProfile).toBe(sample === "pending" ? "octo/v2" : "octo/v1");
     }
   );
@@ -112,7 +112,7 @@ describe("new Card Package versions", () => {
     });
 
     expect(next.cardVersion).toBe("0.2.0");
-    expect(next.renderProfile).toBe("octo-chat@1.2.0-rc.1");
+    expect(next.renderProfile).toBe("octo-chat@1.2.0-rc.2");
     expect(next.issues).toEqual([]);
     expect(findById(next.payload, "decision_choice")).toMatchObject({
       type: "Input.ChoiceSet",
@@ -141,7 +141,7 @@ describe("new Card Package versions", () => {
     });
 
     expect(next.cardVersion).toBe("0.3.0");
-    expect(next.renderProfile).toBe("octo-chat@1.2.0-rc.1");
+    expect(next.renderProfile).toBe("octo-chat@1.2.0-rc.2");
     expect(next.issues).toEqual([]);
     expect(next.payload.body).toEqual(
       expect.arrayContaining([
@@ -180,7 +180,7 @@ describe("ai.reasoning-process compiler", () => {
     expect(result.view).toBe(view);
     expect(result.cardVersion).toBe("0.1.0");
     expect(result.contractVersion).toBe("1.0.0");
-    expect(result.renderProfile).toBe("octo-chat@1.2.0-rc.1");
+    expect(result.renderProfile).toBe("octo-chat@1.2.0-rc.2");
     expect(result.wireProfile).toBe("octo/v2");
     expect(JSON.stringify(result.payload)).not.toContain("${");
   });
