@@ -89,6 +89,7 @@ octo-card list
 octo-card discover [skeleton] [--profile octo-chat@latest] [--format json]
 octo-card explain utility line-skeleton [--profile octo-chat@latest] [--format json]
 octo-card lint [docs.access-request] [--card ./docs.access-request] [--format json]
+octo-card validate --input ./card.json [--wire-profile octo/v1|octo/v2] [--profile octo-chat@latest] [--format json]
 octo-card presets [--format json]
 octo-card init docs.share-notification --name "文档分享通知" [--out ./docs.share-notification] [--preset docs-forward]
 octo-card verify --card ./docs.share-notification [--emit-dir compiled] [--handoff handoff] [--format json]
@@ -185,6 +186,19 @@ pnpm exec octo-card emit --card ./bot.token-view --sample default > card.json
 
 这里 `--out` 创建的是一个独立 Card Package 目录；后续 `--card` 都指向这个目录。
 CLI 会优先读取已安装的 profile package，找不到时才回退到 Forge 仓库源码，方便平台开发。
+
+一次性消息可以直接生成标准 Adaptive Card JSON，不需要创建 Card Package：
+
+```bash
+cat > card.json <<'JSON'
+{
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [{ "type": "TextBlock", "text": "一次性消息", "wrap": true }]
+}
+JSON
+pnpm exec octo-card validate --input ./card.json --wire-profile octo/v1 --format json
+```
 
 ## 质量检查
 
