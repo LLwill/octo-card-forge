@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import path from "node:path";
+import { checkAgentUpgrade, doctorAgent, initAgent } from "./agent-bootstrap.js";
 import {
   discoverUtilities,
   explainUtility,
@@ -60,6 +61,8 @@ const VALUE_FLAGS = new Set([
   "--sample",
   "--view",
   "--wire-profile",
+  "--target",
+  "--workspace",
 ]);
 
 function flag(name: string): string | undefined {
@@ -92,6 +95,9 @@ function usage(): void {
   profile validate <profile@version>
   profile bundle <profile@version> [--output .release]
   profile pack <profile@version> [--output .release]
+  agent init [--target generic] [--workspace <dir>] [--profile octo-chat@version] [--format json]
+  agent doctor [--workspace <dir>] [--format json]
+  agent upgrade --check [--workspace <dir>] [--format json]
   dev [card-id] [--card <dir>] [--profile-dir <dir> | --profile-package <pkg>] [--host 127.0.0.1] [--port 4318]`);
 }
 
@@ -210,6 +216,45 @@ try {
         ? `pnpm cli check --card ${result.root}`
         : `pnpm cli check ${result.cardId}`;
       console.log(`Next: ${next}`);
+    }
+  } else if (command === "agent") {
+    const action = args[0];
+    const formatJson = flag("--format") === "json";
+    const workspace = flag("--workspace");
+    if (action === "init") {
+      const result = await initAgent({
+        workspace,
+        target: flag("--target"),
+        profile: flag("--profile"),
+      });
+      if (formatJson) console.log(JSON.stringify(result, null, 2));
+      else {
+        console.log(`Initialized Octo Card Agent in ${result.workspace}`);
+        console.log(`Skill: ${result.state.skill.version}`);
+        console.log(`CLI: ${result.state.cli.version}`);
+        console.log(`Render Profile: ${result.state.renderProfile.reference}`);
+        for (const file of result.created) console.log(`  ${file}`);
+      }
+    } else if (action === "doctor") {
+      const report = await doctorAgent({ workspace });
+      if (formatJson) console.log(JSON.stringify(report, null, 2));
+      else {
+        console.log(`${report.valid ? "✓" : "✗"} Agent doctor · ${report.workspace}`);
+        for (const item of report.checks) console.log(`  ${item.status}: ${item.id} ${item.message}`);
+      }
+      if (!report.valid) process.exitCode = 1;
+    } else if (action === "upgrade") {
+      if (!args.includes("--check")) throw new Error("agent upgrade currently supports --check only");
+      const report = await checkAgentUpgrade({ workspace });
+      if (formatJson) console.log(JSON.stringify(report, null, 2));
+      else {
+        console.log(`${report.needsUpgrade ? "Upgrade available" : "Up to date"} · check only`);
+        for (const change of report.changes) console.log(`  ${change}`);
+        for (const item of report.checks) console.log(`  ${item.status}: ${item.id} ${item.message}`);
+      }
+      if (!report.valid) process.exitCode = 1;
+    } else {
+      throw new Error("agent action must be init, doctor or upgrade");
     }
   } else if (command === "presets") {
     const presets = listInitPresets();

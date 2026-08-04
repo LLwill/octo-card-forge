@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "skill": {
+    "name": "octo-design-cards",
+    "version": "0.1.0",
+    "entry": "SKILL.md"
+  },
+  "cli": {
+    "package": "@mlt-org/octo-card-cli",
+    "compatibleRange": ">=0.1.0 <0.2.0",
+    "recommendedVersion": "0.1.0"
+  },
+  "renderProfiles": [
+    {
+      "id": "octo-chat",
+      "package": "@mlt-org/octo-card-profile-octo-chat",
+      "compatibleRange": ">=1.2.0-rc.2 <2.0.0",
+      "recommendedVersion": "1.2.0-rc.2"
+    }
+  ]
+}
