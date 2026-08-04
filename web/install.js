@@ -92,10 +92,7 @@ async function loadInstallData() {
   const response = await fetch("/api/install");
   const data = await response.json();
   if (!response.ok) throw new Error(data.message || "install metadata unavailable");
-  const manifestResponse = await fetch(data.skill.manifestUrl);
-  const manifest = await manifestResponse.json();
-  if (!manifestResponse.ok) throw new Error("skill manifest unavailable");
-  renderInstallData({ ...data, skillChecksum: manifest.sha256, skill: { ...data.skill, version: manifest.version } });
+  renderInstallData({ ...data, skillChecksum: data.skill.sha256 });
 }
 
 document.querySelectorAll("[data-locale]").forEach((button) => button.addEventListener("click", () => {

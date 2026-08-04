@@ -173,6 +173,7 @@ jobs:
           grep -Fqx './scripts/start-service.mjs' deploy-package-contents.txt
           grep -Fqx './web/install.html' deploy-package-contents.txt
           grep -Fqx './web/install.js' deploy-package-contents.txt
+          grep -Fqx './web/install-manifest.json' deploy-package-contents.txt
           grep -Fqx './skills/octo-design-cards/skill-manifest.json' deploy-package-contents.txt
           grep -Fqx './deployment-manifest.json' deploy-package-contents.txt
           sha256sum "$tarball"

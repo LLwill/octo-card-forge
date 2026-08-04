@@ -105,7 +105,6 @@ async function handleApi(
     const packageManifest = await readJson<{
       name: string;
       version: string;
-      repository?: string;
     }>(resolveInProject("package.json"));
     const skillManifest = await readJson<{
       skill: { name: string; version: string; entry: string };
@@ -117,11 +116,10 @@ async function handleApi(
         recommendedVersion: string;
       }>;
     }>(resolveInProject("skills", "octo-design-cards", "skill-manifest.json"));
+    const installManifest = await readJson<{
+      skill: { bundleUrl: string; releaseUrl: string; sha256: string };
+    }>(resolveInProject("web", "install-manifest.json"));
     const profile = context.profile ?? await getCurrentRenderProfile();
-    const repository = (packageManifest.repository ?? "https://github.com/LLwill/octo-card-forge")
-      .replace(/\.git$/, "");
-    const releaseTag = `octo-design-cards-skill/v${skillManifest.skill.version}`;
-    const skillBaseUrl = `${repository}/releases/download/${releaseTag}`;
     const profileManifest = skillManifest.renderProfiles.find(
       (candidate) => candidate.id === profile.manifest.id
     ) ?? skillManifest.renderProfiles[0];
@@ -138,9 +136,9 @@ async function handleApi(
         name: skillManifest.skill.name,
         version: skillManifest.skill.version,
         entry: skillManifest.skill.entry,
-        bundleUrl: `${skillBaseUrl}/octo-design-cards-skill-${skillManifest.skill.version}.tgz`,
-        manifestUrl: `${skillBaseUrl}/octo-design-cards-skill-${skillManifest.skill.version}.manifest.json`,
-        releaseUrl: `${repository}/releases/tag/${releaseTag}`,
+        bundleUrl: installManifest.skill.bundleUrl,
+        releaseUrl: installManifest.skill.releaseUrl,
+        sha256: installManifest.skill.sha256,
       },
       renderProfile: {
         id: profile.manifest.id,

@@ -32,6 +32,7 @@ describe("CLI package contents", () => {
     expect(files).toContain("package/skills/octo-design-cards/references/component-system.md");
     expect(files).toContain("package/web/install.html");
     expect(files).toContain("package/web/install.js");
+    expect(files).toContain("package/web/install-manifest.json");
     expect(files.some((file) => file.endsWith(".handoff.zip"))).toBe(false);
     expect(files.some((file) => file.startsWith("package/cards/"))).toBe(false);
     expect(files.some((file) => file.startsWith("package/render-profiles/"))).toBe(false);
