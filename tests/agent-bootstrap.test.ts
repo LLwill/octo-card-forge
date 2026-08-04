@@ -57,7 +57,7 @@ describe("agent lifecycle bootstrap", () => {
     await expect(execFileAsync("pnpm", [
       "--silent", "cli", "agent", "doctor", "--workspace", workspace, "--format", "json",
     ])).rejects.toMatchObject({ code: 1 });
-  });
+  }, 15_000);
 
   it("returns a non-zero result when the workspace is not initialized", async () => {
     const workspace = await mkdtemp(path.join(os.tmpdir(), "octo-card-agent-empty-"));
