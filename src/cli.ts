@@ -29,10 +29,12 @@ import {
 import {
   loadRenderProfileFromDirectory,
   loadRenderProfileFromPackage,
+  loadRenderProfileForReference,
 } from "./profile-source.js";
 import { getCard, listCards, loadCardPackage } from "./registry.js";
 import { startServer } from "./server.js";
-import type { JsonObject } from "./types.js";
+import type { JsonObject, WireProfile } from "./types.js";
+import { validateCompiledCard } from "./validate.js";
 import { verifyCardPackage, verifySummary } from "./verify.js";
 
 const args = process.argv.slice(2);
@@ -45,6 +47,7 @@ const VALUE_FLAGS = new Set([
   "--format",
   "--host",
   "--handoff",
+  "--input",
   "--name",
   "--output",
   "--out",
@@ -72,6 +75,7 @@ function usage(): void {
   discover [query] [--profile octo-chat@latest] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
   explain utility <token> [--profile octo-chat@latest] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
   lint [card-id] [--card <dir>] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
+  validate --input <card.json> [--wire-profile octo/v1|octo/v2] [--profile octo-chat@latest] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
   contract <card-id> [--format json]
   inspect <card-id> [--card <dir>] [--profile-dir <dir> | --profile-package <pkg>] [--sample <name>] [--format json]
   verify --card <dir> [--sample <name>] [--emit-dir <dir>] [--handoff <dir>] [--format json]
@@ -101,6 +105,10 @@ function positional(index: number): string | undefined {
     values.push(args[i]);
   }
   return values[index];
+}
+
+function isJsonObject(value: unknown): value is JsonObject {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 async function loadExplicitProfileSource() {
@@ -261,6 +269,48 @@ try {
       console.log(JSON.stringify(report, null, 2));
     } else {
       printLintText(report);
+    }
+    if (!report.valid) process.exitCode = 1;
+  } else if (command === "validate") {
+    const inputPath = flag("--input") ?? positional(0);
+    if (!inputPath) throw new Error("validate requires --input <card.json>");
+    const requestedWireProfile = flag("--wire-profile") ?? "octo/v1";
+    if (requestedWireProfile !== "octo/v1" && requestedWireProfile !== "octo/v2") {
+      throw new Error("wire profile must be octo/v1 or octo/v2");
+    }
+    const profileSource = await loadExplicitProfileSource();
+    const profile = await loadRenderProfileForReference(flag("--profile"), profileSource);
+    const payload = await readJson<unknown>(path.resolve(inputPath));
+    const issues = isJsonObject(payload)
+      ? validateCompiledCard(
+          payload,
+          profile.capabilities,
+          requestedWireProfile as WireProfile
+        )
+      : [
+          {
+            severity: "error" as const,
+            code: "schema.root_object",
+            path: "$",
+            message: "Adaptive Card JSON root must be an object",
+          },
+        ];
+    const report = {
+      valid: !issues.some((issue) => issue.severity === "error"),
+      input: path.resolve(inputPath),
+      profile: profile.reference,
+      wireProfile: requestedWireProfile as WireProfile,
+      issues,
+    };
+    if (flag("--format") === "json") {
+      console.log(JSON.stringify(report, null, 2));
+    } else {
+      console.log(
+        `${report.valid ? "✓" : "✗"} ${inputPath} · ${report.profile} · ${report.wireProfile}`
+      );
+      for (const issue of issues) {
+        console.log(`  ${issue.severity}: ${issue.code} ${issue.path} ${issue.message}`);
+      }
     }
     if (!report.valid) process.exitCode = 1;
   } else if (command === "contract") {

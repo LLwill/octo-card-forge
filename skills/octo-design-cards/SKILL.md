@@ -1,23 +1,29 @@
 ---
 name: octo-design-cards
-description: Create, modify, validate, preview, and prepare versioned standard Adaptive Card packages for Octo. Use when an Agent needs to build a new Octo card from requirements or a design, change card layout or standard interactions, define the backend-facing Card ViewModel JSON Schema, add views or samples, use Octo Render Profile utilities, update an Octo Render Profile, or hand a card contract to a business backend.
+description: Create, modify, validate, preview, and prepare standard Adaptive Cards for Octo, including lightweight one-shot message cards and versioned Card Packages. Use when an Agent needs to build a new Octo card from requirements or a design, change card layout or standard interactions, define the backend-facing Card ViewModel JSON Schema, add views or samples, use Octo Render Profile utilities, update an Octo Render Profile, or hand a card contract to a business backend.
 ---
 
 # Octo Design Cards
 
-Default to repo-free card authoring. A normal card-generating Agent should work in its own task directory with the installed `octo-card` CLI and the target Render Profile package; it should not clone or edit the Octo Card Forge repository just to produce Adaptive Card JSON.
+Default to repo-free card authoring. Choose the lightest workflow that matches the request:
 
-Use CLI output for deterministic creation, compilation, and validation. Use only standard Adaptive Cards elements and actions; never introduce card-specific renderer markers. Keep machine-checkable rules in `octo-card check` / `octo-card lint`. Use this Skill for workflow, version judgment, component-tier choices, and when to stop and ask. Do not invent business behavior, private Adaptive Cards types, or shared profile CSS for a single card.
+- For a reusable or backend-integrated card, create a versioned Card Package.
+- For a one-time message that only needs to be displayed as a card, use Quick Card mode and return a standard Adaptive Card JSON payload without creating a Card Package.
+
+A card-generating Agent should work in its own task directory with the installed `octo-card` CLI and the target Render Profile package; it should not clone or edit the Octo Card Forge repository just to produce Adaptive Card JSON.
+
+Use CLI output for deterministic creation, compilation, and validation. Use only standard Adaptive Cards elements and actions; never introduce card-specific renderer markers. Keep machine-checkable rules in `octo-card validate`, `octo-card check`, and `octo-card lint`. Use this Skill for workflow, version judgment, component-tier choices, and when to stop and ask. Do not invent business behavior, private Adaptive Cards types, or shared profile CSS for a single card.
 
 ## Start safely
 
-First classify the task:
+Classify the task in this order:
 
-- **Repo-free card authoring**: create a new card package, generate card JSON, preview, lint, or hand off a card contract. This is the default.
-- **Forge platform work**: change the CLI, Skill, Render Profile, shared web showcase, package publishing, or existing repository fixtures.
+- **Quick Card**: convert one-time message content into a single standard Adaptive Card JSON payload. Do not create a manifest, version directory, contract package, or backend handoff unless the request asks for a reusable card.
+- **Card Package authoring**: create a reusable package with a contract, templates, samples, version, and optional backend handoff. This is the default for reusable or backend-integrated work.
 - **Existing Forge card maintenance**: edit a card package that already lives under the Forge repository.
+- **Forge platform work**: change the CLI, Skill, Render Profile, shared web showcase, package publishing, or existing repository fixtures.
 
-For repo-free authoring:
+For Card Package authoring:
 
 1. Work in the task directory or a small card workspace selected by the user.
 2. Ensure `octo-card` is available through `pnpm exec octo-card`, `npx octo-card`, or the local environment.
@@ -33,6 +39,45 @@ For Forge platform work or existing Forge card maintenance:
 
 Do not commit, push, publish, or open a pull request unless the task authorizes it.
 
+## Quick Card mode
+
+Use this mode when the user wants a one-time message, notification, status update,
+summary, or other transient content represented as a card. The output is still a
+standard Adaptive Card JSON payload; Quick Card only removes the reusable package
+and backend handoff overhead.
+
+1. Read `octo-card --help` and `octo-card discover --format json` when the CLI or
+   target Render Profile is available. Use the requested and resolved Render
+   Profile as the visual and capability boundary.
+2. Preserve the message meaning and choose a simple hierarchy: heading, supporting
+   text, key facts, and only the actions explicitly supported by the request.
+3. Use standard Adaptive Cards elements and actions only. Do not invent business
+   action IDs, submit payloads, private element types, renderer markers, or CSS.
+4. Prefer a read-only card when no real interaction contract is provided. Never
+   invent an action merely to make the card look interactive.
+5. Keep the payload small and readable. Use HTTPS for images and URLs, provide
+   standard fallback attributes, and avoid unnecessary inputs, nested containers,
+   or complex visibility state.
+6. Write the payload to a temporary or requested `card.json` and validate it with
+   the standalone command:
+
+   ```bash
+   octo-card validate --input ./card.json --wire-profile octo/v1 --profile octo-chat@latest --format json
+   ```
+
+   Use `octo/v2` when the payload contains inputs or `Action.Submit`. Add
+   `--profile-dir` or `--profile-package` when the target Profile is supplied
+   explicitly. Treat unsupported elements/actions, invalid URLs, duplicate IDs,
+   unresolved expressions, and malformed JSON as blockers. Preview is optional
+   and only needed when a local renderer is available.
+7. Return the JSON and a short assumptions note. Do not create `manifest.json`,
+   `contract/data.schema.json`, version folders, Samples, or a handoff archive
+   unless the user asks to turn the one-shot card into a reusable package.
+
+Quick Card mode may use published `octo-*` components or utilities when they are
+declared by the active Profile, but it should prefer Tier 0 standard composition
+when the visual requirement can be met without a Profile extension.
+
 ## Read screenshots and fuzzy requests
 
 Treat a screenshot and natural-language request as evidence, not as a complete
@@ -46,7 +91,8 @@ backend contract.
 - Do not ask for exact spacing, colors, or element choices when the screenshot and
   the active Render Profile provide a reasonable default.
 - If a missing detail is non-blocking, choose the closest standard/preset behavior
-  and record the assumption in the handoff report.
+  and record the assumption in the Card Package handoff report or the Quick Card
+  assumptions note.
 - If the request and screenshot conflict, ask which source has priority.
 
 ## Create a card
@@ -95,8 +141,8 @@ Use a separate view when structure or available actions change materially. Use c
 Platform visual primitives are not private Adaptive Cards types. They are semantic
 element IDs enhanced by the pinned Render Profile CSS.
 
-Canonical design:
-[`docs/cli-skill-and-component-system.md`](../../docs/cli-skill-and-component-system.md).
+Canonical Skill reference:
+[`references/component-system.md`](references/component-system.md).
 
 ### Expression tiers
 
@@ -116,10 +162,9 @@ octo-<family>-<variant>-<free-suffix>
 octo--<utility-token>--<utility-token>--uid-<unique-name>
 ```
 
-Current validated families:
-
-- `octo-badge-<neutral|accent|good|warning|attention>-...` on `TextBlock`
-- `octo-surface-<accent|header-accent|footer-default>-...` on `Container` / `Column`
+Available families and variants are Profile-defined. Read
+`capabilities.components` from the resolved Profile artifact; do not rely on a
+hard-coded list in this Skill.
 
 Rules:
 
@@ -148,9 +193,10 @@ Utility rules:
 Prefer values declared in `capabilities.components` and `capabilities.utilities`
 over this prose list when the pinned Render Profile changes.
 
-When Tier 2 is used, or the same visual pattern appears repeatedly, record a
-candidate component pattern in the handoff report instead of patching the shared
-profile.
+When Tier 2 is used or the same visual pattern appears repeatedly, record a
+candidate component pattern in the Card Package handoff report. For a Quick
+Card, mention the candidate in the assumptions note and do not patch the shared
+Profile.
 
 ## Handle Render Profiles
 
@@ -190,7 +236,18 @@ Keep the scaffold's initial versions for a card's first release. After a version
 
 ## Validate and preview
 
-For repo-free authoring, run:
+For Quick Card mode, validate the raw JSON directly:
+
+```bash
+octo-card validate --input ./card.json --wire-profile octo/v1 --profile octo-chat@latest --format json
+```
+
+The command validates the root type and version, Profile-supported elements and
+actions, component and utility fallbacks, wire-profile interaction limits, URL
+schemes, IDs, toggle targets, expressions, and payload limits. A successful
+Quick Card needs no `manifest.json`, contract, version directory, or handoff.
+
+For Card Package authoring, run:
 
 ```bash
 octo-card verify --card ./<card-id> --emit-dir compiled --handoff handoff --format json
@@ -218,7 +275,7 @@ local toggles and inputs and inspect the final JSON.
 
 Treat CLI errors, unresolved `${...}` expressions, unsupported host capabilities, contract failures, broken toggle targets, duplicate IDs, or insecure URLs as blockers. Never accept a visual preview as proof of correctness when validation fails.
 
-## Hand off
+## Hand off a Card Package
 
 Inspect the final diff and exclude unrelated files. Report:
 
@@ -231,4 +288,7 @@ Inspect the final diff and exclude unrelated files. Report:
 - Commands run and their results; local preview command.
 - Remaining prototype assets, unresolved product choices, or required Octo Web Render Profile work.
 
-If backend field semantics or action behavior cannot be determined from the requirement, stop and list the contract questions. Do not invent business behavior to complete a visually plausible card.
+If backend field semantics or action behavior cannot be determined for a Card
+Package, stop and list the contract questions. For a Quick Card, omit an action
+whose business behavior is unknown and list that omission in the assumptions note.
+Do not invent business behavior to complete a visually plausible card.

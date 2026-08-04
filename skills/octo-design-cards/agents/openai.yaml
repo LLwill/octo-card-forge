@@ -1,4 +1,4 @@
 interface:
   display_name: "Octo Design Cards"
-  short_description: "Create repo-free Octo Adaptive Card packages"
-  default_prompt: "Use $octo-design-cards to create or update an Octo Adaptive Card package. Default to repo-free authoring with the octo-card CLI, interpret screenshots and fuzzy requirements, ask only blocking contract/interaction/security questions, then run octo-card verify and emit final Adaptive Card JSON."
+  short_description: "Create repo-free Octo Adaptive Cards and packages"
+  default_prompt: "Use $octo-design-cards to create or update an Octo Adaptive Card, choosing Quick Card mode for one-time messages and Card Package mode for reusable/backend-integrated cards. Default to repo-free authoring with the octo-card CLI, interpret screenshots and fuzzy requirements, ask only blocking contract/interaction/security questions, then run octo-card verify for Card Packages or octo-card validate for Quick Card JSON, and emit final Adaptive Card JSON."
