@@ -4,6 +4,9 @@ This reference is part of the distributed Skill package. The active Render
 Profile artifact remains the source of truth for the exact component variants,
 utility tokens, fallback values, and limits.
 
+If no Render Profile artifact is resolved, use Tier 0 only. Do not guess component families,
+variants, utility tokens, fallback values, or capability limits from memory.
+
 ## Expression tiers
 
 1. **Tier 0**: standard Adaptive Cards elements/actions plus HostConfig. Prefer
@@ -43,7 +46,7 @@ Rules:
 
 ## Utility contract
 
-Before using a utility, run:
+Before using a utility with a resolved Profile, run:
 
 ```bash
 octo-card discover [query] --format json
@@ -52,7 +55,8 @@ octo-card explain utility <token> --format json
 
 Use only tokens declared in `capabilities.utilities`. Observe each token's
 `appliesTo`, fallback, deprecation, and group rules. Do not combine two tokens
-from the same group and stay within `utilityRules.maxTokensPerElement`.
+from the same group and stay within `utilityRules.maxTokensPerElement`. Without a resolved Profile,
+do not use utility IDs.
 
 The utility ID shape is:
 

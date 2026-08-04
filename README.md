@@ -58,6 +58,15 @@ pnpm cli profile pack octo-chat@1.2.0-rc.2 --output .release
 `render-profiles/octo-chat/` 只保存当前候选 Profile 源码；历史精确版本由制品库保存，
 需要复现旧卡时从对应 card/profile 制品重新渲染，不在本仓预览。
 
+只需要给 Agent 读取 Skill 时，可生成不依赖 Node/npm 的 Portable Bundle：
+
+```bash
+pnpm skill:pack .release
+```
+
+产物为 `.release/octo-design-cards-skill-<version>.tgz` 和同名 checksum manifest；它只包含
+`SKILL.md`、`agents/`、`references/` 和 `skill-manifest.json`，不包含 CLI 或 Web Preview。
+
 ## 系统边界
 
 - 业务后端负责：领域模型 → Card ViewModel。
@@ -78,6 +87,7 @@ pnpm cli profile pack octo-chat@1.2.0-rc.2 --output .release
 - [`docs/octo-card-utility-system-development-plan.md`](docs/octo-card-utility-system-development-plan.md)：Tailwind-like `id` utility、Profile 超集、校验、CSS 对账和发布边界的开发落地计划。
 - [`docs/octo-card-utility-core-development.md`](docs/octo-card-utility-core-development.md)：Utility Core 的文件级开发任务、函数签名、错误码、测试和验收标准。
 - [`docs/repo-free-card-authoring-implementation.md`](docs/repo-free-card-authoring-implementation.md)：让 Agent 不 clone Forge、只用可分发 CLI/Profile 开发卡片的实施方案。
+- [`docs/agent-toolkit-installation-and-upgrade-plan.md`](docs/agent-toolkit-installation-and-upgrade-plan.md)：Portable Skill Bundle、CLI Runtime、Agent 注册、版本诊断、升级与回滚方案。
 
 术语约定：Template Renderer 生成 Card JSON；Web Renderer 使用 Card JSON 和 Render
 Profile 生成 DOM。两者不是同一个组件。
@@ -101,6 +111,9 @@ octo-card render docs.access-request --sample pending
 octo-card render --card ./docs.access-request --sample pending
 octo-card emit --card ./docs.access-request --sample pending
 octo-card check [docs.access-request] [--card ./docs.access-request] [--format json]
+octo-card agent init [--target generic] [--workspace <dir>] [--profile octo-chat@version] [--format json]
+octo-card agent doctor [--workspace <dir>] [--format json]
+octo-card agent upgrade --check [--workspace <dir>] [--format json]
 octo-card dev [docs.access-request] [--card ./docs.access-request] [--host 127.0.0.1] [--port 4318]
 ```
 
@@ -156,6 +169,20 @@ Content-Type: application/json
 ## Agent 使用
 
 仓库内置 [`octo-design-cards`](skills/octo-design-cards/SKILL.md) Skill。外部 Agent 使用该 Skill 创建或修改 Card Package，并理解数据契约、标准 Action/Input、Render Profile、版本规则和必跑校验；Card Forge 自身不运行 Agent。
+
+对于安装了 CLI 的 Agent，可在自己的工作目录执行一次初始化。它会生成
+`.octo-card/agent.json`，并只维护 `AGENTS.md` 中的托管区块；不会覆盖已有的用户指令：
+
+```bash
+octo-card agent init --target generic
+octo-card agent doctor --format json
+octo-card agent upgrade --check --format json
+```
+
+`upgrade --check` 当前是无副作用预检，不会修改依赖或 lockfile。Skill Bundle 的兼容关系见
+[`skills/octo-design-cards/skill-manifest.json`](skills/octo-design-cards/skill-manifest.json)，
+安装与升级的完整渠道方案见
+[`docs/agent-toolkit-installation-and-upgrade-plan.md`](docs/agent-toolkit-installation-and-upgrade-plan.md)。
 
 Agent 不应凭提示词记忆 Profile 能力。需要查找样式能力时使用：
 

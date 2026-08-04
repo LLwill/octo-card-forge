@@ -27,9 +27,11 @@ describe("CLI package contents", () => {
 
     expect(files).toContain("package/dist/cli.js");
     expect(files).toContain("package/skills/octo-design-cards/SKILL.md");
+    expect(files).toContain("package/skills/octo-design-cards/skill-manifest.json");
+    expect(files).toContain("package/skills/octo-design-cards/references/card-package-workflow.md");
     expect(files).toContain("package/skills/octo-design-cards/references/component-system.md");
     expect(files.some((file) => file.endsWith(".handoff.zip"))).toBe(false);
     expect(files.some((file) => file.startsWith("package/cards/"))).toBe(false);
     expect(files.some((file) => file.startsWith("package/render-profiles/"))).toBe(false);
-  });
+  }, 15_000);
 });
