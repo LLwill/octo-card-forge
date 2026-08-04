@@ -12,6 +12,8 @@ const detailReference = document.querySelector("#detailReference");
 const detailMeta = document.querySelector("#detailMeta");
 const detailStatus = document.querySelector("#detailStatus");
 const detailCardSelect = document.querySelector("#detailCardSelect");
+const detailVersionSwitcher = document.querySelector("#detailVersionSwitcher");
+const detailVersionSelect = document.querySelector("#detailVersionSelect");
 const sampleTabs = document.querySelector("#sampleTabs");
 const detailPreview = document.querySelector("#detailPreview");
 const sampleSelect = document.querySelector("#sampleSelect");
@@ -24,6 +26,7 @@ const exportButton = document.querySelector("#exportButton");
 const homeThemeToggle = document.querySelector("#homeThemeToggle");
 let cards = [];
 let catalogItems = [];
+let cardGroups = new Map();
 let currentCard;
 let currentContext;
 let currentView;
@@ -39,7 +42,7 @@ const copy = {
     "catalog.search": "按名称或 ID 搜索卡片…", "catalog.loading": "正在加载成品卡片…",
     "filters.all": "全部", "filters.ai": "AI", "filters.documents": "文档",
     "stats.cards": "张卡片", "stats.views": "个视图", "stats.samples": "个样例",
-    "detail.allCards": "全部卡片", "detail.card": "卡片", "detail.eyebrow": "卡片详情",
+    "detail.allCards": "全部卡片", "detail.card": "卡片", "detail.version": "版本", "detail.eyebrow": "卡片详情",
     "detail.export": "导出交付包", "detail.liveOutput": "实时输出", "detail.preview": "卡片预览",
     "detail.renderState": "渲染状态", "detail.viewModel": "视图模型", "detail.editData": "编辑样例数据",
     "detail.reassemble": "重新组装卡片", "detail.contract": "查看数据契约",
@@ -59,7 +62,7 @@ const copy = {
     "catalog.search": "Search cards by name or ID…", "catalog.loading": "Loading finished cards…",
     "filters.all": "All", "filters.ai": "AI", "filters.documents": "Documents",
     "stats.cards": "cards", "stats.views": "views", "stats.samples": "samples",
-    "detail.allCards": "All cards", "detail.card": "Card", "detail.eyebrow": "CARD DETAIL",
+    "detail.allCards": "All cards", "detail.card": "Card", "detail.version": "Version", "detail.eyebrow": "CARD DETAIL",
     "detail.export": "Export handoff", "detail.liveOutput": "LIVE OUTPUT", "detail.preview": "Card preview",
     "detail.renderState": "Render state", "detail.viewModel": "VIEW MODEL", "detail.editData": "Edit sample data",
     "detail.reassemble": "Reassemble card", "detail.contract": "View data contract",
@@ -83,6 +86,7 @@ function applyLocale() {
     ".brand-nav nav a[data-nav='cards']": "nav.cards", ".brand-nav nav a[data-nav='components']": "nav.components",
     "#catalogTitle": "catalog.title", ".home-hero-copy > p:not(.eyebrow)": "catalog.description",
     "#backToCatalog span:not([aria-hidden])": "detail.allCards", "#detailEyebrow": "detail.eyebrow",
+    "#detailCardLabel": "detail.card", "#detailVersionLabel": "detail.version",
     "#exportButton": "detail.export", "#previewHeading": "detail.preview", ".sample-switcher > span": "detail.renderState",
     "#editorHeading": "detail.editData", ".detail-editor-panel .eyebrow": "detail.viewModel",
     "#renderButton": "detail.reassemble", ".contract-details summary": "detail.contract",
@@ -165,7 +169,7 @@ function firstSample(card) {
 function cardMatches(item) {
   const query = cardSearch.value.trim().toLowerCase();
   const matchesFilter = document.querySelector("[data-filter].active")?.dataset.filter || "all";
-  const searchable = `${item.card.id} ${item.card.name} ${item.card.version} ${item.card.contractVersion}`.toLowerCase();
+  const searchable = `${item.card.id} ${item.card.name} ${item.versions.map((card) => `${card.version} ${card.contractVersion}`).join(" ")}`.toLowerCase();
   return (matchesFilter === "all" || matchesFilter === cardKind(item.card)) &&
     (!query || searchable.includes(query));
 }
@@ -207,7 +211,7 @@ function renderCatalog() {
     previewShell.append(cardPreview(item));
     const footer = document.createElement("footer");
     const meta = document.createElement("span");
-    meta.textContent = `${Object.keys(item.card.samples).length} ${t("card.views")} · ${item.sampleCount} ${t("card.samples")}`;
+    meta.textContent = `${item.card.version} · ${Object.keys(item.card.samples).length} ${t("card.views")} · ${item.sampleCount} ${t("card.samples")}`;
     const open = document.createElement("a");
     open.className = "card-open-link";
     open.href = `/?card=${encodeURIComponent(item.card.reference)}`;
@@ -348,12 +352,19 @@ async function renderCard(view) {
 async function openCard(reference, replace = false) {
   const card = cards.find((item) => item.reference === reference);
   if (!card) return;
+  const group = cardGroups.get(card.id) || { latest: card, versions: [card] };
   if (replace) history.replaceState({}, "", `/?card=${encodeURIComponent(reference)}`);
   else history.pushState({}, "", `/?card=${encodeURIComponent(reference)}`);
   currentCard = card;
   catalogView.hidden = true;
   detailView.hidden = false;
-  detailCardSelect.value = card.reference;
+  detailCardSelect.value = group.latest.reference;
+  detailVersionSelect.replaceChildren();
+  for (const version of group.versions) {
+    detailVersionSelect.add(new Option(version.version, version.reference));
+  }
+  detailVersionSelect.value = card.reference;
+  detailVersionSwitcher.hidden = group.versions.length < 2;
   detailTitle.textContent = card.name;
   detailDescription.textContent = locale === "zh" ? "在当前 Render Profile 下查看样例状态、编辑 ViewModel 并验证最终 Adaptive Card。" : "Inspect sample states, edit ViewModel data, and validate the final Adaptive Card under the current Render Profile.";
   detailReference.textContent = card.id;
@@ -407,17 +418,29 @@ async function start() {
     json("/api/component-baseline"),
   ]);
   cards = cardData;
+  cardGroups = new Map();
   for (const card of cards) {
-    detailCardSelect.add(new Option(`${card.name} · ${card.version}`, card.reference));
+    const group = cardGroups.get(card.id) || { latest: card, versions: [] };
+    group.versions.push(card);
+    if (card.version.localeCompare(group.latest.version, undefined, { numeric: true }) > 0) {
+      group.latest = card;
+    }
+    cardGroups.set(card.id, group);
+  }
+  const latestCards = [...cardGroups.values()]
+    .sort((a, b) => a.latest.id.localeCompare(b.latest.id))
+    .map((group) => group.latest);
+  for (const card of latestCards) {
+    detailCardSelect.add(new Option(card.name, card.reference));
   }
   setHostStyle(profileData.stylesheetUrl);
-  catalogCount.textContent = cards.length;
-  viewCount.textContent = cards.reduce((count, card) => count + Object.keys(card.samples).length, 0);
-  sampleCount.textContent = cards.reduce(
+  catalogCount.textContent = latestCards.length;
+  viewCount.textContent = latestCards.reduce((count, card) => count + Object.keys(card.samples).length, 0);
+  sampleCount.textContent = latestCards.reduce(
     (count, card) => count + Object.values(card.samples).reduce((total, names) => total + names.length, 0),
     0
   );
-  catalogItems = await Promise.all(cards.map(async (card) => {
+  catalogItems = await Promise.all(latestCards.map(async (card) => {
     const selected = firstSample(card);
     const result = await json(
       `/api/cards/${encodeURIComponent(card.reference)}/samples/${encodeURIComponent(selected.sample)}`
@@ -426,6 +449,7 @@ async function start() {
       card,
       result,
       hostConfig: profileData.hostConfig,
+      versions: cardGroups.get(card.id).versions,
       sampleCount: Object.values(card.samples).reduce((total, names) => total + names.length, 0),
     };
   }));
@@ -453,6 +477,7 @@ document.addEventListener("keydown", (event) => {
 });
 document.querySelector("#backToCatalog").addEventListener("click", closeCard);
 detailCardSelect.addEventListener("change", () => openCard(detailCardSelect.value));
+detailVersionSelect.addEventListener("change", () => openCard(detailVersionSelect.value));
 window.addEventListener("popstate", () => {
   const reference = new URLSearchParams(location.search).get("card");
   if (reference) openCard(reference, true);
