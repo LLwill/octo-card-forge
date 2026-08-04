@@ -1,0 +1,115 @@
+name: publish-octo-design-cards-skill
+
+on:
+  push:
+    tags:
+      - octo-design-cards-skill/v*
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Skill Bundle version, for example 0.2.0
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-octo-design-cards-skill-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "22"
+
+jobs:
+  publish:
+    name: package-and-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out tagged commit
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Require tag to point to main
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main || {
+            echo "Skill Bundle tags must point to a commit already merged into main." >&2
+            exit 1
+          }
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.0
+          run_install: false
+
+      - name: Resolve and verify release metadata
+        id: metadata
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]]; then
+            version="$REQUESTED_VERSION"
+          else
+            tag="$GITHUB_REF_NAME"
+            if [[ ! "$tag" =~ ^octo-design-cards-skill/v(.+)$ ]]; then
+              echo "Invalid Skill Bundle release tag: $tag" >&2
+              exit 1
+            fi
+            version="${BASH_REMATCH[1]}"
+          fi
+          test "$(node -p "require('./skills/octo-design-cards/skill-manifest.json').skill.version")" = "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Run release gates
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm typecheck
+          pnpm test
+          pnpm check
+          pnpm smoke:repo-free-agent
+
+      - name: Build Skill Bundle
+        run: node scripts/package-skill.mjs .release
+
+      - name: Inspect Skill Bundle
+        env:
+          VERSION: ${{ steps.metadata.outputs.version }}
+        run: |
+          set -euo pipefail
+          artifact=".release/octo-design-cards-skill-$VERSION.tgz"
+          manifest=".release/octo-design-cards-skill-$VERSION.manifest.json"
+          test -f "$artifact"
+          test -f "$manifest"
+          tar -tzf "$artifact" | sort | tee skill-contents.txt
+          grep -Fqx './SKILL.md' skill-contents.txt
+          grep -Fqx './agents/openai.yaml' skill-contents.txt
+          grep -Fqx './references/card-package-workflow.md' skill-contents.txt
+          grep -Fqx './references/component-system.md' skill-contents.txt
+          grep -Fqx './skill-manifest.json' skill-contents.txt
+          sha256sum "$artifact"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.metadata.outputs.version }}
+        run: |
+          set -euo pipefail
+          tag="octo-design-cards-skill/v$VERSION"
+          gh release create "$tag" \
+            ".release/octo-design-cards-skill-$VERSION.tgz" \
+            ".release/octo-design-cards-skill-$VERSION.manifest.json" \
+            --title "octo-design-cards Skill v$VERSION" \
+            --notes "Portable Skill Bundle for octo-design-cards. Includes the Skill instructions, Agent metadata, references, and compatibility manifest." \
+            --target "$GITHUB_SHA"

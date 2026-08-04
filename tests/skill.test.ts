@@ -50,13 +50,20 @@ describe("octo-design-cards skill", () => {
   });
 
   it("ships a self-contained manifest for portable Skill consumers", async () => {
+    const packageJson = JSON.parse(await readFile("package.json", "utf8")) as { version: string };
     const manifest = JSON.parse(
       await readFile("skills/octo-design-cards/skill-manifest.json", "utf8")
-    ) as { skill: { name: string; entry: string }; cli: { package: string }; renderProfiles: unknown[] };
+    ) as {
+      skill: { name: string; version: string; entry: string };
+      cli: { package: string; recommendedVersion: string };
+      renderProfiles: unknown[];
+    };
     expect(manifest).toMatchObject({
       skill: { name: "octo-design-cards", entry: "SKILL.md" },
       cli: { package: "@mlt-org/octo-card-cli" },
     });
+    expect(manifest.skill.version).toBe(packageJson.version);
+    expect(manifest.cli.recommendedVersion).toBe(packageJson.version);
     expect(manifest.renderProfiles).toHaveLength(1);
   });
 });
