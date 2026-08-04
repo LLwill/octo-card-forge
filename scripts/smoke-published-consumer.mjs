@@ -16,7 +16,7 @@ const workspace = mkdtempSync(path.join(os.tmpdir(), "octo-card-published-consum
 
 function run(args, options = {}) {
   try {
-    return execFileSync("pnpm", args, {
+    return execFileSync("npm", args, {
       cwd: workspace,
       encoding: "utf8",
       stdio: options.capture === false ? "inherit" : ["ignore", "pipe", "pipe"],
@@ -31,7 +31,7 @@ function run(args, options = {}) {
 }
 
 function jsonCommand(args) {
-  return JSON.parse(run(["exec", "octo-card", ...args, "--format", "json"]));
+  return JSON.parse(run(["exec", "--", "octo-card", ...args, "--format", "json"]));
 }
 
 async function download(url) {
@@ -40,8 +40,8 @@ async function download(url) {
   return Buffer.from(await response.arrayBuffer());
 }
 
-run(["init"], { capture: false });
-run(["add", "--save-dev", `${cliPackage}@${cliVersion}`, `${profilePackage}@${profileVersion}`], { capture: false });
+run(["init", "--yes"], { capture: false });
+run(["install", "--save-dev", `${cliPackage}@${cliVersion}`, `${profilePackage}@${profileVersion}`], { capture: false });
 
 const init = jsonCommand(["agent", "init", "--target", "generic"]);
 const doctor = jsonCommand(["agent", "doctor"]);
@@ -57,7 +57,7 @@ if (
   throw new Error(`Agent lifecycle smoke failed: ${JSON.stringify({ init, doctor, upgrade })}`);
 }
 
-run(["exec", "octo-card", "init", "consumer.bot-token", "--name", "Consumer Bot Token", "--out", "./consumer.bot-token", "--preset", "bot-token"], { capture: false });
+run(["exec", "--", "octo-card", "init", "consumer.bot-token", "--name", "Consumer Bot Token", "--out", "./consumer.bot-token", "--preset", "bot-token"], { capture: false });
 const packageReport = jsonCommand(["verify", "--card", "./consumer.bot-token", "--emit-dir", "compiled", "--handoff", "handoff"]);
 if (!packageReport.valid || !packageReport.handoff?.filePath) {
   throw new Error(`Card Package smoke failed: ${JSON.stringify(packageReport)}`);

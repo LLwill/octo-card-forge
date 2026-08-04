@@ -46,23 +46,23 @@ if (!existsSync(profilePack.tarball)) {
 const workspace = mkdtempSync(path.join(os.tmpdir(), "octo-card-agent-smoke-"));
 const cardRoot = path.join(workspace, "bot.token-view");
 
-run("pnpm", ["add", "-D", cliTarball, profilePack.tarball], {
+run("npm", ["install", "--save-dev", cliTarball, profilePack.tarball], {
   cwd: workspace,
   stdio: "ignore",
 });
 
-const octo = (...args) => run("pnpm", ["exec", "octo-card", ...args], { cwd: workspace });
+const octo = (...args) => run("npm", ["exec", "--", "octo-card", ...args], { cwd: workspace });
 
-const discover = runJson("pnpm", [
-  "exec",
+const discover = runJson("npm", [
+  "exec", "--",
   "octo-card",
   "discover",
   "skeleton",
   "--format",
   "json",
 ], { cwd: workspace });
-const presets = runJson("pnpm", [
-  "exec",
+const presets = runJson("npm", [
+  "exec", "--",
   "octo-card",
   "presets",
   "--format",
@@ -71,8 +71,8 @@ const presets = runJson("pnpm", [
 if (!presets.presets.some((preset) => preset.id === "bot-token")) {
   throw new Error("Installed octo-card CLI did not expose the bot-token preset");
 }
-run("pnpm", [
-  "exec",
+run("npm", [
+  "exec", "--",
   "octo-card",
   "init",
   "bot.token-view",

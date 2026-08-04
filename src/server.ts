@@ -129,8 +129,8 @@ async function handleApi(
         version: packageManifest.version,
         compatibleRange: skillManifest.cli.compatibleRange,
         npmUrl: `https://www.npmjs.com/package/${packageManifest.name}/v/${packageManifest.version}`,
-        installCommand: `pnpm add -D ${packageManifest.name}@${packageManifest.version} ${profile.manifest.packageName}@${profile.manifest.version}`,
-        initCommand: "pnpm exec octo-card agent init --target generic",
+        installCommand: `npm install --save-dev ${packageManifest.name}@${packageManifest.version} ${profile.manifest.packageName}@${profile.manifest.version}`,
+        initCommand: "npx --no-install octo-card agent init --target generic",
       },
       skill: {
         name: skillManifest.skill.name,
