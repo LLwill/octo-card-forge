@@ -31,6 +31,7 @@ const files = [
   "web",
   "cards",
   "render-profiles",
+  "skills/octo-design-cards/skill-manifest.json",
   "scripts/start-service.mjs",
 ];
 

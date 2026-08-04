@@ -213,8 +213,8 @@ try {
       console.log(`Preset: ${result.preset}`);
       for (const file of result.files) console.log(`  ${file}`);
       const next = flag("--out")
-        ? `pnpm cli check --card ${result.root}`
-        : `pnpm cli check ${result.cardId}`;
+        ? `npx --no-install octo-card check --card ${result.root}`
+        : `npx --no-install octo-card check ${result.cardId}`;
       console.log(`Next: ${next}`);
     }
   } else if (command === "agent") {

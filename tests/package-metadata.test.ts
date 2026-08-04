@@ -27,6 +27,9 @@ describe("CLI package metadata", () => {
     expect(manifest.scripts?.["smoke:repo-free-agent"]).toBe(
       "node scripts/smoke-repo-free-agent.mjs"
     );
+    expect(manifest.scripts?.["smoke:published-consumer"]).toBe(
+      "node scripts/smoke-published-consumer.mjs"
+    );
     expect(manifest.scripts?.["skill:pack"]).toBe("node scripts/package-skill.mjs");
     expect(manifest.dependencies).not.toHaveProperty("tsx");
     expect(manifest.devDependencies).toHaveProperty("tsx");

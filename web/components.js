@@ -18,7 +18,7 @@ let locale = localStorage.getItem("octo-card-locale") === "en" ? "en" : "zh";
 
 const componentCopy = {
   zh: {
-    navCards: "卡片", navComponents: "组件", eyebrow: "当前基线", title: "标准卡片组件",
+    navCards: "卡片", navComponents: "组件", navInstall: "安装", eyebrow: "当前基线", title: "标准卡片组件",
     description: "把 Adaptive Card 的元素、语义和 utility 收进一套可检索的视觉词典。每个条目都由当前 Render Profile 实时渲染。",
     search: "按组件名称、token 或描述搜索…", all: "全部", foundation: "基础能力", adaptive: "Adaptive Cards", utilities: "Utilities", patterns: "组合模式",
     width: "卡片宽度", profileSystem: "PROFILE SYSTEM", profileTitle: "当前 Render Profile", profileDescription: "所有标准卡片和 utility specimen 共用同一份 HostConfig 与 Profile CSS。",
@@ -28,7 +28,7 @@ const componentCopy = {
     categories: { foundation: "基础能力", components: "Adaptive Cards", utilities: "Utility token", patterns: "组合模式" }
   },
   en: {
-    navCards: "Cards", navComponents: "Components", eyebrow: "CURRENT BASELINE", title: "Standard card components",
+    navCards: "Cards", navComponents: "Components", navInstall: "Install", eyebrow: "CURRENT BASELINE", title: "Standard card components",
     description: "A searchable visual dictionary for Adaptive Card elements, semantics, and utilities. Every specimen is rendered by the current Render Profile.",
     search: "Search by component name, token, or description…", all: "All", foundation: "Foundation", adaptive: "Adaptive Cards", utilities: "Utilities", patterns: "Patterns",
     width: "Card width", profileSystem: "PROFILE SYSTEM", profileTitle: "Current Render Profile", profileDescription: "Standard cards and utility specimens share the same HostConfig and Profile CSS.",
@@ -48,7 +48,7 @@ function applyComponentLocale() {
     button.setAttribute("aria-pressed", button.dataset.locale === locale ? "true" : "false");
   });
   const text = {
-    ".brand-nav nav a[data-nav='cards']": ct("navCards"), ".brand-nav nav a[data-nav='components']": ct("navComponents"),
+    ".brand-nav nav a[data-nav='cards']": ct("navCards"), ".brand-nav nav a[data-nav='components']": ct("navComponents"), ".brand-nav nav a[data-nav='install']": ct("navInstall"),
     ".component-hero .eyebrow span:last-child": ct("eyebrow"), "#pageTitle": ct("title"), ".hero-copy": ct("description"),
     "#componentSearch": ct("search"), "[data-filter='all']": ct("all"), "[data-filter='foundation']": ct("foundation"),
     "[data-filter='components']": ct("adaptive"), "[data-filter='utilities']": ct("utilities"), "[data-filter='patterns']": ct("patterns"),

@@ -36,7 +36,7 @@ let locale = localStorage.getItem("octo-card-locale") === "en" ? "en" : "zh";
 
 const copy = {
   zh: {
-    "nav.cards": "卡片", "nav.components": "组件",
+    "nav.cards": "卡片", "nav.components": "组件", "nav.install": "安装",
     "catalog.eyebrow": "卡片目录", "catalog.title": "成品卡片",
     "catalog.description": "浏览当前基线下可交付的卡片成品。选择一张进入预览、编辑和验证。",
     "catalog.search": "按名称或 ID 搜索卡片…", "catalog.loading": "正在加载成品卡片…",
@@ -56,7 +56,7 @@ const copy = {
     "errors.selectSample": "请选择一个样例状态", "errors.export": "导出失败"
   },
   en: {
-    "nav.cards": "Cards", "nav.components": "Components",
+    "nav.cards": "Cards", "nav.components": "Components", "nav.install": "Install",
     "catalog.eyebrow": "CARD CATALOG", "catalog.title": "Finished cards",
     "catalog.description": "Browse deliverable cards under the current baseline. Open one to preview, edit, and validate.",
     "catalog.search": "Search cards by name or ID…", "catalog.loading": "Loading finished cards…",
@@ -83,7 +83,7 @@ function applyLocale() {
   document.documentElement.lang = locale === "zh" ? "zh-CN" : "en";
   document.querySelectorAll("[data-locale]").forEach((button) => button.classList.toggle("active", button.dataset.locale === locale));
   const staticText = {
-    ".brand-nav nav a[data-nav='cards']": "nav.cards", ".brand-nav nav a[data-nav='components']": "nav.components",
+    ".brand-nav nav a[data-nav='cards']": "nav.cards", ".brand-nav nav a[data-nav='components']": "nav.components", ".brand-nav nav a[data-nav='install']": "nav.install",
     "#catalogTitle": "catalog.title", ".home-hero-copy > p:not(.eyebrow)": "catalog.description",
     "#backToCatalog span:not([aria-hidden])": "detail.allCards", "#detailEyebrow": "detail.eyebrow",
     "#detailCardLabel": "detail.card", "#detailVersionLabel": "detail.version",
@@ -98,8 +98,10 @@ function applyLocale() {
   }
   const cardsNav = document.querySelector(".brand-nav nav a[data-nav='cards']");
   const componentsNav = document.querySelector(".brand-nav nav a[data-nav='components']");
+  const installNav = document.querySelector(".brand-nav nav a[data-nav='install']");
   if (cardsNav) cardsNav.textContent = locale === "zh" ? "卡片" : "Cards";
   if (componentsNav) componentsNav.textContent = locale === "zh" ? "组件" : "Components";
+  if (installNav) installNav.textContent = t("nav.install");
   const title = document.querySelector(".home-hero .eyebrow span:last-child");
   if (title) title.textContent = t("catalog.eyebrow");
   document.querySelector("#cardSearch")?.setAttribute("placeholder", t("catalog.search"));

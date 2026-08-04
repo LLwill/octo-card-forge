@@ -202,13 +202,13 @@ Agent 侧不需要 clone 本仓库即可完成单卡开发闭环。典型流程�
 Render Profile 包后，在自己的工作目录中生成、预览、校验和交付：
 
 ```bash
-pnpm add -D @mlt-org/octo-card-cli @mlt-org/octo-card-profile-octo-chat
-pnpm exec octo-card discover skeleton --format json
-pnpm exec octo-card presets --format json
-pnpm exec octo-card init bot.token-view --name "Bot Token 查看" --out ./bot.token-view --preset bot-token
-pnpm exec octo-card dev --card ./bot.token-view
-pnpm exec octo-card verify --card ./bot.token-view --emit-dir compiled --handoff handoff --format json
-pnpm exec octo-card emit --card ./bot.token-view --sample default > card.json
+npm install --save-dev @mlt-org/octo-card-cli @mlt-org/octo-card-profile-octo-chat
+npx --no-install octo-card discover skeleton --format json
+npx --no-install octo-card presets --format json
+npx --no-install octo-card init bot.token-view --name "Bot Token 查看" --out ./bot.token-view --preset bot-token
+npx --no-install octo-card dev --card ./bot.token-view
+npx --no-install octo-card verify --card ./bot.token-view --emit-dir compiled --handoff handoff --format json
+npx --no-install octo-card emit --card ./bot.token-view --sample default > card.json
 ```
 
 这里 `--out` 创建的是一个独立 Card Package 目录；后续 `--card` 都指向这个目录。
@@ -224,7 +224,7 @@ cat > card.json <<'JSON'
   "body": [{ "type": "TextBlock", "text": "一次性消息", "wrap": true }]
 }
 JSON
-pnpm exec octo-card validate --input ./card.json --wire-profile octo/v1 --format json
+npx --no-install octo-card validate --input ./card.json --wire-profile octo/v1 --format json
 ```
 
 ## 质量检查

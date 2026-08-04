@@ -130,7 +130,7 @@ writeFileSync(
   )}\n`
 );
 
-run("pnpm", ["add", "-D", cliTarball, profilePack.tarball], {
+run("npm", ["install", "--save-dev", cliTarball, profilePack.tarball], {
   cwd: workspace,
   stdio: "inherit",
 });
@@ -142,9 +142,9 @@ writeFileSync(
 This is a consumer workspace, not the Octo Card Forge repository.
 
 For Octo card work:
-- Use the installed \`octo-card\` CLI through \`pnpm exec octo-card\`.
+- Use the installed \`octo-card\` CLI through \`npx --no-install octo-card\`.
 - Read the card authoring skill from \`node_modules/@mlt-org/octo-card-cli/skills/octo-design-cards/SKILL.md\`.
-- Run \`pnpm exec octo-card presets --format json\`; if a preset matches the task, use it as an editable starting point with \`octo-card init --preset\`.
+- Run \`npx --no-install octo-card presets --format json\`; if a preset matches the task, use it as an editable starting point with \`octo-card init --preset\`.
 - Produce an independent card package in this workspace.
 - Do not depend on a local Forge checkout.
 
@@ -162,15 +162,15 @@ Open a new Codex task in this directory and ask it to complete \`TASK.md\`.
 Useful local checks after the task:
 
 \`\`\`bash
-pnpm exec octo-card verify --card ./<card-dir> --emit-dir compiled --handoff handoff --format json
-pnpm exec octo-card emit --card ./<card-dir> --sample <sample-name> > card.json
+npx --no-install octo-card verify --card ./<card-dir> --emit-dir compiled --handoff handoff --format json
+npx --no-install octo-card emit --card ./<card-dir> --sample <sample-name> > card.json
 \`\`\`
 
 Suggested starting preset for this scenario: \`${presetHintFor(scenario) ?? "none"}\`.
 `
 );
 
-const help = run("pnpm", ["exec", "octo-card", "--help"], { cwd: workspace });
+const help = run("npm", ["exec", "--", "octo-card", "--help"], { cwd: workspace });
 if (!help.includes("octo-card commands")) {
   throw new Error("Installed octo-card CLI did not print expected help");
 }
