@@ -7,8 +7,17 @@ import { describe, expect, it } from "vitest";
 
 const execFileAsync = promisify(execFile);
 
+async function currentVersions(): Promise<{ cli: string; skill: string }> {
+  const packageJson = JSON.parse(await readFile("package.json", "utf8")) as { version: string };
+  const skillManifest = JSON.parse(
+    await readFile("skills/octo-design-cards/skill-manifest.json", "utf8")
+  ) as { skill: { version: string } };
+  return { cli: packageJson.version, skill: skillManifest.skill.version };
+}
+
 describe("agent lifecycle bootstrap", () => {
   it("initializes idempotently, diagnoses, and performs a read-only upgrade check", async () => {
+    const versions = await currentVersions();
     const workspace = await mkdtemp(path.join(os.tmpdir(), "octo-card-agent-"));
     const agentsPath = path.join(workspace, "AGENTS.md");
     await writeFile(agentsPath, "# Consumer workspace\n\nKeep this instruction.\n");
@@ -20,8 +29,8 @@ describe("agent lifecycle bootstrap", () => {
       state: { skill: { version: string }; cli: { version: string }; renderProfile: { reference: string } };
     };
     expect(initReport.state).toMatchObject({
-      skill: { version: "0.1.0" },
-      cli: { version: "0.1.0" },
+      skill: { version: versions.skill },
+      cli: { version: versions.cli },
       renderProfile: { reference: "octo-chat@1.2.0-rc.2" },
     });
     const firstAgents = await readFile(agentsPath, "utf8");
@@ -67,17 +76,18 @@ describe("agent lifecycle bootstrap", () => {
   });
 
   it("detects an exact CLI version mismatch in a lockfile", async () => {
+    const versions = await currentVersions();
     const workspace = await mkdtemp(path.join(os.tmpdir(), "octo-card-agent-lockfile-"));
     await writeFile(
       path.join(workspace, "package.json"),
       `${JSON.stringify({
         private: true,
-        devDependencies: { "@mlt-org/octo-card-cli": "0.1.0" },
+        devDependencies: { "@mlt-org/octo-card-cli": versions.cli },
       }, null, 2)}\n`
     );
     await writeFile(
       path.join(workspace, "pnpm-lock.yaml"),
-      "lockfileVersion: '9.0'\n\npackages:\n\n  '@mlt-org/octo-card-cli@0.1.0':\n    resolution: {}\n"
+      `lockfileVersion: '9.0'\n\npackages:\n\n  '@mlt-org/octo-card-cli@${versions.cli}':\n    resolution: {}\n`
     );
     await execFileAsync("pnpm", [
       "--silent", "cli", "agent", "init", "--workspace", workspace, "--format", "json",

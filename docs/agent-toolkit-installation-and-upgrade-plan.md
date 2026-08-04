@@ -61,7 +61,7 @@ Agent Adapter
 ### 3.1 Portable Skill Bundle
 
 ```text
-octo-design-cards-skill-0.1.0.tgz
+octo-design-cards-skill-0.2.0.tgz
 ├── SKILL.md
 ├── agents/openai.yaml
 ├── references/card-package-workflow.md
@@ -121,7 +121,7 @@ Render Profile 保持独立制品，例如：
 
 ```bash
 pnpm add -D \
-  @mlt-org/octo-card-cli@0.1.0 \
+  @mlt-org/octo-card-cli@0.2.0 \
   @mlt-org/octo-card-profile-octo-chat@1.2.0-rc.2
 ```
 
@@ -150,13 +150,13 @@ Skill Bundle 包含 `skill-manifest.json`，描述兼容关系、下载地址和
   "schemaVersion": 1,
   "skill": {
     "name": "octo-design-cards",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "entry": "SKILL.md"
   },
   "cli": {
     "package": "@mlt-org/octo-card-cli",
-    "compatibleRange": ">=0.1.0 <0.2.0",
-    "recommendedVersion": "0.1.0"
+    "compatibleRange": ">=0.2.0 <0.3.0",
+    "recommendedVersion": "0.2.0"
   },
   "renderProfiles": [
     {
@@ -167,7 +167,7 @@ Skill Bundle 包含 `skill-manifest.json`，描述兼容关系、下载地址和
     }
   ],
   "artifacts": {
-    "skillBundle": "https://example.invalid/octo-design-cards-skill-0.1.0.tgz",
+    "skillBundle": "https://github.com/LLwill/octo-card-forge/releases/download/octo-design-cards-skill/v0.2.0/octo-design-cards-skill-0.2.0.tgz",
     "sha256": "published-release-checksum"
   }
 }
@@ -193,12 +193,12 @@ Skill Bundle 包含 `skill-manifest.json`，描述兼容关系、下载地址和
   "target": "generic",
   "skill": {
     "source": "bundle|npm|embedded",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "path": "node_modules/@mlt-org/octo-card-cli/skills/octo-design-cards/SKILL.md"
   },
   "cli": {
     "package": "@mlt-org/octo-card-cli",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "renderProfile": {
     "package": "@mlt-org/octo-card-profile-octo-chat",
@@ -294,8 +294,8 @@ pnpm exec octo-card agent doctor
 第一阶段 Skill 随 CLI 同包发布：
 
 ```text
-@mlt-org/octo-card-cli@0.1.0
-  contains octo-design-cards Skill@0.1.0
+@mlt-org/octo-card-cli@0.2.0
+  contains octo-design-cards Skill@0.2.0
 ```
 
 Skill 新增 CLI 要求时，必须在同一 CLI 版本提供对应实现。

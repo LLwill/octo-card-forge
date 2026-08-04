@@ -290,13 +290,23 @@ pnpm start
 发布 Agent 侧 CLI：
 
 ```bash
-git tag octo-card-cli/v0.1.0
-git push origin octo-card-cli/v0.1.0
+git tag octo-card-cli/v0.2.0
+git push origin octo-card-cli/v0.2.0
 ```
 
 这会触发 `publish-octo-card-cli`，验证 `package.json` 中的
-`@mlt-org/octo-card-cli@0.1.0`，运行 `typecheck/test/check/smoke:repo-free-agent`，
+`@mlt-org/octo-card-cli@0.2.0`，运行 `typecheck/test/check/smoke:repo-free-agent`，
 打包并发布 `@mlt-org/octo-card-cli`。
+
+发布 Portable Skill Bundle：
+
+```bash
+git tag octo-design-cards-skill/v0.2.0
+git push origin octo-design-cards-skill/v0.2.0
+```
+
+这会触发 `publish-octo-design-cards-skill`，生成 Skill Bundle、checksum manifest，
+并创建 GitHub Release。该制品不依赖 Node/npm，适合只需要读取 Skill 的 Agent。
 
 发布 Render Profile：
 
