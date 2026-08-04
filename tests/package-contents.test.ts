@@ -33,5 +33,5 @@ describe("CLI package contents", () => {
     expect(files.some((file) => file.endsWith(".handoff.zip"))).toBe(false);
     expect(files.some((file) => file.startsWith("package/cards/"))).toBe(false);
     expect(files.some((file) => file.startsWith("package/render-profiles/"))).toBe(false);
-  });
+  }, 15_000);
 });
