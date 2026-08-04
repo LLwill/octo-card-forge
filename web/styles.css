@@ -625,6 +625,9 @@ body.install-page {
 .install-next-step code { min-width: 0; flex: 1 1 auto; color: var(--page-text); font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
 .install-next-step .small-icon-button { flex: 0 0 auto; }
 .install-choice .install-command-block { margin-top: 17px; }
+.install-agent-prompt { min-width: 0; margin-top: 12px; padding: 11px 13px; border: 1px solid rgba(38, 103, 232, .24); border-radius: 7px; background: var(--page-accent-soft); }
+.install-agent-prompt .install-command-header { margin-bottom: 7px; color: var(--page-accent); }
+.install-agent-prompt p { margin: 0; color: var(--page-text); font-size: 12px; line-height: 1.65; overflow-wrap: anywhere; }
 .install-choice .install-download-row { margin-top: auto; }
 .install-text-link { width: fit-content; margin-top: 12px; display: inline-flex; align-items: center; gap: 6px; color: var(--page-accent) !important; font-size: 11px; font-weight: 650; text-decoration: none; }
 .install-text-link:hover { text-decoration: underline; }
