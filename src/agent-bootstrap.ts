@@ -172,6 +172,44 @@ function satisfiesRange(version: string, range: string): boolean {
   });
 }
 
+function satisfiesDeclaredRange(version: string, range: string): boolean {
+  const trimmed = range.trim();
+  const operator = trimmed[0];
+  if (operator !== "^" && operator !== "~") return satisfiesRange(version, trimmed);
+  const base = parseVersion(trimmed.slice(1));
+  if (!base) return false;
+  const upper =
+    operator === "~"
+      ? `${base.major}.${base.minor + 1}.0`
+      : base.major > 0
+        ? `${base.major + 1}.0.0`
+        : base.minor > 0
+          ? `0.${base.minor + 1}.0`
+          : `0.0.${base.patch + 1}`;
+  return satisfiesRange(version, `>=${trimmed.slice(1)} <${upper}`);
+}
+
+function lockfilePackageVersion(content: string, lockfile: string, packageName: string): string | undefined {
+  const escaped = packageName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  if (lockfile === "package-lock.json") {
+    try {
+      const parsed = JSON.parse(content) as {
+        packages?: Record<string, { version?: string }>;
+        dependencies?: Record<string, { version?: string }>;
+      };
+      return parsed.packages?.[`node_modules/${packageName}`]?.version ?? parsed.dependencies?.[packageName]?.version;
+    } catch {
+      return undefined;
+    }
+  }
+  if (lockfile === "yarn.lock") {
+    const match = new RegExp(`${escaped}[^\\n]*:\\n(?:[^\\n]*\\n)*?\\s+version [\\\"']([^\\\"']+)[\\\"']`).exec(content);
+    return match?.[1];
+  }
+  const match = new RegExp(`^\\s*['\"]?${escaped}@(\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?)`, "m").exec(content);
+  return match?.[1];
+}
+
 function relativePath(workspace: string, filePath: string): string {
   const relative = path.relative(workspace, filePath);
   return relative && !relative.startsWith("..") ? relative : filePath;
@@ -290,7 +328,7 @@ async function packageDependencyChecks(workspace: string, cliVersion: string): P
     checks.push(check("workspace.cli-dependency", "warn", `${CLI_PACKAGE} is not declared in package.json`));
   } else if (declared.startsWith("file:") || declared.startsWith("workspace:")) {
     checks.push(check("workspace.cli-dependency", "pass", `${CLI_PACKAGE} uses local dependency ${declared}`));
-  } else if (!satisfiesRange(cliVersion, declared.replace(/^\^|^~/, ""))) {
+  } else if (!satisfiesDeclaredRange(cliVersion, declared)) {
     checks.push(check("workspace.cli-dependency", "warn", `package.json declares ${CLI_PACKAGE}@${declared}; current CLI is ${cliVersion}`));
   } else {
     checks.push(check("workspace.cli-dependency", "pass", `${CLI_PACKAGE}@${cliVersion} satisfies ${declared}`));
@@ -307,10 +345,19 @@ async function packageDependencyChecks(workspace: string, cliVersion: string): P
     checks.push(check("workspace.lockfile", "warn", "No supported lockfile found; resolved dependency drift was not checked"));
   } else if (!declared || declared.startsWith("file:") || declared.startsWith("workspace:")) {
     checks.push(check("workspace.lockfile", "warn", `${lockfile} found, but no registry CLI dependency can be compared`));
-  } else if (!(await readFile(path.join(workspace, lockfile), "utf8")).includes(CLI_PACKAGE)) {
-    checks.push(check("workspace.lockfile", "warn", `${lockfile} does not mention ${CLI_PACKAGE}`));
   } else {
-    checks.push(check("workspace.lockfile", "pass", `${lockfile} contains ${CLI_PACKAGE}`));
+    const lockedVersion = lockfilePackageVersion(
+      await readFile(path.join(workspace, lockfile), "utf8"),
+      lockfile,
+      CLI_PACKAGE
+    );
+    if (!lockedVersion) {
+      checks.push(check("workspace.lockfile", "fail", `${lockfile} does not resolve ${CLI_PACKAGE}`));
+    } else if (lockedVersion !== cliVersion || !satisfiesDeclaredRange(lockedVersion, declared)) {
+      checks.push(check("workspace.lockfile", "fail", `${lockfile} resolves ${CLI_PACKAGE}@${lockedVersion}; current CLI is ${cliVersion} and package.json declares ${declared}`));
+    } else {
+      checks.push(check("workspace.lockfile", "pass", `${lockfile} resolves ${CLI_PACKAGE}@${lockedVersion}`));
+    }
   }
   return checks;
 }
@@ -342,6 +389,12 @@ export async function doctorAgent(options: { workspace?: string } = {}): Promise
     checks.push(check("agent.state", "fail", error instanceof Error ? error.message : String(error)));
   }
   if (state && manifest && cliVersion) {
+    const stateSkillPath = path.isAbsolute(state.skill.path)
+      ? state.skill.path
+      : path.resolve(workspace, state.skill.path);
+    checks.push(await exists(stateSkillPath)
+      ? check("skill.state-path", "pass", `Recorded Skill path is present: ${stateSkillPath}`)
+      : check("skill.state-path", "fail", `Recorded Skill path is missing: ${stateSkillPath}`));
     checks.push(state.skill.version === manifest.skill.version
       ? check("skill.version", "pass", `Skill ${state.skill.version} is current`)
       : check("skill.version", "fail", `State has Skill ${state.skill.version}; current bundle is ${manifest.skill.version}`));

@@ -77,6 +77,7 @@ or a handoff archive unless the user asks to promote them into a reusable packag
 With a CLI and resolved Profile:
 
 ```bash
+octo-card agent init --target generic
 octo-card agent doctor --format json
 octo-card presets --format json
 octo-card init <card-id> --name "<display-name>" --out ./<card-id> [--preset <preset-id>]

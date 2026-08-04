@@ -49,10 +49,48 @@ describe("agent lifecycle bootstrap", () => {
       needsUpgrade: false,
       changes: [],
     });
+
+    const statePath = path.join(workspace, ".octo-card", "agent.json");
+    const state = JSON.parse(await readFile(statePath, "utf8")) as { skill: { path: string } };
+    state.skill.path = "missing/SKILL.md";
+    await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`);
+    await expect(execFileAsync("pnpm", [
+      "--silent", "cli", "agent", "doctor", "--workspace", workspace, "--format", "json",
+    ])).rejects.toMatchObject({ code: 1 });
   });
 
   it("returns a non-zero result when the workspace is not initialized", async () => {
     const workspace = await mkdtemp(path.join(os.tmpdir(), "octo-card-agent-empty-"));
+    await expect(execFileAsync("pnpm", [
+      "--silent", "cli", "agent", "doctor", "--workspace", workspace, "--format", "json",
+    ])).rejects.toMatchObject({ code: 1 });
+  });
+
+  it("detects an exact CLI version mismatch in a lockfile", async () => {
+    const workspace = await mkdtemp(path.join(os.tmpdir(), "octo-card-agent-lockfile-"));
+    await writeFile(
+      path.join(workspace, "package.json"),
+      `${JSON.stringify({
+        private: true,
+        devDependencies: { "@mlt-org/octo-card-cli": "0.1.0" },
+      }, null, 2)}\n`
+    );
+    await writeFile(
+      path.join(workspace, "pnpm-lock.yaml"),
+      "lockfileVersion: '9.0'\n\npackages:\n\n  '@mlt-org/octo-card-cli@0.1.0':\n    resolution: {}\n"
+    );
+    await execFileAsync("pnpm", [
+      "--silent", "cli", "agent", "init", "--workspace", workspace, "--format", "json",
+    ]);
+    const valid = await execFileAsync("pnpm", [
+      "--silent", "cli", "agent", "doctor", "--workspace", workspace, "--format", "json",
+    ]);
+    expect(JSON.parse(valid.stdout)).toMatchObject({ valid: true });
+
+    await writeFile(
+      path.join(workspace, "pnpm-lock.yaml"),
+      "lockfileVersion: '9.0'\n\npackages:\n\n  '@mlt-org/octo-card-cli@0.0.9':\n    resolution: {}\n"
+    );
     await expect(execFileAsync("pnpm", [
       "--silent", "cli", "agent", "doctor", "--workspace", workspace, "--format", "json",
     ])).rejects.toMatchObject({ code: 1 });

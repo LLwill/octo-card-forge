@@ -64,6 +64,7 @@ Agent Adapter
 octo-design-cards-skill-0.1.0.tgz
 ├── SKILL.md
 ├── agents/openai.yaml
+├── references/card-package-workflow.md
 ├── references/component-system.md
 └── skill-manifest.json
 ```
