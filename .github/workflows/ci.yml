@@ -52,6 +52,13 @@ jobs:
       - name: Run repo-free Agent smoke
         run: pnpm smoke:repo-free-agent
 
+      - name: Run published consumer smoke
+        env:
+          CONSUMER_CLI_VERSION: "0.2.0"
+          CONSUMER_PROFILE_VERSION: "1.2.0-rc.2"
+          CONSUMER_SKILL_VERSION: "0.2.0"
+        run: pnpm smoke:published-consumer
+
       - name: Compile and validate every Card sample
         run: pnpm check
 
@@ -164,6 +171,9 @@ jobs:
           grep -Fqx './package.json' deploy-package-contents.txt
           grep -Fqx './dist/server.js' deploy-package-contents.txt
           grep -Fqx './scripts/start-service.mjs' deploy-package-contents.txt
+          grep -Fqx './web/install.html' deploy-package-contents.txt
+          grep -Fqx './web/install.js' deploy-package-contents.txt
+          grep -Fqx './skills/octo-design-cards/skill-manifest.json' deploy-package-contents.txt
           grep -Fqx './deployment-manifest.json' deploy-package-contents.txt
           sha256sum "$tarball"
 

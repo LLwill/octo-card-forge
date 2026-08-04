@@ -39,6 +39,7 @@
     "check": "tsx src/cli.ts check",
     "prepare:agent-validation": "node scripts/create-agent-validation-workspace.mjs",
     "smoke:repo-free-agent": "node scripts/smoke-repo-free-agent.mjs",
+    "smoke:published-consumer": "node scripts/smoke-published-consumer.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

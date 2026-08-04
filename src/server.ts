@@ -101,6 +101,58 @@ async function handleApi(
     return true;
   }
 
+  if (req.method === "GET" && url.pathname === "/api/install") {
+    const packageManifest = await readJson<{
+      name: string;
+      version: string;
+      repository?: string;
+    }>(resolveInProject("package.json"));
+    const skillManifest = await readJson<{
+      skill: { name: string; version: string; entry: string };
+      cli: { package: string; compatibleRange: string; recommendedVersion: string };
+      renderProfiles: Array<{
+        id: string;
+        package: string;
+        compatibleRange: string;
+        recommendedVersion: string;
+      }>;
+    }>(resolveInProject("skills", "octo-design-cards", "skill-manifest.json"));
+    const profile = context.profile ?? await getCurrentRenderProfile();
+    const repository = (packageManifest.repository ?? "https://github.com/LLwill/octo-card-forge")
+      .replace(/\.git$/, "");
+    const releaseTag = `octo-design-cards-skill/v${skillManifest.skill.version}`;
+    const skillBaseUrl = `${repository}/releases/download/${releaseTag}`;
+    const profileManifest = skillManifest.renderProfiles.find(
+      (candidate) => candidate.id === profile.manifest.id
+    ) ?? skillManifest.renderProfiles[0];
+    sendJson(res, 200, {
+      cli: {
+        package: packageManifest.name,
+        version: packageManifest.version,
+        compatibleRange: skillManifest.cli.compatibleRange,
+        npmUrl: `https://www.npmjs.com/package/${packageManifest.name}/v/${packageManifest.version}`,
+        installCommand: `pnpm add -D ${packageManifest.name}@${packageManifest.version} ${profile.manifest.packageName}@${profile.manifest.version}`,
+        initCommand: "pnpm exec octo-card agent init --target generic",
+      },
+      skill: {
+        name: skillManifest.skill.name,
+        version: skillManifest.skill.version,
+        entry: skillManifest.skill.entry,
+        bundleUrl: `${skillBaseUrl}/octo-design-cards-skill-${skillManifest.skill.version}.tgz`,
+        manifestUrl: `${skillBaseUrl}/octo-design-cards-skill-${skillManifest.skill.version}.manifest.json`,
+        releaseUrl: `${repository}/releases/tag/${releaseTag}`,
+      },
+      renderProfile: {
+        id: profile.manifest.id,
+        version: profile.manifest.version,
+        package: profile.manifest.packageName,
+        compatibility: profile.manifest.compatibility,
+        compatibleRange: profileManifest?.compatibleRange,
+      },
+    });
+    return true;
+  }
+
   if (req.method === "GET" && url.pathname === "/api/component-baseline") {
     const profile = context.profile ?? await getCurrentRenderProfile();
     sendJson(res, 200, {
@@ -287,8 +339,11 @@ export async function startServer(options: {
         "/": ["index.html", "text/html"],
         "/components": ["components.html", "text/html"],
         "/components/": ["components.html", "text/html"],
+        "/install": ["install.html", "text/html"],
+        "/install/": ["install.html", "text/html"],
         "/app.js": ["app.js", "text/javascript"],
         "/components.js": ["components.js", "text/javascript"],
+        "/install.js": ["install.js", "text/javascript"],
         "/styles.css": ["styles.css", "text/css"],
       };
       const file = files[url.pathname];

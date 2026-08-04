@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#f7f8fa" />
+    <title>Install · Octo Card Forge</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="install-page">
+    <header class="component-header">
+      <div class="component-header-inner">
+        <div class="brand-nav">
+          <a class="brand" href="/" aria-label="Octo Card Forge home">
+            <span class="brand-mark" aria-hidden="true"><i></i><i></i></span><span class="brand-name"><span>octo</span><span class="brand-accent">card</span></span><span class="brand-product">FORGE</span>
+          </a>
+          <nav aria-label="Primary navigation">
+            <a data-nav="cards" href="/">Cards</a>
+            <a data-nav="components" href="/components">Components</a>
+            <a class="active" data-nav="install" href="/install">Install</a>
+          </nav>
+        </div>
+        <div class="header-actions">
+          <div class="locale-switcher" role="group" aria-label="Language">
+            <button type="button" data-locale="zh">中</button>
+            <span class="locale-divider" aria-hidden="true">/</span>
+            <button type="button" data-locale="en">EN</button>
+          </div>
+          <button id="installThemeToggle" class="icon-button" type="button" aria-label="切换页面主题" title="切换页面主题">
+            <span class="theme-icon" data-theme-icon aria-hidden="true"></span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="install-main">
+      <section class="install-hero" aria-labelledby="installTitle">
+        <div>
+          <p class="eyebrow" data-copy="eyebrow">AGENT TOOLKIT</p>
+          <h1 id="installTitle" data-copy="title">安装 Octo Card 工具</h1>
+          <p class="install-hero-copy" data-copy="description">为 Agent 配置 Skill、CLI 和 Octo-Chat Render Profile。选择你的运行环境，复制命令即可开始。</p>
+        </div>
+        <div class="install-release-status" role="status">
+          <span class="status-mark" aria-hidden="true"></span>
+          <span data-copy="currentRelease">当前发布</span>
+          <strong id="releaseVersion">—</strong>
+        </div>
+      </section>
+
+      <div id="installStatus" class="install-status" role="status" data-copy="loading">正在读取当前制品…</div>
+
+      <section class="install-section" aria-labelledby="nodeHeading">
+        <header class="install-section-heading">
+          <div>
+            <p class="eyebrow" data-copy="nodeEyebrow">NODE AGENT</p>
+            <h2 id="nodeHeading" data-copy="nodeTitle">需要执行工具的 Agent</h2>
+          </div>
+          <span class="install-badge" data-copy="recommended">推荐</span>
+        </header>
+        <p class="install-section-copy" data-copy="nodeDescription">安装 CLI 和固定版本的 Render Profile，获得 init、doctor、校验、预览和交付能力。</p>
+        <div class="install-command-block">
+          <div class="install-command-header">
+            <span data-copy="installCommandLabel">安装 CLI + Render Profile</span>
+            <button class="copy-button" type="button" data-copy-command="install" aria-label="复制安装命令" title="复制安装命令"><i data-lucide="copy" aria-hidden="true"></i><span data-copy="copy">复制</span></button>
+          </div>
+          <code id="installCommand">—</code>
+        </div>
+        <div class="install-command-block">
+          <div class="install-command-header">
+            <span data-copy="initCommandLabel">初始化当前 Agent 工作区</span>
+            <button class="copy-button" type="button" data-copy-command="init" aria-label="复制初始化命令" title="复制初始化命令"><i data-lucide="copy" aria-hidden="true"></i><span data-copy="copy">复制</span></button>
+          </div>
+          <code id="initCommand">—</code>
+        </div>
+        <div class="install-check-grid">
+          <div><span data-copy="cliVersionLabel">CLI</span><strong id="cliVersion">—</strong></div>
+          <div><span data-copy="profileVersionLabel">Render Profile</span><strong id="profileVersion">—</strong></div>
+          <div><span data-copy="compatibilityLabel">兼容范围</span><strong id="cliCompatibility">—</strong></div>
+        </div>
+      </section>
+
+      <section class="install-section" aria-labelledby="skillHeading">
+        <header class="install-section-heading">
+          <div>
+            <p class="eyebrow" data-copy="skillEyebrow">SKILL-ONLY AGENT</p>
+            <h2 id="skillHeading" data-copy="skillTitle">只需要读取规则的 Agent</h2>
+          </div>
+          <span class="install-badge install-badge-neutral" data-copy="portable">Portable</span>
+        </header>
+        <p class="install-section-copy" data-copy="skillDescription">下载不依赖 Node/npm 的 Skill Bundle，把 SKILL.md 注册到 Agent 支持的 Skill 目录即可。</p>
+        <div class="install-download-row">
+          <div class="install-download-meta"><strong id="skillVersion">—</strong><span data-copy="bundleFormat">Portable Skill Bundle · .tgz</span></div>
+          <a id="skillDownload" class="install-action-link" href="#" target="_blank" rel="noreferrer"><i data-lucide="download" aria-hidden="true"></i><span data-copy="download">下载 Bundle</span></a>
+          <a id="skillRelease" class="install-action-link secondary" href="#" target="_blank" rel="noreferrer"><i data-lucide="external-link" aria-hidden="true"></i><span data-copy="releaseNotes">查看 Release</span></a>
+        </div>
+        <div class="install-checksum">
+          <span data-copy="checksumLabel">SHA-256</span>
+          <code id="skillChecksum">—</code>
+          <button class="icon-button small-icon-button" type="button" data-copy-command="checksum" aria-label="复制 checksum" title="复制 checksum"><i data-lucide="copy" aria-hidden="true"></i></button>
+        </div>
+      </section>
+
+      <section class="install-section install-facts" aria-labelledby="factsHeading">
+        <header class="install-section-heading">
+          <div>
+            <p class="eyebrow" data-copy="compatibilityEyebrow">COMPATIBILITY</p>
+            <h2 id="factsHeading" data-copy="factsTitle">版本关系</h2>
+          </div>
+        </header>
+        <div class="install-fact-table" role="table" aria-label="版本兼容关系">
+          <div class="install-fact-row install-fact-head" role="row"><span data-copy="componentLabel">组件</span><span data-copy="versionLabel">当前版本</span><span data-copy="rangeLabel">兼容关系</span></div>
+          <div class="install-fact-row" role="row"><span data-copy="cliLabel">CLI</span><strong id="factCliVersion">—</strong><code id="factCliRange">—</code></div>
+          <div class="install-fact-row" role="row"><span data-copy="skillLabel">Skill Bundle</span><strong id="factSkillVersion">—</strong><code id="factSkillRange">—</code></div>
+          <div class="install-fact-row" role="row"><span data-copy="profileLabel">Render Profile</span><strong id="factProfileVersion">—</strong><code id="factProfileRange">—</code></div>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+    <script src="/install.js" type="module"></script>
+  </body>
+</html>
