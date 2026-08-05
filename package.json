@@ -20,7 +20,7 @@
     "registry": "https://registry.npmjs.org/"
   },
   "peerDependencies": {
-    "@mlt-org/octo-card-profile-octo-chat": "^1.2.0-rc.1"
+    "@mlt-org/octo-card-profile-octo-chat": "^1.2.0-rc.2"
   },
   "peerDependenciesMeta": {
     "@mlt-org/octo-card-profile-octo-chat": {
