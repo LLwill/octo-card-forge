@@ -27,6 +27,7 @@ await mkdir(stagingDir, { recursive: true });
 const files = [
   "package.json",
   "pnpm-lock.yaml",
+  ".npmrc",
   "dist",
   "web",
   "cards",

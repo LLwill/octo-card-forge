@@ -344,6 +344,27 @@ CI 顺序：
 
 禁止覆盖同版本包。
 
+### Profile 版本与运行依赖规则
+
+`render-profiles/octo-chat/manifest.json` 是 Forge 当前 Render Profile 的唯一事实来源。
+`package.json` 中的 `@mlt-org/octo-card-profile-octo-chat` 只声明外部 CLI 消费者的兼容范围，
+不作为 Forge Server 运行时的当前 Profile 版本来源。
+
+Forge deploy bundle 已包含完整的 `render-profiles/` 源文件，Server 会优先读取 bundle 内的
+Profile。Forge 自身和生产 bundle 使用 `.npmrc` 的 `auto-install-peers=false`，避免因为
+可选 peer 自动安装另一份过期的 Profile npm 包。
+
+发布新的兼容 Profile 版本时：
+
+1. 更新 `render-profiles/octo-chat/manifest.json` 和 Profile 制品版本；
+2. 运行 `pnpm typecheck`、`pnpm test`、`pnpm check` 和 `pnpm package:deploy`；
+3. 确认 deploy manifest 的 `renderProfile` 与 manifest 版本一致；
+4. 只有兼容最低版本或主版本变化时，才调整 `package.json` 的 peer 兼容范围和 lockfile；
+5. 禁止通过修改 deploy 仓库来修正 Forge Profile 版本。
+
+Profile 版本升级由 Forge CI 生成新的不可变 deploy artifact；部署系统只消费该 artifact，
+不在部署阶段重新解析 Profile 依赖。
+
 ### PR 5：Web 增加 dormant 双路径支持
 
 仓库：`octo-web`

@@ -1,16 +1,13 @@
 lockfileVersion: '9.0'
 
 settings:
-  autoInstallPeers: true
+  autoInstallPeers: false
   excludeLinksFromLockfile: false
 
 importers:
 
   .:
     dependencies:
-      '@mlt-org/octo-card-profile-octo-chat':
-        specifier: ^1.2.0-rc.2
-        version: 1.2.0-rc.2
       adaptive-expressions:
         specifier: 4.23.3
         version: 4.23.3
@@ -360,9 +357,6 @@ packages:
   '@microsoft/recognizers-text-data-types-timex-expression@1.3.1':
     resolution: {integrity: sha512-jarJIFIJZBqeofy3hh0vdQo1yOmTM+jCjj6/zmo9JunsQ6LO750eZHCg9eLptQhsvq321XCt5xdRNLCwU8YeNA==}
     engines: {node: '>=10.3.0'}
-
-  '@mlt-org/octo-card-profile-octo-chat@1.2.0-rc.2':
-    resolution: {integrity: sha512-MZfEJOGuKj27kToreQBgk1tVvGtnMr01QaTqG7sesJJoPNd/7b6IQRqwG9ruwLi8O5bW2SrfOvH8jj24iC4Bcw==}
 
   '@rollup/rollup-android-arm-eabi@4.62.2':
     resolution: {integrity: sha512-6o7ZLZK+BeenkZCFNDXqpbjw9bD6nuWonvS/lwQJp7NoVVxm6p3qE7qQ5jGuBjiFsgvqjD8mZAU5oWxTmbOeOg==}
@@ -1081,8 +1075,6 @@ snapshots:
   '@jridgewell/sourcemap-codec@1.5.5': {}
 
   '@microsoft/recognizers-text-data-types-timex-expression@1.3.1': {}
-
-  '@mlt-org/octo-card-profile-octo-chat@1.2.0-rc.2': {}
 
   '@rollup/rollup-android-arm-eabi@4.62.2':
     optional: true
