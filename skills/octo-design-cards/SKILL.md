@@ -134,6 +134,24 @@ Before using Tier 1, read the resolved Profile capabilities and
 variants, tokens, fallbacks, appliesTo rules, and group limits. Without a resolved Profile, use
 Tier 0 only.
 
+## Runtime effects
+
+Render Profile capabilities describe rendering. Local behavior is a separate Web runtime effect.
+Discover it with `octo-card discover --format json`, then declare package dependencies in
+`manifest.json`, for example:
+
+```json
+{"runtimeCapabilities":[{"id":"message.send.current_user","version":">=1.0.0 <2.0.0","required":true}]}
+```
+
+Put the effect and a bounded source in `Action.Submit.data`. Current-user messaging supports
+`message_source` types `action.title`, `choice_labels`, `input_text`, and small `compose` values.
+Web resolves the source from the rendered card and sends it as the logged-in user first, then
+invokes the card action. Never add `from_uid`, scripts, arbitrary URLs, or client templates.
+Unknown, unavailable, or undeclared required capabilities block validation; planned capabilities
+are unavailable until Web publishes support. Future local operations use the same registry and
+declaration shape.
+
 ## Validate and hand off
 
 For a Card Package, run `verify` before delivery. For Quick Card, run `validate` when the runtime

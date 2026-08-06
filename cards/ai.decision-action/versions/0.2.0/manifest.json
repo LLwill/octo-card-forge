@@ -8,6 +8,13 @@
   "renderProfile": "octo-chat@1.2.0-rc.2",
   "defaultLocale": "zh-CN",
   "dataSchema": "contract/data.schema.json",
+  "runtimeCapabilities": [
+    {
+      "id": "message.send.current_user",
+      "version": ">=1.0.0 <2.0.0",
+      "required": true
+    }
+  ],
   "views": {
     "choose": {
       "wireProfile": "octo/v2",

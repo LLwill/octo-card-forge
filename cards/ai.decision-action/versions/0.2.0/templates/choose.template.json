@@ -122,6 +122,13 @@
               "data": {
                 "action": "decision_send",
                 "effect": "append_user_message",
+                "effect_version": 1,
+                "effect_required": true,
+                "message_source": {
+                  "type": "choice_labels",
+                  "input_id": "decision_choice",
+                  "separator": "\n"
+                },
                 "decision_id": "${decisionId}",
                 "reply_target_uid": "${replyTargetUid}"
               }

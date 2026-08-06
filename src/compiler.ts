@@ -83,7 +83,14 @@ export async function compileCardPackage(options: {
       });
     }
     const profile = await loadRenderProfileForReference(renderProfile, options.profile);
-    issues.push(...validateCompiledCard(payload, profile.capabilities, view.wireProfile));
+    issues.push(
+      ...validateCompiledCard(
+        payload,
+        profile.capabilities,
+        view.wireProfile,
+        card.manifest.runtimeCapabilities
+      )
+    );
   }
 
   return {
