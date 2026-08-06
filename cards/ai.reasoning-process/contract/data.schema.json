@@ -43,6 +43,11 @@
       "enum": ["Accent", "Good", "Warning", "Attention"],
       "description": "Adaptive Cards 标准语义色。"
     },
+    "timerText": {
+      "type": "string",
+      "minLength": 1,
+      "description": "兼容旧版数据的耗时与阶段摘要；精简版不展示此字段。"
+    },
     "traceExpanded": {
       "type": "boolean",
       "description": "初始是否展示推理明细。"

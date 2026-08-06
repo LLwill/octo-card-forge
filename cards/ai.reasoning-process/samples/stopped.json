@@ -4,6 +4,7 @@
   "title": "深度思考",
   "statusLabel": "已停止",
   "statusTone": "Warning",
+  "timerText": "已思考 6 秒 · 已停止于第 2 段",
   "traceExpanded": false,
   "traceCollapsed": true,
   "collapsedSummary": "已停止 · 保留 2 段思考",

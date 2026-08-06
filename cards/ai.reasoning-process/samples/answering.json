@@ -4,6 +4,7 @@
   "title": "深度思考",
   "statusLabel": "回答中",
   "statusTone": "Accent",
+  "timerText": "正在生成回答…",
   "traceExpanded": true,
   "traceCollapsed": false,
   "collapsedSummary": "正在生成回答",

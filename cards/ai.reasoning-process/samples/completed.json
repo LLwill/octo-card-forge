@@ -4,6 +4,7 @@
   "title": "深度思考",
   "statusLabel": "已完成",
   "statusTone": "Good",
+  "timerText": "用时 12 秒 · 3 段推理 · 13 次工具调用",
   "traceExpanded": false,
   "traceCollapsed": true,
   "collapsedSummary": "已思考 12 秒",

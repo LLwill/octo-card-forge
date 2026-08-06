@@ -4,6 +4,7 @@
   "title": "深度思考",
   "statusLabel": "生成失败",
   "statusTone": "Attention",
+  "timerText": "已中断",
   "traceExpanded": true,
   "traceCollapsed": false,
   "collapsedSummary": "生成已中断",

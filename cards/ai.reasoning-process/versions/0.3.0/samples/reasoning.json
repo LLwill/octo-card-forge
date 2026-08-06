@@ -4,6 +4,7 @@
   "title": "深度思考",
   "statusLabel": "思考中",
   "statusTone": "Accent",
+  "timerText": "正在深度思考…",
   "traceExpanded": true,
   "traceCollapsed": false,
   "collapsedSummary": "正在思考",
