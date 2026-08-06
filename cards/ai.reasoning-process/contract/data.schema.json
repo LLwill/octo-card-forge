@@ -73,7 +73,7 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["phaseState", "thought", "actions"],
+        "required": ["thought", "actions"],
         "properties": {
           "phaseState": {
             "type": "string",

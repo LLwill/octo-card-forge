@@ -6,6 +6,8 @@ export interface CardViewDefinition {
   wireProfile: WireProfile;
   template: string;
   samples: string[];
+  states?: string[];
+  submit_actions?: string[];
 }
 
 export interface CardManifest {
@@ -17,6 +19,7 @@ export interface CardManifest {
   adaptiveCardVersion: string;
   /** Concrete pin, `id@latest` (follows CURRENT_RENDER_PROFILE), or omit for current baseline. */
   renderProfile?: string;
+  renderProfileCompatibility?: string;
   defaultLocale: string;
   views: Record<string, CardViewDefinition>;
   dataSchema: string;

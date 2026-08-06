@@ -3,14 +3,17 @@
   "id": "ai.reasoning-process",
   "name": "推理过程卡",
   "version": "0.3.0",
-  "contractVersion": "2.0.0",
+  "contractVersion": "1.2.0",
   "adaptiveCardVersion": "1.5",
   "renderProfile": "octo-chat@latest",
+  "renderProfileCompatibility": "octo-chat/v1",
   "defaultLocale": "zh-CN",
   "dataSchema": "contract/data.schema.json",
   "views": {
     "active": {
       "wireProfile": "octo/v2",
+      "states": ["reasoning", "answering"],
+      "submit_actions": [],
       "template": "templates/active.template.json",
       "samples": [
         "samples/reasoning.json",
@@ -18,7 +21,9 @@
       ]
     },
     "result": {
-      "wireProfile": "octo/v2",
+      "wireProfile": "octo/v1",
+      "states": ["completed", "stopped"],
+      "submit_actions": [],
       "template": "templates/result.template.json",
       "samples": [
         "samples/completed.json",
@@ -27,6 +32,8 @@
     },
     "error": {
       "wireProfile": "octo/v2",
+      "states": ["error"],
+      "submit_actions": [],
       "template": "templates/error.template.json",
       "samples": [
         "samples/error.json"

@@ -6,7 +6,15 @@ import { compileCardPackage } from "./compiler.js";
 import { readJson } from "./fs.js";
 import { getCard, resolveCardAssetPath } from "./registry.js";
 import { loadRenderProfileForReference } from "./profile-source.js";
-import type { CardPackage, JsonObject, RenderProfileSource } from "./types.js";
+import type { CardInspection, CardPackage, JsonObject, RenderProfileSource } from "./types.js";
+
+/** Keep the persisted interaction report aligned with the strict server decoder. */
+function toServerInteractionReport(inspection: CardInspection): JsonObject {
+  return {
+    actions: inspection.actions.map(({ path: _path, ...action }) => action),
+    inputs: inspection.inputs.map(({ path: _path, ...input }) => input),
+  };
+}
 
 /** Build a deterministic, self-contained package for manual backend handoff. */
 export async function buildHandoffPackageForCard(
@@ -26,6 +34,7 @@ export async function buildHandoffPackageForCard(
 
   for (const [viewName, definition] of Object.entries(card.manifest.views)) {
     const samples = [];
+    let interactionReport: JsonObject | undefined;
     for (const samplePath of definition.samples) {
       const name = path.basename(samplePath, path.extname(samplePath));
       const data = await readJson<JsonObject>(
@@ -47,14 +56,18 @@ export async function buildHandoffPackageForCard(
         card: result.payload,
         inspection: result.inspection,
       });
+      interactionReport ??= toServerInteractionReport(result.inspection);
     }
 
     views[viewName] = {
       wireProfile: definition.wireProfile,
+      states: definition.states,
+      submit_actions: definition.submit_actions,
       template: await readJson<JsonObject>(
         resolveCardAssetPath(card.root, definition.template, `views.${viewName}.template`)
       ),
       samples,
+      interactionReport,
     };
   }
 
@@ -162,11 +175,11 @@ export async function buildHandoffArchiveForCard(
   for (const [viewName, rawView] of Object.entries(views)) {
     const view = rawView as JsonObject;
     addFile(`templates/${viewName}.template.json`, json(view.template));
+    addFile(`reports/${viewName}.interaction.json`, json(view.interactionReport));
     for (const rawSample of view.samples as JsonObject[]) {
       const sampleName = String(rawSample.name);
       addFile(`samples/${sampleName}.json`, json(rawSample.data));
       addFile(`goldens/${sampleName}.card.json`, json(rawSample.card));
-      addFile(`reports/${sampleName}.interaction.json`, json(rawSample.inspection));
     }
   }
 

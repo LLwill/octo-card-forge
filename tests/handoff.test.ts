@@ -82,6 +82,29 @@ describe("backend handoff package", () => {
     }
   });
 
+  it("writes one strict interaction report per reasoning view", async () => {
+    const archive = await buildHandoffArchive("ai.reasoning-process@0.3.0");
+    const zip = await JSZip.loadAsync(archive.buffer);
+    const prefix = "ai.reasoning-process@0.3.0/";
+    const files = Object.keys(zip.files);
+
+    expect(files).toEqual(
+      expect.arrayContaining([
+        `${prefix}reports/active.interaction.json`,
+        `${prefix}reports/result.interaction.json`,
+        `${prefix}reports/error.interaction.json`,
+      ])
+    );
+    expect(files).not.toContain(`${prefix}reports/reasoning.interaction.json`);
+    expect(files).not.toContain(`${prefix}reports/completed.interaction.json`);
+
+    const report = JSON.parse(
+      await zip.file(`${prefix}reports/active.interaction.json`)!.async("string")
+    ) as JsonObject;
+    expect(report.toggles).toBeUndefined();
+    expect((report.actions as JsonObject[])[0]).not.toHaveProperty("path");
+  });
+
   it("creates deterministic archive names", async () => {
     const archive = await buildHandoffArchive("docs.access-request@0.3.0");
     expect(archive.fileName).toBe("docs.access-request@0.3.0.handoff.zip");

@@ -138,7 +138,7 @@ describe("new Card Package versions", () => {
 
     expect(result.issues).toEqual([]);
     expect(result.cardVersion).toBe("0.3.0");
-    expect(result.contractVersion).toBe("2.0.0");
+    expect(result.contractVersion).toBe("1.2.0");
     expect(findById(result.payload, "reasoning_toggle")?.targetElements).toEqual([
       "trace_panel",
       "collapsed_panel",
@@ -207,12 +207,12 @@ describe("new Card Package versions", () => {
 
 describe("ai.reasoning-process compiler", () => {
   it.each([
-    ["reasoning", "active"],
-    ["answering", "active"],
-    ["completed", "result"],
-    ["stopped", "result"],
-    ["error", "error"],
-  ])("compiles the %s sample into the %s view", async (sample, view) => {
+    ["reasoning", "active", "octo/v2"],
+    ["answering", "active", "octo/v2"],
+    ["completed", "result", "octo/v1"],
+    ["stopped", "result", "octo/v1"],
+    ["error", "error", "octo/v2"],
+  ])("compiles the %s sample into the %s view", async (sample, view, wireProfile) => {
     const result = await compileSample({
       cardId: "ai.reasoning-process",
       sample,
@@ -221,10 +221,31 @@ describe("ai.reasoning-process compiler", () => {
     expect(result.issues).toEqual([]);
     expect(result.view).toBe(view);
     expect(result.cardVersion).toBe("0.3.0");
-    expect(result.contractVersion).toBe("2.0.0");
+    expect(result.contractVersion).toBe("1.2.0");
     expect(result.renderProfile).toBe("octo-chat@1.2.0-rc.2");
-    expect(result.wireProfile).toBe("octo/v2");
+    expect(result.wireProfile).toBe(wireProfile);
     expect(JSON.stringify(result.payload)).not.toContain("${");
+  });
+
+  it("keeps the v1.2 producer shape compatible without phaseState", async () => {
+    const sample = await compileSample({
+      cardId: "ai.reasoning-process",
+      sample: "reasoning",
+    });
+    const data = structuredClone(sample.data);
+    for (const phase of data.phases as JsonObject[]) {
+      delete phase.phaseState;
+    }
+
+    const result = await compileCard({
+      cardId: "ai.reasoning-process",
+      view: "active",
+      data,
+    });
+
+    expect(result.issues).toEqual([]);
+    expect(result.contractVersion).toBe("1.2.0");
+    expect(JSON.stringify(result.payload)).not.toContain("正在深度思考");
   });
 
   it("exposes only the local toggle interaction for an active trace", async () => {
@@ -253,8 +274,8 @@ describe("ai.reasoning-process compiler", () => {
       url: "https://api.iconify.design/lucide/chevron-up.svg?color=%23a1a6ab",
       width: "14px",
     });
-    expect(JSON.stringify(result.payload)).toContain('"text":"◌"');
-    expect(JSON.stringify(result.payload)).toContain('"text":"✓"');
+    expect(JSON.stringify(result.payload)).not.toContain('"text":"●"');
+    expect(JSON.stringify(result.payload)).toContain("正在执行下一步");
     expect(findById(result.payload, "reasoning_tools_toggle_collapsed_0")).toMatchObject({
       type: "Image",
       url: "https://api.iconify.design/lucide/chevron-down.svg?color=%23a1a6ab",
@@ -284,7 +305,7 @@ describe("ai.reasoning-process compiler", () => {
     expect(findById(result.payload, "collapsed_panel")?.isVisible).toBe(false);
   });
 
-  it("renders phase-level completion states", async () => {
+  it("renders a plugin-compatible marker for every phase", async () => {
     const active = await compileSample({
       cardId: "ai.reasoning-process",
       sample: "reasoning",
@@ -294,10 +315,10 @@ describe("ai.reasoning-process compiler", () => {
       sample: "completed",
     });
 
-    expect(JSON.stringify(active.payload)).toContain('"text":"◌"');
-    expect(JSON.stringify(active.payload)).toContain('"text":"✓"');
+    expect(JSON.stringify(active.payload)).not.toContain('"text":"●"');
+    expect(JSON.stringify(completed.payload)).not.toContain('"text":"●"');
+    expect(JSON.stringify(active.payload)).not.toContain('"text":"◌"');
     expect(JSON.stringify(completed.payload)).not.toContain('"text":"◌"');
-    expect(JSON.stringify(completed.payload)).toContain('"text":"✓"');
   });
 
   it("starts a completed trace collapsed and keeps it locally expandable", async () => {

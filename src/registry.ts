@@ -76,6 +76,16 @@ export function assertCardManifest(value: CardManifest, filePath: string): void 
     if (view.wireProfile !== "octo/v1" && view.wireProfile !== "octo/v2") {
       throw new Error(`${filePath}: view ${viewName} has an invalid wireProfile`);
     }
+    if (view.states !== undefined &&
+      (!Array.isArray(view.states) || view.states.length === 0 ||
+        view.states.some((state) => typeof state !== "string" || state.length === 0))) {
+      throw new Error(`${filePath}: view ${viewName} states must be a non-empty string array`);
+    }
+    if (view.submit_actions !== undefined &&
+      (!Array.isArray(view.submit_actions) ||
+        view.submit_actions.some((action) => typeof action !== "string" || action.length === 0))) {
+      throw new Error(`${filePath}: view ${viewName} submit_actions must be a string array`);
+    }
   }
 }
 

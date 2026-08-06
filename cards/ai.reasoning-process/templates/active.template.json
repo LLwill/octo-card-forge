@@ -104,20 +104,6 @@
                   "columns": [
                     {
                       "type": "Column",
-                      "width": "auto",
-                      "verticalContentAlignment": "Center",
-                      "items": [
-                        {
-                          "type": "TextBlock",
-                          "text": "${if(equals(phaseState, 'completed'), '✓', '◌')}",
-                          "color": "${if(equals(phaseState, 'completed'), 'Good', 'Accent')}",
-                          "size": "Small",
-                          "spacing": "None"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "Column",
                       "width": "stretch",
                       "verticalContentAlignment": "Center",
                       "items": [
@@ -182,7 +168,7 @@
                       "columns": [
                         {
                           "type": "Column",
-                          "width": "16px",
+                          "width": "8px",
                           "items": []
                         },
                         {
@@ -192,7 +178,7 @@
                           "items": [
                             {
                               "type": "TextBlock",
-                              "text": "${statusGlyph}",
+                              "text": "•",
                               "color": "${statusTone}",
                               "size": "Small",
                               "spacing": "None"
@@ -202,6 +188,7 @@
                         {
                           "type": "Column",
                           "width": "auto",
+                          "spacing": "Small",
                           "verticalContentAlignment": "Center",
                           "items": [
                             {
@@ -216,6 +203,7 @@
                         {
                           "type": "Column",
                           "width": "stretch",
+                          "spacing": "Small",
                           "verticalContentAlignment": "Center",
                           "items": [
                             {
