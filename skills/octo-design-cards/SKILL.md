@@ -85,9 +85,27 @@ octo-card verify --card ./<card-id> --emit-dir compiled --handoff handoff --form
 octo-card inspect --card ./<card-id> --format json
 ```
 
+### Draft and Release
+
+- Treat `./<card-id>/` as the mutable Draft. It may use `octo-chat@latest` while the card is being
+  designed and previewed.
+- Treat `./<card-id>/versions/<version>/` as an immutable Release. It must pin a concrete Profile
+  version and its directory name must match `manifest.version`.
+- Never edit a published version in place. Create the next Card version when changing required
+  contract fields, interaction behavior, or a pinned Profile.
+- Before delivery, run the Draft check normally. For a Release, run:
+
+  ```bash
+  octo-card verify --card ./<card-id>/versions/<version> --release --format json
+  ```
+
+  A visual preview is not the release gate. The verify result must report `valid: true`, and the
+  handoff should carry the same resolved Profile reference and all View Wire Profiles.
+
 Use `bot-token` or `docs-forward` only when the preset semantics fit. Replace all scaffold
 placeholders, design a display-ready ViewModel contract, add realistic non-sensitive samples,
-and keep template expressions separate from sample data. Interactive cards use `octo/v2`;
+and keep template expressions separate from sample data. Remove contract fields that templates no
+longer read, then update samples and `contractVersion` together. Interactive cards use `octo/v2`;
 display-only cards use `octo/v1`.
 
 For screenshots, treat visible layout as evidence rather than a backend contract. Ask only about
@@ -106,6 +124,10 @@ they are not private Adaptive Card types.
 - Tier 2: one-off standard composition; do not invent a new shared component family.
 - Forbidden: card-private renderer markers, business CSS selectors, or editing a shared Profile for
   one card.
+
+If a visual requirement cannot be expressed with standard Adaptive Card structure or already
+published Profile capabilities, use a Tier 2 composition and report a candidate Profile capability;
+do not change `octo-chat` Profile assets as part of a single-card task.
 
 Before using Tier 1, read the resolved Profile capabilities and
 [`references/component-system.md`](references/component-system.md). Use only declared families,

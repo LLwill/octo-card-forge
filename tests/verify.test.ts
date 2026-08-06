@@ -64,4 +64,23 @@ describe("repo-free card verify", () => {
       await rm(root, { recursive: true, force: true });
     }
   });
+
+  it("requires a versioned package for the release gate", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "octo-card-verify-"));
+    try {
+      const cardRoot = path.join(root, "docs-forward");
+      await initCard({
+        cardId: "docs.forward",
+        name: "文档转发",
+        preset: "docs-forward",
+        outputRoot: cardRoot,
+      });
+
+      await expect(
+        verifyCardPackage({ cardRoot, release: true })
+      ).rejects.toThrow("Release verification requires a versioned package");
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
 });

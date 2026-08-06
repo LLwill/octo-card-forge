@@ -130,6 +130,23 @@ describe("new Card Package versions", () => {
     });
   });
 
+  it("compiles the 0.3.0 reasoning package with synchronized title arrows", async () => {
+    const result = await compileSample({
+      cardId: "ai.reasoning-process@0.3.0",
+      sample: "reasoning",
+    });
+
+    expect(result.issues).toEqual([]);
+    expect(result.cardVersion).toBe("0.3.0");
+    expect(result.contractVersion).toBe("2.0.0");
+    expect(findById(result.payload, "reasoning_toggle")?.targetElements).toEqual([
+      "trace_panel",
+      "collapsed_panel",
+      "reasoning_toggle_collapsed",
+      "reasoning_toggle_expanded",
+    ]);
+  });
+
   it("compiles the AI decision 0.2 choice", async () => {
     const next = await compileSample({
       cardId: "ai.decision-action@0.2.0",
@@ -203,34 +220,84 @@ describe("ai.reasoning-process compiler", () => {
 
     expect(result.issues).toEqual([]);
     expect(result.view).toBe(view);
-    expect(result.cardVersion).toBe("0.1.0");
-    expect(result.contractVersion).toBe("1.0.0");
+    expect(result.cardVersion).toBe("0.3.0");
+    expect(result.contractVersion).toBe("2.0.0");
     expect(result.renderProfile).toBe("octo-chat@1.2.0-rc.2");
     expect(result.wireProfile).toBe("octo/v2");
     expect(JSON.stringify(result.payload)).not.toContain("${");
   });
 
-  it("exposes stable stop and toggle interactions for an active trace", async () => {
+  it("exposes only the local toggle interaction for an active trace", async () => {
     const result = await compileSample({
       cardId: "ai.reasoning-process",
       sample: "reasoning",
     });
 
-    expect(findById(result.payload, "reasoning_stop")).toMatchObject({
-      type: "Action.Submit",
-      associatedInputs: "none",
-      data: {
-        action: "reasoning_stop",
-        effect: "stop_reasoning",
-        reasoning_id: "reasoning-channel-b-001",
-      },
-    });
+    expect(findById(result.payload, "reasoning_stop")).toBeUndefined();
     expect(findById(result.payload, "reasoning_toggle")).toMatchObject({
       type: "Action.ToggleVisibility",
-      targetElements: ["trace_panel", "collapsed_panel"],
+      targetElements: [
+        "trace_panel",
+        "collapsed_panel",
+        "reasoning_toggle_collapsed",
+        "reasoning_toggle_expanded",
+      ],
     });
+    expect(findById(result.payload, "reasoning_toggle_collapsed")).toMatchObject({
+      type: "Image",
+      url: "https://api.iconify.design/lucide/chevron-down.svg?color=%23a1a6ab",
+      width: "14px",
+    });
+    expect(findById(result.payload, "reasoning_toggle_expanded")).toMatchObject({
+      type: "Image",
+      url: "https://api.iconify.design/lucide/chevron-up.svg?color=%23a1a6ab",
+      width: "14px",
+    });
+    expect(JSON.stringify(result.payload)).toContain('"text":"◌"');
+    expect(JSON.stringify(result.payload)).toContain('"text":"✓"');
+    expect(findById(result.payload, "reasoning_tools_toggle_collapsed_0")).toMatchObject({
+      type: "Image",
+      url: "https://api.iconify.design/lucide/chevron-down.svg?color=%23a1a6ab",
+      width: "14px",
+      selectAction: expect.objectContaining({
+        type: "Action.ToggleVisibility",
+        targetElements: [
+          "reasoning_tools_panel_0",
+          "reasoning_tools_toggle_collapsed_0",
+          "reasoning_tools_toggle_expanded_0",
+        ],
+      }),
+    });
+    expect(findById(result.payload, "reasoning_tools_toggle_expanded_0")).toMatchObject({
+      type: "Image",
+      url: "https://api.iconify.design/lucide/chevron-up.svg?color=%23a1a6ab",
+      isVisible: false,
+      width: "14px",
+    });
+    expect(findById(result.payload, "reasoning_tools_panel_0")).toMatchObject({
+      type: "Container",
+      isVisible: false,
+      spacing: "Small",
+    });
+    expect(JSON.stringify(result.payload)).toContain('"text":"•"');
     expect(findById(result.payload, "trace_panel")?.isVisible).toBe(true);
     expect(findById(result.payload, "collapsed_panel")?.isVisible).toBe(false);
+  });
+
+  it("renders phase-level completion states", async () => {
+    const active = await compileSample({
+      cardId: "ai.reasoning-process",
+      sample: "reasoning",
+    });
+    const completed = await compileSample({
+      cardId: "ai.reasoning-process",
+      sample: "completed",
+    });
+
+    expect(JSON.stringify(active.payload)).toContain('"text":"◌"');
+    expect(JSON.stringify(active.payload)).toContain('"text":"✓"');
+    expect(JSON.stringify(completed.payload)).not.toContain('"text":"◌"');
+    expect(JSON.stringify(completed.payload)).toContain('"text":"✓"');
   });
 
   it("starts a completed trace collapsed and keeps it locally expandable", async () => {
@@ -241,29 +308,37 @@ describe("ai.reasoning-process compiler", () => {
 
     expect(findById(result.payload, "trace_panel")?.isVisible).toBe(false);
     expect(findById(result.payload, "collapsed_panel")?.isVisible).toBe(true);
-    expect(result.inspection.actions).toEqual([
-      expect.objectContaining({
-        id: "reasoning_toggle",
-        type: "Action.ToggleVisibility",
-      }),
-    ]);
+    expect(findById(result.payload, "reasoning_toggle_collapsed")?.isVisible).toBe(true);
+    expect(findById(result.payload, "reasoning_toggle_expanded")?.isVisible).toBe(false);
+    expect(result.inspection.actions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "reasoning_toggle",
+          type: "Action.ToggleVisibility",
+        }),
+        expect.objectContaining({
+          id: "reasoning_toggle_expanded_action",
+          type: "Action.ToggleVisibility",
+        }),
+        expect.objectContaining({
+          id: "reasoning_tools_toggle_action_0",
+          type: "Action.ToggleVisibility",
+        }),
+        expect.objectContaining({
+          id: "reasoning_tools_toggle_expanded_action_0",
+          type: "Action.ToggleVisibility",
+        }),
+      ])
+    );
   });
 
-  it("exposes a retry action with the reasoning identifier after failure", async () => {
+  it("keeps the failure details visible without retry actions", async () => {
     const result = await compileSample({
       cardId: "ai.reasoning-process",
       sample: "error",
     });
 
-    expect(findById(result.payload, "reasoning_retry")).toMatchObject({
-      type: "Action.Submit",
-      associatedInputs: "none",
-      data: {
-        action: "reasoning_retry",
-        effect: "retry_reasoning",
-        reasoning_id: "reasoning-channel-b-003",
-      },
-    });
+    expect(findById(result.payload, "reasoning_retry")).toBeUndefined();
     expect(JSON.stringify(result.payload)).toContain("推理服务连接超时");
   });
 
@@ -277,12 +352,12 @@ describe("ai.reasoning-process compiler", () => {
         title: "已深度思考",
         statusLabel: "生成失败",
         statusTone: "Attention",
-        timerText: "已中断",
         traceExpanded: false,
         traceCollapsed: true,
         collapsedSummary: "生成已中断",
         phases: [
           {
+            phaseState: "completed",
             thought: "读取指标失败。",
             actions: [
               {

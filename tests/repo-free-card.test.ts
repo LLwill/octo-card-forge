@@ -30,7 +30,7 @@ describe("repo-free card package authoring", () => {
       cards: [
         {
           cardId: "ai.reasoning-process",
-          version: "0.1.0",
+          version: "0.3.0",
         },
       ],
     });

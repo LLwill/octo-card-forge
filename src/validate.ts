@@ -59,6 +59,113 @@ function formatValue(value: unknown): string {
   return JSON.stringify(value);
 }
 
+function validateChildCollection(
+  value: JsonObject,
+  key: string,
+  path: string,
+  expected: (type: string) => boolean,
+  description: string,
+  error: (code: string, path: string, message: string) => void
+): void {
+  const children = value[key];
+  if (!Array.isArray(children)) {
+    error("schema.collection", `${path}.${key}`, `${key} must be an array`);
+    return;
+  }
+  children.forEach((child, index) => {
+    if (!isObject(child) || typeof child.type !== "string" || !expected(child.type)) {
+      error(
+        "schema.child_type",
+        `${path}.${key}[${index}]`,
+        `${key} must contain ${description}`
+      );
+    }
+  });
+}
+
+function validateElementStructure(
+  value: JsonObject,
+  type: string,
+  path: string,
+  error: (code: string, path: string, message: string) => void
+): void {
+  if (type === "Container" || type === "Column") {
+    validateChildCollection(
+      value,
+      "items",
+      path,
+      (childType) => !childType.startsWith(ACTION_PREFIX),
+      "Adaptive Card elements",
+      error
+    );
+  } else if (type === "ColumnSet") {
+    validateChildCollection(value, "columns", path, (childType) => childType === "Column", "Column", error);
+  } else if (type === "ActionSet") {
+    validateChildCollection(
+      value,
+      "actions",
+      path,
+      (childType) => childType.startsWith(ACTION_PREFIX),
+      "actions",
+      error
+    );
+  } else if (type === "AdaptiveCard") {
+    if (value.body !== undefined) {
+      validateChildCollection(
+        value,
+        "body",
+        path,
+        (childType) => !childType.startsWith(ACTION_PREFIX),
+        "Adaptive Card elements",
+        error
+      );
+    }
+    if (value.actions !== undefined) {
+      validateChildCollection(
+        value,
+        "actions",
+        path,
+        (childType) => childType.startsWith(ACTION_PREFIX),
+        "actions",
+        error
+      );
+    }
+  } else if (type === "FactSet") {
+    if (!Array.isArray(value.facts)) {
+      error("schema.collection", `${path}.facts`, "facts must be an array");
+    } else {
+      value.facts.forEach((fact, index) => {
+        if (
+          !isObject(fact) ||
+          typeof fact.title !== "string" ||
+          typeof fact.value !== "string"
+        ) {
+          error(
+            "schema.child_type",
+            `${path}.facts[${index}]`,
+            "facts must contain objects with string title and value"
+          );
+        }
+      });
+    }
+  } else if (type === "ImageSet") {
+    validateChildCollection(value, "images", path, (childType) => childType === "Image", "Image", error);
+  } else if (type === "Table") {
+    validateChildCollection(value, "rows", path, (childType) => childType === "TableRow", "TableRow", error);
+  } else if (type === "TableRow") {
+    validateChildCollection(value, "cells", path, (childType) => childType === "TableCell", "TableCell", error);
+  } else if (type === "TableCell") {
+    validateChildCollection(
+      value,
+      "items",
+      path,
+      (childType) => !childType.startsWith(ACTION_PREFIX),
+      "Adaptive Card elements",
+      error
+    );
+  }
+}
+
 function validateUtilityId(
   id: string,
   value: JsonObject,
@@ -182,6 +289,7 @@ export function validateCompiledCard(
     const type = typeof value.type === "string" ? value.type : undefined;
     if (type) {
       nodes++;
+      validateElementStructure(value, type, path, error);
       if (type.startsWith(ACTION_PREFIX)) {
         if (!capabilities.allowedActions.includes(type)) {
           error("host.action_unsupported", `${path}.type`, `${type} is not allowed`);

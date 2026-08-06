@@ -77,6 +77,8 @@ export interface RenderCapabilities {
 export interface RenderProfileSource {
   root: string;
   reference: string;
+  /** Where the preview/validator loaded the profile from. */
+  source?: "workspace" | "package" | "directory";
   manifest: RenderProfileManifest;
   capabilities: RenderCapabilities;
   hostConfig: Record<string, unknown>;
@@ -120,9 +122,11 @@ export interface CardInspection {
 }
 
 export interface CardPackage {
-  /** Stable lookup key. Base packages use id; additional versions use id@version. */
+  /** Stable lookup key. Draft packages use id; releases use id@version. */
   reference: string;
   root: string;
+  kind: "draft" | "release";
+  mutable: boolean;
   manifest: CardManifest;
 }
 

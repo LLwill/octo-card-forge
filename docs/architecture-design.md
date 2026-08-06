@@ -239,6 +239,11 @@ checksum 属于后续扩展，见专项设计与 Render Profile 实施方案，�
 | `renderProfile` | 设计、预览和验证使用的平台渲染规范 |
 | `wireProfile` | 该 View 发送时使用 `octo/v1` 或 `octo/v2` |
 
+仓库根目录的 `cards/<id>/` 是可变 Draft，版本目录 `cards/<id>/versions/<version>/` 是不可变
+Release。两者可以暂时拥有相同的 Card 版本号，但 Registry 会分别标记为 `draft` 和 `release`；
+Release 必须固定具体的 Render Profile，不能使用 `@latest`。发布前使用
+`octo-card verify --card ./<id>/versions/<version> --release` 作为门禁。
+
 交互 View 使用 `octo/v2`；不包含 Input/Submit 的结果 View 优先使用 `octo/v1`。
 
 ### 5.3 Card ViewModel

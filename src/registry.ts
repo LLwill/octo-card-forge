@@ -1,4 +1,4 @@
-import { readdir } from "node:fs/promises";
+import { readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { readJson, resolveInProject } from "./fs.js";
 import type {
@@ -15,6 +15,7 @@ const ACTIVE_RENDER_PROFILE_ROOT = "render-profiles";
 
 const RENDER_PROFILE_REFERENCE =
   /^([a-z][a-z0-9.-]*)@(latest|\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$/;
+const CARD_VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
 
 export function parseRenderProfileReference(reference: string): {
   id: string;
@@ -54,8 +55,16 @@ export function assertCardManifest(value: CardManifest, filePath: string): void 
   if (value.schemaVersion !== 2) {
     throw new Error(`${filePath}: unsupported schemaVersion ${String(value.schemaVersion)}`);
   }
-  if (!value.id || !value.dataSchema) {
-    throw new Error(`${filePath}: id and dataSchema are required`);
+  if (!value.id || !value.name || !value.version || !value.contractVersion || !value.dataSchema) {
+    throw new Error(
+      `${filePath}: id, name, version, contractVersion and dataSchema are required`
+    );
+  }
+  if (!CARD_VERSION.test(value.version) || !CARD_VERSION.test(value.contractVersion)) {
+    throw new Error(`${filePath}: version and contractVersion must use x.y.z format`);
+  }
+  if (!/^\d+\.\d+$/.test(value.adaptiveCardVersion)) {
+    throw new Error(`${filePath}: adaptiveCardVersion must use x.y format`);
   }
   if (value.renderProfile !== undefined && value.renderProfile !== "") {
     parseRenderProfileReference(value.renderProfile);
@@ -70,14 +79,84 @@ export function assertCardManifest(value: CardManifest, filePath: string): void 
   }
 }
 
+function packageKind(root: string): "draft" | "release" {
+  return path.basename(path.dirname(root)) === "versions" ? "release" : "draft";
+}
+
+/** Resolve a manifest-owned file without allowing paths to escape the package. */
+export function resolveCardAssetPath(
+  root: string,
+  relativePath: string,
+  label: string
+): string {
+  if (
+    !relativePath ||
+    path.isAbsolute(relativePath) ||
+    relativePath.split(/[\\/]/).some((segment) => segment === "..")
+  ) {
+    throw new Error(`${root}/manifest.json: ${label} must stay inside the card package`);
+  }
+  const resolvedRoot = path.resolve(root);
+  const resolvedPath = path.resolve(resolvedRoot, relativePath);
+  const relative = path.relative(resolvedRoot, resolvedPath);
+  if (relative === "" || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+    throw new Error(`${root}/manifest.json: ${label} must stay inside the card package`);
+  }
+  return resolvedPath;
+}
+
+async function assertCardPackageAssets(root: string, manifest: CardManifest): Promise<void> {
+  const assets = new Map<string, string>();
+  const add = (relativePath: string, label: string) => {
+    const resolved = resolveCardAssetPath(root, relativePath, label);
+    assets.set(resolved, label);
+    return resolved;
+  };
+
+  add(manifest.dataSchema, "dataSchema");
+  for (const [viewName, view] of Object.entries(manifest.views)) {
+    add(view.template, `views.${viewName}.template`);
+    for (const [index, sample] of view.samples.entries()) {
+      add(sample, `views.${viewName}.samples[${index}]`);
+    }
+  }
+
+  for (const [filePath, label] of assets) {
+    let information;
+    try {
+      information = await stat(filePath);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        throw new Error(`${root}/manifest.json: ${label} does not exist: ${filePath}`);
+      }
+      throw error;
+    }
+    if (!information.isFile()) {
+      throw new Error(`${root}/manifest.json: ${label} must point to a file: ${filePath}`);
+    }
+  }
+}
+
 export async function loadCardPackage(root: string): Promise<CardPackage> {
   const resolvedRoot = path.resolve(root);
   const manifestPath = path.join(resolvedRoot, "manifest.json");
   const manifest = await readJson<CardManifest>(manifestPath);
   assertCardManifest(manifest, manifestPath);
+  const kind = packageKind(resolvedRoot);
+  if (kind === "release") {
+    if (path.basename(resolvedRoot) !== manifest.version) {
+      throw new Error(`${manifestPath}: release directory must match version ${manifest.version}`);
+    }
+    if (!manifest.renderProfile || manifest.renderProfile.endsWith("@latest")) {
+      throw new Error(`${manifestPath}: a release must pin a concrete renderProfile version`);
+    }
+  }
+  await assertCardPackageAssets(resolvedRoot, manifest);
   return {
-    reference: manifest.id,
+    reference: kind === "release" ? `${manifest.id}@${manifest.version}` : manifest.id,
     root: resolvedRoot,
+    kind,
+    mutable: kind === "draft",
     manifest,
   };
 }
@@ -93,11 +172,10 @@ export async function listCards(): Promise<CardPackage[]> {
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     const root = path.join(cardsRoot, entry.name);
-    const manifestPath = path.join(root, "manifest.json");
-    const manifest = await readJson<CardManifest>(manifestPath);
-    assertCardManifest(manifest, manifestPath);
+    const draft = await loadCardPackage(root);
+    const manifest = draft.manifest;
     if (isCurrentRenderProfile(manifest)) {
-      cards.push({ reference: manifest.id, root, manifest });
+      cards.push(draft);
     }
 
     const versionsRoot = path.join(root, "versions");
@@ -111,8 +189,8 @@ export async function listCards(): Promise<CardPackage[]> {
       if (!versionEntry.isDirectory()) continue;
       const versionRoot = path.join(versionsRoot, versionEntry.name);
       const versionManifestPath = path.join(versionRoot, "manifest.json");
-      const versionManifest = await readJson<CardManifest>(versionManifestPath);
-      assertCardManifest(versionManifest, versionManifestPath);
+      const version = await loadCardPackage(versionRoot);
+      const versionManifest = version.manifest;
       if (versionManifest.id !== manifest.id) {
         throw new Error(
           `${versionManifestPath}: version package id must be ${manifest.id}`
@@ -124,11 +202,7 @@ export async function listCards(): Promise<CardPackage[]> {
         );
       }
       if (isCurrentRenderProfile(versionManifest)) {
-        cards.push({
-          reference: `${versionManifest.id}@${versionManifest.version}`,
-          root: versionRoot,
-          manifest: versionManifest,
-        });
+        cards.push(version);
       }
     }
   }
@@ -175,7 +249,7 @@ export async function getRenderProfile(reference?: string): Promise<RenderProfil
       readJson<RenderCapabilities>(path.join(root, manifest.capabilities)),
       readJson<Record<string, unknown>>(path.join(root, manifest.hostConfig)),
     ]);
-    return { root, reference: resolved, manifest, capabilities, hostConfig };
+    return { root, reference: resolved, source: "workspace", manifest, capabilities, hostConfig };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       throw new Error(`Unknown render profile: ${resolved}`);

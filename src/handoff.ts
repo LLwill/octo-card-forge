@@ -1,9 +1,10 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import JSZip from "jszip";
 import { compileCardPackage } from "./compiler.js";
 import { readJson } from "./fs.js";
-import { getCard } from "./registry.js";
+import { getCard, resolveCardAssetPath } from "./registry.js";
 import { loadRenderProfileForReference } from "./profile-source.js";
 import type { CardPackage, JsonObject, RenderProfileSource } from "./types.js";
 
@@ -27,7 +28,9 @@ export async function buildHandoffPackageForCard(
     const samples = [];
     for (const samplePath of definition.samples) {
       const name = path.basename(samplePath, path.extname(samplePath));
-      const data = await readJson<JsonObject>(path.join(card.root, samplePath));
+      const data = await readJson<JsonObject>(
+        resolveCardAssetPath(card.root, samplePath, `views.${viewName}.samples`)
+      );
       const result = await compileCardPackage({
         card,
         view: viewName,
@@ -48,7 +51,9 @@ export async function buildHandoffPackageForCard(
 
     views[viewName] = {
       wireProfile: definition.wireProfile,
-      template: await readJson<JsonObject>(path.join(card.root, definition.template)),
+      template: await readJson<JsonObject>(
+        resolveCardAssetPath(card.root, definition.template, `views.${viewName}.template`)
+      ),
       samples,
     };
   }
@@ -72,7 +77,7 @@ export async function buildHandoffPackageForCard(
       },
     },
     dataContract: await readJson<JsonObject>(
-      path.join(card.root, card.manifest.dataSchema)
+      resolveCardAssetPath(card.root, card.manifest.dataSchema, "dataSchema")
     ),
     views,
   };
@@ -95,21 +100,62 @@ export async function buildHandoffArchiveForCard(
   const packageName = `${String(manifest.id)}@${String(manifest.version)}`;
   const zip = new JSZip();
   const fixedDate = new Date("1980-01-01T00:00:00.000Z");
-  const addFile = (relativePath: string, content: string) =>
+  const addFile = (relativePath: string, content: string | Buffer) =>
     zip.file(`${packageName}/${relativePath}`, content, {
       date: fixedDate,
       createFolders: false,
     });
+  const resolvedRenderProfile = String(
+    (handoff.renderProfile as JsonObject).resolved
+  );
+  const renderProfile =
+    profileSource ?? await loadRenderProfileForReference(resolvedRenderProfile);
+  const profileManifestContent = json(
+    (handoff.renderProfile as JsonObject).manifest
+  );
+  const profileChecksums: Record<string, string> = {
+    "render-profile/manifest.json": createHash("sha256")
+      .update(profileManifestContent)
+      .digest("hex"),
+  };
 
   addFile("manifest.json", json(manifest));
   addFile(
     "render-profile/manifest.json",
-    json((handoff.renderProfile as JsonObject).manifest)
+    profileManifestContent
   );
+  const profileFiles = [
+    renderProfile.manifest.hostConfig,
+    renderProfile.manifest.theme,
+    renderProfile.manifest.stylesheet,
+    renderProfile.manifest.tokens,
+    renderProfile.manifest.capabilities,
+  ].filter((file): file is string => Boolean(file));
+  for (const relativePath of new Set(profileFiles)) {
+    if (
+      path.isAbsolute(relativePath) ||
+      relativePath.split(/[\\/]/).some((segment) => segment === "..")
+    ) {
+      throw new Error("Render Profile resources must stay inside the profile package");
+    }
+    const content = await readFile(path.resolve(renderProfile.root, relativePath));
+    const archivePath = `render-profile/${relativePath}`;
+    addFile(archivePath, content);
+    profileChecksums[archivePath] = createHash("sha256").update(content).digest("hex");
+    const basename = path.basename(relativePath);
+    if (archivePath !== `render-profile/${basename}`) {
+      addFile(`render-profile/${basename}`, content);
+      profileChecksums[`render-profile/${basename}`] = profileChecksums[archivePath];
+    }
+  }
   addFile(
     "render-profile/capabilities.json",
     json((handoff.renderProfile as JsonObject).capabilities)
   );
+  profileChecksums["render-profile/capabilities.json"] ??= createHash("sha256")
+    .update(json((handoff.renderProfile as JsonObject).capabilities))
+    .digest("hex");
+  addFile("render-profile/checksums.json", json(profileChecksums));
   addFile("contract/data.schema.json", json(handoff.dataContract));
 
   const views = handoff.views as JsonObject;
@@ -124,9 +170,6 @@ export async function buildHandoffArchiveForCard(
     }
   }
 
-  const resolvedRenderProfile = String(
-    (handoff.renderProfile as JsonObject).resolved
-  );
   const renderProfileLabel =
     manifest.renderProfile && manifest.renderProfile !== resolvedRenderProfile
       ? `${String(manifest.renderProfile)} → ${resolvedRenderProfile}`

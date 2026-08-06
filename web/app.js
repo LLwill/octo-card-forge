@@ -50,7 +50,7 @@ const copy = {
     "status.loading": "正在加载…", "status.assembling": "组装中…", "status.ready": "就绪",
     "status.validated": "校验通过", "status.checkJson": "请检查 JSON", "status.cards": "张成品卡片 · 当前基线",
     "status.shown": "张卡片 · 共", "status.shownSuffix": "张",
-    "card.ai": "AI 工作流", "card.docs": "文档工作流", "card.open": "打开详情 ↗",
+    "card.ai": "AI 工作流", "card.docs": "文档工作流", "card.draft": "草稿", "card.release": "发布版", "card.open": "打开详情 ↗",
     "card.views": "个视图", "card.samples": "个样例", "empty.title": "没有找到卡片", "empty.body": "请尝试其他搜索词或分类。",
     "meta.version": "卡片版本", "meta.contract": "契约版本", "meta.adaptive": "Adaptive Cards", "meta.profile": "Render Profile",
     "errors.selectSample": "请选择一个样例状态", "errors.export": "导出失败"
@@ -70,7 +70,7 @@ const copy = {
     "status.loading": "Loading…", "status.assembling": "Assembling…", "status.ready": "Ready",
     "status.validated": "Validated", "status.checkJson": "Check JSON", "status.cards": "finished cards · current baseline",
     "status.shown": "of", "status.shownSuffix": "cards",
-    "card.ai": "AI WORKFLOW", "card.docs": "DOCUMENT WORKFLOW", "card.open": "Open details ↗",
+    "card.ai": "AI WORKFLOW", "card.docs": "DOCUMENT WORKFLOW", "card.draft": "DRAFT", "card.release": "RELEASE", "card.open": "Open details ↗",
     "card.views": "views", "card.samples": "samples", "empty.title": "No cards found", "empty.body": "Try another search or category.",
     "meta.version": "Card version", "meta.contract": "Contract", "meta.adaptive": "Adaptive Cards", "meta.profile": "Render profile",
     "errors.selectSample": "Select a sample state", "errors.export": "Export failed"
@@ -163,6 +163,10 @@ function cardKind(card) {
   return card.id.startsWith("ai.") ? "ai" : "docs";
 }
 
+function packageKindLabel(card) {
+  return card.kind === "draft" ? t("card.draft") : t("card.release");
+}
+
 function firstSample(card) {
   const [view, samples] = Object.entries(card.samples)[0] || [];
   return { view, sample: samples?.[0] };
@@ -213,7 +217,7 @@ function renderCatalog() {
     previewShell.append(cardPreview(item));
     const footer = document.createElement("footer");
     const meta = document.createElement("span");
-    meta.textContent = `${item.card.version} · ${Object.keys(item.card.samples).length} ${t("card.views")} · ${item.sampleCount} ${t("card.samples")}`;
+    meta.textContent = `${packageKindLabel(item.card)} · ${item.card.version} · ${Object.keys(item.card.samples).length} ${t("card.views")} · ${item.sampleCount} ${t("card.samples")}`;
     const open = document.createElement("a");
     open.className = "card-open-link";
     open.href = `/?card=${encodeURIComponent(item.card.reference)}`;
@@ -271,7 +275,7 @@ function updateDetailPreview(result) {
 function populateDetailMeta(card) {
   detailMeta.replaceChildren();
   const values = [
-    [t("meta.version"), card.version],
+    [t("meta.version"), `${packageKindLabel(card)} · ${card.version}`],
     [t("meta.contract"), card.contractVersion],
     [t("meta.adaptive"), card.adaptiveCardVersion || currentContext.renderProfile.adaptiveCardsSdkVersion],
     [t("meta.profile"), currentContext.renderProfile.version],
@@ -363,7 +367,7 @@ async function openCard(reference, replace = false) {
   detailCardSelect.value = group.latest.reference;
   detailVersionSelect.replaceChildren();
   for (const version of group.versions) {
-    detailVersionSelect.add(new Option(version.version, version.reference));
+    detailVersionSelect.add(new Option(`${packageKindLabel(version)} · ${version.version}`, version.reference));
   }
   detailVersionSelect.value = card.reference;
   detailVersionSwitcher.hidden = group.versions.length < 2;

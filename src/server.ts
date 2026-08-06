@@ -19,6 +19,7 @@ import {
   getRenderProfile,
   loadCardPackage,
   listCards,
+  resolveCardAssetPath,
 } from "./registry.js";
 import type { CardPackage, JsonObject, RenderProfileSource } from "./types.js";
 
@@ -83,15 +84,17 @@ async function handleApi(
     sendJson(
       res,
       200,
-      cards.map(({ reference, manifest }) => ({
-        reference,
-        id: manifest.id,
-        name: manifest.name,
-        version: manifest.version,
-        contractVersion: manifest.contractVersion,
-        renderProfile: manifest.renderProfile,
+      cards.map((card) => ({
+        reference: card.reference,
+        id: card.manifest.id,
+        name: card.manifest.name,
+        kind: card.kind,
+        mutable: card.mutable,
+        version: card.manifest.version,
+        contractVersion: card.manifest.contractVersion,
+        renderProfile: card.manifest.renderProfile,
         samples: Object.fromEntries(
-          Object.entries(manifest.views).map(([view, definition]) => [
+          Object.entries(card.manifest.views).map(([view, definition]) => [
             view,
             definition.samples.map((sample) => path.basename(sample, ".json")),
           ])
@@ -143,6 +146,7 @@ async function handleApi(
       renderProfile: {
         id: profile.manifest.id,
         version: profile.manifest.version,
+        source: profile.source ?? "workspace",
         package: profile.manifest.packageName,
         compatibility: profile.manifest.compatibility,
         compatibleRange: profileManifest?.compatibleRange,
@@ -190,7 +194,12 @@ async function handleApi(
         for (const samplePath of definition.samples) {
           const sample = path.basename(samplePath, path.extname(samplePath));
           const result = context.card
-            ? await compileSampleFromPackage({ card, sample, profile: context.profile })
+            ? await compileSampleFromPackage({
+                card,
+                sample,
+                view,
+                profile: context.profile,
+              })
             : await compileSample({ cardId: card.reference, sample });
           interactionReports.push({
             sample,
@@ -205,7 +214,9 @@ async function handleApi(
         cardReference: card.reference,
         cardVersion: card.manifest.version,
         contractVersion: card.manifest.contractVersion,
-        schema: await readJson(path.join(card.root, card.manifest.dataSchema)),
+        schema: await readJson(
+          resolveCardAssetPath(card.root, card.manifest.dataSchema, "dataSchema")
+        ),
         interactionReports,
       });
     } else {
@@ -213,7 +224,13 @@ async function handleApi(
         context.profile ?? await getRenderProfile(card.manifest.renderProfile);
       sendJson(res, 200, {
         card: card.manifest,
+        package: {
+          reference: card.reference,
+          kind: card.kind,
+          mutable: card.mutable,
+        },
         renderProfile: profile.manifest,
+        renderProfileSource: profile.source ?? "workspace",
         hostConfig: profile.hostConfig,
         stylesheetUrl: `/api/render-styles/${encodeURIComponent(profile.reference)}`,
       });
@@ -228,6 +245,7 @@ async function handleApi(
       ? await compileSampleFromPackage({
           card: context.card,
           sample,
+          view: url.searchParams.get("view") ?? undefined,
           profile: context.profile,
         })
       : await compileSample({
@@ -254,7 +272,9 @@ async function handleApi(
       cardReference: card.reference,
       view: viewName,
       wireProfile: view.wireProfile,
-      template: await readJson(path.join(card.root, view.template)),
+      template: await readJson(
+        resolveCardAssetPath(card.root, view.template, `views.${viewName}.template`)
+      ),
     });
     return true;
   }

@@ -311,7 +311,7 @@ async function lintCardPackages(
         const sample = path.basename(samplePath, path.extname(samplePath));
         report.summary.samples++;
         try {
-          const result = await compileSampleFromPackage({ card, sample, profile });
+          const result = await compileSampleFromPackage({ card, sample, view, profile });
           const valid = !result.issues.some((issue) => issue.severity === "error");
           const utilityIds = collectUtilityUsage(result.payload);
           for (const usage of utilityIds) {

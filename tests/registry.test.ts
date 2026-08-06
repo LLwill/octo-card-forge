@@ -30,10 +30,19 @@ describe("versioned Card Package registry", () => {
     const cards = await listCards();
     expect(cards.map((card) => card.reference)).toEqual([
       "ai.decision-action@0.2.0",
-      "ai.reasoning-process",
       "ai.reasoning-process@0.2.0",
+      "ai.reasoning-process",
+      "ai.reasoning-process@0.3.0",
       "docs.access-request@0.3.0",
     ]);
+    expect(cards.find((card) => card.reference === "ai.reasoning-process")).toMatchObject({
+      kind: "draft",
+      mutable: true,
+    });
+    expect(cards.find((card) => card.reference === "ai.reasoning-process@0.3.0")).toMatchObject({
+      kind: "release",
+      mutable: false,
+    });
   });
 
   it("leaves historical card packages to artifacts instead of local preview", async () => {
