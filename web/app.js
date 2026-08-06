@@ -167,6 +167,12 @@ function packageKindLabel(card) {
   return card.kind === "draft" ? t("card.draft") : t("card.release");
 }
 
+function preferCardVersion(candidate, current) {
+  const versionOrder = candidate.version.localeCompare(current.version, undefined, { numeric: true });
+  if (versionOrder !== 0) return versionOrder > 0;
+  return candidate.kind === "release" && current.kind === "draft";
+}
+
 function firstSample(card) {
   const [view, samples] = Object.entries(card.samples)[0] || [];
   return { view, sample: samples?.[0] };
@@ -428,7 +434,7 @@ async function start() {
   for (const card of cards) {
     const group = cardGroups.get(card.id) || { latest: card, versions: [] };
     group.versions.push(card);
-    if (card.version.localeCompare(group.latest.version, undefined, { numeric: true }) > 0) {
+    if (preferCardVersion(card, group.latest)) {
       group.latest = card;
     }
     cardGroups.set(card.id, group);
@@ -461,7 +467,12 @@ async function start() {
   }));
   renderCatalog();
   const reference = new URLSearchParams(location.search).get("card");
-  if (reference) await openCard(reference, true);
+  if (reference) {
+    const canonicalCard = reference.includes("@")
+      ? cards.find((card) => card.reference === reference)
+      : cardGroups.get(reference)?.latest;
+    if (canonicalCard) await openCard(canonicalCard.reference, true);
+  }
 }
 
 cardSearch.addEventListener("input", renderCatalog);
