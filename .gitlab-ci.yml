@@ -1,0 +1,216 @@
+# octo-card-forge CI/CD — single "prod" environment (no dev/test split):
+#   build (MR only) -> package (docker build+push to TCR, emit digest)
+#   -> sync (render manifests/deploy.yaml, push to deploy-files) -> deploy (ArgoCD sync)
+#   -> notify.
+#
+# Only git tags (v*) trigger package/sync/deploy. ArgoCD sync is NOT
+# auto-triggered for prod — see argocd_sync below; trigger it manually after
+# reviewing the tagged release.
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_TAG'
+
+stages:
+  - build
+  - package
+  - sync
+  - deploy
+  - notify
+
+variables:
+  APP_NAME: octo-card-forge
+  REPOSITORY: tbj7-xtiao-tcr1.tencentcloudcr.com
+  CONTAINER_IMAGE: tbj7-xtiao-tcr1.tencentcloudcr.com/dmwork/octo-card-forge
+  DEPLOY_FILES_REPO: code.mlamp.cn/dm-fa/infra/deploy-files.git
+  FF_USE_FASTZIP: "true"
+  ROBOT_PUSH_MESSAGE: "enable"
+
+  NODE_IMAGE: tbj7-xtiao-tcr1.tencentcloudcr.com/xtiao-release/node:22-alpine
+  DOCKER_IMAGE: tbj7-xtiao-tcr1.tencentcloudcr.com/xtiao-release/docker:20.10.17
+  GIT_IMAGE: tbj7-xtiao-tcr1.tencentcloudcr.com/xtiao-release/alpine/git:v2.30.2
+  CURL_IMAGE: tbj7-xtiao-tcr1.tencentcloudcr.com/xtiao-release/alpine/curl:8.11.1
+  NPM_REGISTRY: https://registry.npmmirror.com
+  PNPM_VERSION: "10.32.0"
+  ARGOCD_SERVER: argocd-server.argocd:80
+  ARGOCD_APP: octo-card-forge-prod
+
+build:
+  stage: build
+  only:
+    - merge_requests
+  tags:
+    - tke-deepmining-runner
+  image: $NODE_IMAGE
+  before_script:
+    - npm config set registry "$NPM_REGISTRY"
+    - npm install -g "pnpm@${PNPM_VERSION}" --force
+  script:
+    - pnpm install --frozen-lockfile
+    - pnpm typecheck
+    - pnpm test
+    - pnpm build
+
+package_tags:
+  stage: package
+  only:
+    - tags
+  tags:
+    - tke-deepmining-runner
+  image: $DOCKER_IMAGE
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    PUSH_IMAGE_PATH: $CONTAINER_IMAGE:$CI_COMMIT_TAG
+    PUSH_IMAGE_LATEST: "$CONTAINER_IMAGE:latest"
+  before_script:
+    - i=0; while [ "$i" -lt 12 ]; do docker info && break; sleep 5; i=$(( i + 1 )) ; done
+    - echo "$HARBOR_PWD" | docker login "$REPOSITORY" -u 100028731872 --password-stdin
+  script:
+    - |
+      set -e
+      BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+      docker build \
+        -t "${PUSH_IMAGE_PATH}" \
+        -t "${PUSH_IMAGE_LATEST}" \
+        --build-arg NODE_IMAGE="${NODE_IMAGE}" \
+        --build-arg NPM_REGISTRY="${NPM_REGISTRY}" \
+        --build-arg PNPM_VERSION="${PNPM_VERSION}" \
+        --build-arg GIT_COMMIT="${CI_COMMIT_SHORT_SHA}" \
+        --build-arg GIT_BRANCH="${CI_COMMIT_REF_NAME}" \
+        --build-arg GIT_TAG="${CI_COMMIT_TAG}" \
+        --build-arg BUILD_DATE="${BUILD_DATE}" \
+        -f ./Dockerfile.ci .
+      docker push "${PUSH_IMAGE_PATH}"
+      docker push "${PUSH_IMAGE_LATEST}"
+      IMAGE_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "${PUSH_IMAGE_PATH}" | cut -d@ -f2)
+      if [ -z "$IMAGE_DIGEST" ]; then
+        echo "ERROR resolve image digest failed"
+        exit 1
+      fi
+      echo "IMAGE_DIGEST=${IMAGE_DIGEST}" | tee package.env
+      echo "packaged ${PUSH_IMAGE_PATH} @ ${IMAGE_DIGEST}"
+  artifacts:
+    reports:
+      dotenv: package.env
+
+sync_code:
+  stage: sync
+  only:
+    - tags
+  tags:
+    - tke-deepmining-runner
+  image: $GIT_IMAGE
+  variables:
+    GIT_STRATEGY: clone
+    GIT_DEPTH: 1
+  script:
+    - git config --global user.email "ci@mininglamp.com"
+    - git config --global user.name "ci"
+    - |
+      set -e
+
+      if [[ -z "$IMAGE_DIGEST" ]]; then
+        echo "Error: IMAGE_DIGEST not set; refusing to render manifest"
+        exit 1
+      fi
+
+      TARGET_BRANCH="$APP_NAME-prod"
+      DEPLOY_DIR="deploy-repo"
+      DEPLOY_REPO_URL="https://__token__:${CODE_TOKEN}@${DEPLOY_FILES_REPO}"
+
+      echo "Tag: ${CI_COMMIT_TAG} -> Deploy branch: $TARGET_BRANCH -> Image: ${CONTAINER_IMAGE} -> Digest: $IMAGE_DIGEST"
+
+      if git clone -b "$TARGET_BRANCH" --depth 1 --single-branch "$DEPLOY_REPO_URL" "$DEPLOY_DIR"; then
+        echo "Branch $TARGET_BRANCH exists"
+      else
+        echo "Branch $TARGET_BRANCH does not exist, creating it"
+        git clone --depth 1 "$DEPLOY_REPO_URL" "$DEPLOY_DIR"
+        cd "$DEPLOY_DIR"
+        git checkout -b "$TARGET_BRANCH"
+        cd ..
+      fi
+
+      if [ ! -f manifests/deploy.yaml ]; then
+        echo "Error: manifests/deploy.yaml not found"
+        exit 1
+      fi
+
+      mkdir -p "$DEPLOY_DIR/manifests"
+      cp manifests/deploy.yaml "$DEPLOY_DIR/manifests/deploy.yaml"
+
+      cd "$DEPLOY_DIR"
+
+      sed -i "s|{{BRANCH}}|prod|g" manifests/deploy.yaml
+      sed -i "s|{{REPO_URL}}|${CONTAINER_IMAGE}|g" manifests/deploy.yaml
+      sed -i "s|{{IMAGE_DIGEST}}|${IMAGE_DIGEST}|g" manifests/deploy.yaml
+
+      if grep -q "{{" manifests/deploy.yaml; then
+        echo "Error: unresolved placeholder remains after render"
+        grep -n "{{" manifests/deploy.yaml
+        exit 1
+      fi
+
+      git add manifests/deploy.yaml
+
+      if git diff --cached --quiet; then
+        echo "No changes to commit"
+        exit 0
+      fi
+
+      git commit -m "Update octo-card-forge prod to ${CI_COMMIT_TAG} (@${IMAGE_DIGEST})"
+      git push --force "$DEPLOY_REPO_URL" "HEAD:$TARGET_BRANCH"
+
+argocd_sync:
+  stage: deploy
+  only:
+    - tags
+  tags:
+    - tke-deepmining-runner
+  image: $CURL_IMAGE
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - |
+      echo "Tag build: skipping auto ArgoCD sync for prod. Trigger manually after reviewing the release:"
+      echo "curl -X POST http://$ARGOCD_SERVER/api/v1/applications/$ARGOCD_APP/sync -H \"Authorization: Bearer \$ARGOCD_TOKEN\" -H \"Content-Type: application/json\" -d '{\"prune\":false,\"dryRun\":false}'"
+
+notify_success:
+  stage: notify
+  only:
+    - tags
+  when: on_success
+  tags:
+    - tke-deepmining-runner
+  image: $CURL_IMAGE
+  variables:
+    GIT_STRATEGY: none
+  script: |
+    if [[ "$ROBOT_PUSH_MESSAGE" == "disable" ]]; then exit 0; fi
+    MESSAGE="octo-card-forge prod pipeline success\ntag: ${CI_COMMIT_TAG}\ncommit: ${CI_COMMIT_SHORT_SHA}\nimage: ${CONTAINER_IMAGE}:${CI_COMMIT_TAG}\npipeline: ${CI_PIPELINE_URL}\nNOTE: ArgoCD sync not yet triggered, run it manually."
+    if [[ -n "$DISCORD_WEBHOOK" ]]; then
+      curl -s -X POST "$DISCORD_WEBHOOK" -H "Content-Type: application/json" -d "{\"content\":\"$MESSAGE\"}"
+    fi
+    if [[ -n "$WECOM_WEBHOOK" ]]; then
+      curl -s -X POST "$WECOM_WEBHOOK" -H "Content-Type: application/json" -d "{\"msgtype\":\"text\",\"text\":{\"content\":\"$MESSAGE\"}}"
+    fi
+
+notify_failure:
+  stage: notify
+  only:
+    - tags
+  when: on_failure
+  tags:
+    - tke-deepmining-runner
+  image: $CURL_IMAGE
+  variables:
+    GIT_STRATEGY: none
+  script: |
+    if [[ "$ROBOT_PUSH_MESSAGE" == "disable" ]]; then exit 0; fi
+    MESSAGE="octo-card-forge prod pipeline failed\ntag: ${CI_COMMIT_TAG}\ncommit: ${CI_COMMIT_SHORT_SHA}\npipeline: ${CI_PIPELINE_URL}"
+    if [[ -n "$DISCORD_WEBHOOK" ]]; then
+      curl -s -X POST "$DISCORD_WEBHOOK" -H "Content-Type: application/json" -d "{\"content\":\"$MESSAGE\"}"
+    fi
+    if [[ -n "$WECOM_WEBHOOK" ]]; then
+      curl -s -X POST "$WECOM_WEBHOOK" -H "Content-Type: application/json" -d "{\"msgtype\":\"text\",\"text\":{\"content\":\"$MESSAGE\"}}"
+    fi
