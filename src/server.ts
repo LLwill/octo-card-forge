@@ -78,6 +78,11 @@ async function handleApi(
   url: URL,
   context: ServerContext
 ): Promise<boolean> {
+  if (req.method === "GET" && url.pathname === "/healthz") {
+    sendJson(res, 200, { status: "ok" });
+    return true;
+  }
+
   if (req.method === "GET" && url.pathname === "/api/cards") {
     const cards = context.card ? [context.card] : await listCards();
     sendJson(
