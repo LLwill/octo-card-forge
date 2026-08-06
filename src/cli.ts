@@ -151,6 +151,12 @@ function printDiscoverText(report: Awaited<ReturnType<typeof discoverUtilities>>
       );
     }
   }
+  console.log("\nRuntime capabilities");
+  for (const capability of report.runtimeCapabilities) {
+    console.log(
+      `  ${capability.id}@${capability.version}\t${capability.status}\t${capability.description}`
+    );
+  }
 }
 
 function printExplainText(report: Awaited<ReturnType<typeof explainUtility>>): void {

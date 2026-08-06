@@ -11,6 +11,7 @@ import type {
   RenderProfileSource,
 } from "./types.js";
 import { isUtilityId, parseUtilityId } from "./utility-id.js";
+import { RUNTIME_CAPABILITIES } from "./runtime-capabilities.js";
 
 export interface AgentUtilityToken {
   token: string;
@@ -32,6 +33,7 @@ export interface AgentDiscoverReport {
     group: string;
     tokens: AgentUtilityToken[];
   }>;
+  runtimeCapabilities: typeof RUNTIME_CAPABILITIES;
 }
 
 export interface AgentExplainReport extends AgentUtilityToken {
@@ -150,6 +152,7 @@ export async function discoverUtilities(options: {
         group,
         tokens: tokens.sort((a, b) => a.token.localeCompare(b.token)),
       })),
+    runtimeCapabilities: RUNTIME_CAPABILITIES,
   };
 }
 
