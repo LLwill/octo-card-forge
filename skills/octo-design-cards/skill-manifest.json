@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "skill": {
     "name": "octo-design-cards",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "entry": "SKILL.md"
   },
   "cli": {
     "package": "@mlt-org/octo-card-cli",
     "compatibleRange": ">=0.2.0 <0.3.0",
-    "recommendedVersion": "0.2.0"
+    "recommendedVersion": "0.2.1"
   },
   "renderProfiles": [
     {
