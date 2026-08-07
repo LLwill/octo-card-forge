@@ -139,6 +139,6 @@
   "maxNodes": 200,
   "maxDepth": 24,
   "maxPayloadBytes": 65536,
-  "imageUrlSchemes": ["https"],
+  "imageUrlSchemes": ["https", "data"],
   "openUrlSchemes": ["https"]
 }

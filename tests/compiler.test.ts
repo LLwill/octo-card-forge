@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { compileCard, compileSample } from "../src/compiler.js";
 import type { JsonObject } from "../src/types.js";
 
+const CHEVRON_DOWN_DATA_URL =
+  "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxZW0iIGhlaWdodD0iMWVtIiB2aWV3Qm94PSIwIDAgMjQgMjQiPjxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ExYTZhYiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBzdHJva2Utd2lkdGg9IjIiIGQ9Im02IDlsNiA2bDYtNiIvPjwvc3ZnPg==";
+const CHEVRON_UP_DATA_URL =
+  "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxZW0iIGhlaWdodD0iMWVtIiB2aWV3Qm94PSIwIDAgMjQgMjQiPjxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ExYTZhYiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBzdHJva2Utd2lkdGg9IjIiIGQ9Im0xOCAxNWwtNi02bC02IDYiLz48L3N2Zz4=";
+
 function findById(value: unknown, id: string): JsonObject | undefined {
   if (Array.isArray(value)) {
     for (const item of value) {
@@ -266,19 +271,19 @@ describe("ai.reasoning-process compiler", () => {
     });
     expect(findById(result.payload, "reasoning_toggle_collapsed")).toMatchObject({
       type: "Image",
-      url: "https://api.iconify.design/lucide/chevron-down.svg?color=%23a1a6ab",
+      url: CHEVRON_DOWN_DATA_URL,
       width: "14px",
     });
     expect(findById(result.payload, "reasoning_toggle_expanded")).toMatchObject({
       type: "Image",
-      url: "https://api.iconify.design/lucide/chevron-up.svg?color=%23a1a6ab",
+      url: CHEVRON_UP_DATA_URL,
       width: "14px",
     });
     expect(JSON.stringify(result.payload)).not.toContain('"text":"●"');
     expect(JSON.stringify(result.payload)).toContain("正在执行下一步");
     expect(findById(result.payload, "reasoning_tools_toggle_collapsed_0")).toMatchObject({
       type: "Image",
-      url: "https://api.iconify.design/lucide/chevron-down.svg?color=%23a1a6ab",
+      url: CHEVRON_DOWN_DATA_URL,
       width: "14px",
       selectAction: expect.objectContaining({
         type: "Action.ToggleVisibility",
@@ -291,7 +296,7 @@ describe("ai.reasoning-process compiler", () => {
     });
     expect(findById(result.payload, "reasoning_tools_toggle_expanded_0")).toMatchObject({
       type: "Image",
-      url: "https://api.iconify.design/lucide/chevron-up.svg?color=%23a1a6ab",
+      url: CHEVRON_UP_DATA_URL,
       isVisible: false,
       width: "14px",
     });

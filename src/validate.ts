@@ -11,6 +11,7 @@ const ACTION_PREFIX = "Action.";
 const INPUT_PREFIX = "Input.";
 const DEFAULT_MAX_UTILITY_TOKENS_PER_ELEMENT = 3;
 const STRUCTURAL_TYPES = new Set(["TextRun", "TableRow", "TableCell"]);
+const BASE64_IMAGE_URL_PATTERN = /^data:image\/[a-z0-9.+-]+;base64,([a-z0-9+/]+={0,2})$/i;
 
 function isObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -57,6 +58,13 @@ function findComponent(
 
 function formatValue(value: unknown): string {
   return JSON.stringify(value);
+}
+
+function isBase64ImageUrl(value: string): boolean {
+  const match = BASE64_IMAGE_URL_PATTERN.exec(value);
+  if (!match) return false;
+  const payload = match[1];
+  return payload.length % 4 !== 1;
 }
 
 function validateChildCollection(
@@ -434,6 +442,10 @@ export function validateCompiledCard(
         if (typeof raw !== "string") return;
         try {
           const scheme = new URL(raw).protocol.replace(":", "");
+          if (scheme === "data" && !isBase64ImageUrl(raw)) {
+            error("security.invalid_url", `${path}.${key}`, "Invalid base64 image data URL");
+            return;
+          }
           if (!allowed.includes(scheme)) {
             error("security.url_scheme", `${path}.${key}`, `${scheme} URL is not allowed`);
           }
