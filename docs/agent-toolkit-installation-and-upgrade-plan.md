@@ -102,7 +102,7 @@ CI / Docker   -> 固定版本的 octo-card-cli container
 Render Profile 保持独立制品，例如：
 
 ```text
-@mlt-org/octo-card-profile-octo-chat@1.2.0-rc.2
+@mlt-org/octo-card-profile-octo-chat@1.2.0-rc.3
 ```
 
 它负责 HostConfig、capabilities、组件、utility、tokens、theme 和 CSS。CLI 升级不应
@@ -122,7 +122,7 @@ Render Profile 保持独立制品，例如：
 ```bash
 pnpm add -D \
   @mlt-org/octo-card-cli@0.2.0 \
-  @mlt-org/octo-card-profile-octo-chat@1.2.0-rc.2
+  @mlt-org/octo-card-profile-octo-chat@1.2.0-rc.3
 ```
 
 Skill 可以从以下路径读取，也可以使用独立 Skill Bundle：
@@ -163,7 +163,7 @@ Skill Bundle 包含 `skill-manifest.json`，描述兼容关系、下载地址和
       "id": "octo-chat",
       "package": "@mlt-org/octo-card-profile-octo-chat",
       "compatibleRange": ">=1.2.0-rc.2 <2.0.0",
-      "recommendedVersion": "1.2.0-rc.2"
+      "recommendedVersion": "1.2.0-rc.3"
     }
   ],
   "artifacts": {
@@ -202,7 +202,7 @@ Skill Bundle 包含 `skill-manifest.json`，描述兼容关系、下载地址和
   },
   "renderProfile": {
     "package": "@mlt-org/octo-card-profile-octo-chat",
-    "reference": "octo-chat@1.2.0-rc.2"
+    "reference": "octo-chat@1.2.0-rc.3"
   },
   "generatedFiles": ["AGENTS.md"]
 }
@@ -281,7 +281,7 @@ octo-card agent upgrade --apply
 
 ```bash
 pnpm add -D @mlt-org/octo-card-cli@0.1.0
-pnpm add -D @mlt-org/octo-card-profile-octo-chat@1.2.0-rc.2
+pnpm add -D @mlt-org/octo-card-profile-octo-chat@1.2.0-rc.3
 pnpm exec octo-card agent doctor
 ```
 

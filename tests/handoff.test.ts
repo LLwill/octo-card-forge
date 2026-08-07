@@ -26,8 +26,8 @@ describe("backend handoff package", () => {
         schemaVersion: 2,
       },
       renderProfile: {
-        requested: "octo-chat@1.2.0-rc.2",
-        resolved: "octo-chat@1.2.0-rc.2",
+        requested: "octo-chat@1.2.0-rc.3",
+        resolved: "octo-chat@1.2.0-rc.3",
         server: { required: true },
         web: { required: true },
       },
@@ -83,9 +83,9 @@ describe("backend handoff package", () => {
   });
 
   it("writes one strict interaction report per reasoning view", async () => {
-    const archive = await buildHandoffArchive("ai.reasoning-process@0.3.0");
+    const archive = await buildHandoffArchive("ai.reasoning-process@0.3.1");
     const zip = await JSZip.loadAsync(archive.buffer);
-    const prefix = "ai.reasoning-process@0.3.0/";
+    const prefix = "ai.reasoning-process@0.3.1/";
     const files = Object.keys(zip.files);
 
     expect(files).toEqual(
@@ -128,7 +128,7 @@ describe("backend handoff package", () => {
           version: "0.1.0",
         },
         renderProfile: {
-          resolved: "octo-chat@1.2.0-rc.2",
+          resolved: "octo-chat@1.2.0-rc.3",
         },
       });
 

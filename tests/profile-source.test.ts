@@ -5,11 +5,11 @@ import { loadRenderProfileForReference } from "../src/profile-source.js";
 
 describe("render profile source resolution", () => {
   it("prefers the checked-in profile when running from the forge workspace", async () => {
-    const profile = await loadRenderProfileForReference("octo-chat@1.2.0-rc.2");
+    const profile = await loadRenderProfileForReference("octo-chat@1.2.0-rc.3");
 
     expect(profile.root).toBe(
       path.resolve(resolveInProject("render-profiles", "octo-chat"))
     );
-    expect(profile.reference).toBe("octo-chat@1.2.0-rc.2");
+    expect(profile.reference).toBe("octo-chat@1.2.0-rc.3");
   });
 });

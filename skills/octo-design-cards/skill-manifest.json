@@ -15,7 +15,7 @@
       "id": "octo-chat",
       "package": "@mlt-org/octo-card-profile-octo-chat",
       "compatibleRange": ">=1.2.0-rc.2 <2.0.0",
-      "recommendedVersion": "1.2.0-rc.2"
+      "recommendedVersion": "1.2.0-rc.3"
     }
   ]
 }
