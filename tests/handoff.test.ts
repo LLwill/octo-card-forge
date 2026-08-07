@@ -83,9 +83,9 @@ describe("backend handoff package", () => {
   });
 
   it("writes one strict interaction report per reasoning view", async () => {
-    const archive = await buildHandoffArchive("ai.reasoning-process@0.3.0");
+    const archive = await buildHandoffArchive("ai.reasoning-process@0.3.1");
     const zip = await JSZip.loadAsync(archive.buffer);
-    const prefix = "ai.reasoning-process@0.3.0/";
+    const prefix = "ai.reasoning-process@0.3.1/";
     const files = Object.keys(zip.files);
 
     expect(files).toEqual(

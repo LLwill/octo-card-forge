@@ -32,14 +32,14 @@ describe("versioned Card Package registry", () => {
       "ai.decision-action@0.2.0",
       "ai.reasoning-process@0.2.0",
       "ai.reasoning-process",
-      "ai.reasoning-process@0.3.0",
+      "ai.reasoning-process@0.3.1",
       "docs.access-request@0.3.0",
     ]);
     expect(cards.find((card) => card.reference === "ai.reasoning-process")).toMatchObject({
       kind: "draft",
       mutable: true,
     });
-    expect(cards.find((card) => card.reference === "ai.reasoning-process@0.3.0")).toMatchObject({
+    expect(cards.find((card) => card.reference === "ai.reasoning-process@0.3.1")).toMatchObject({
       kind: "release",
       mutable: false,
     });

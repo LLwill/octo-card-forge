@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "id": "ai.reasoning-process",
   "name": "推理过程卡",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "contractVersion": "1.2.0",
   "adaptiveCardVersion": "1.5",
   "renderProfile": "octo-chat@latest",

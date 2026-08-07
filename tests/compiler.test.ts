@@ -135,14 +135,14 @@ describe("new Card Package versions", () => {
     });
   });
 
-  it("compiles the 0.3.0 reasoning package with synchronized title arrows", async () => {
+  it("compiles the 0.3.1 reasoning package with synchronized title arrows", async () => {
     const result = await compileSample({
-      cardId: "ai.reasoning-process@0.3.0",
+      cardId: "ai.reasoning-process@0.3.1",
       sample: "reasoning",
     });
 
     expect(result.issues).toEqual([]);
-    expect(result.cardVersion).toBe("0.3.0");
+    expect(result.cardVersion).toBe("0.3.1");
     expect(result.contractVersion).toBe("1.2.0");
     expect(findById(result.payload, "reasoning_toggle")?.targetElements).toEqual([
       "trace_panel",
@@ -225,7 +225,7 @@ describe("ai.reasoning-process compiler", () => {
 
     expect(result.issues).toEqual([]);
     expect(result.view).toBe(view);
-    expect(result.cardVersion).toBe("0.3.0");
+    expect(result.cardVersion).toBe("0.3.1");
     expect(result.contractVersion).toBe("1.2.0");
     expect(result.renderProfile).toBe("octo-chat@1.2.0-rc.3");
     expect(result.wireProfile).toBe(wireProfile);
