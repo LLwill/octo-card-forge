@@ -415,7 +415,7 @@ CLI 支持：
 
 ```text
 octo-chat@latest
-octo-chat@1.2.0-rc.2
+octo-chat@1.2.0-rc.3
 file:/absolute/path/to/profile-package
 dir:/absolute/path/to/render-profiles/octo-chat
 ```
@@ -460,7 +460,7 @@ CLI 编译结果中应解析为精确版本：
 
 ```json
 {
-  "renderProfile": "octo-chat@1.2.0-rc.2"
+  "renderProfile": "octo-chat@1.2.0-rc.3"
 }
 ```
 

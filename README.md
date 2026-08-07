@@ -50,11 +50,11 @@ pnpm cli render docs.access-request@0.3.0 --sample pending
 当前候选 Render Profile 可生成 Web 直接安装的不可变制品：
 
 ```bash
-pnpm cli profile bundle octo-chat@1.2.0-rc.2 --output .release
-pnpm cli profile pack octo-chat@1.2.0-rc.2 --output .release
+pnpm cli profile bundle octo-chat@1.2.0-rc.3 --output .release
+pnpm cli profile pack octo-chat@1.2.0-rc.3 --output .release
 ```
 
-打包结果为 `.release/mlt-org-octo-card-profile-octo-chat-1.2.0-rc.2.tgz`。
+打包结果为 `.release/mlt-org-octo-card-profile-octo-chat-1.2.0-rc.3.tgz`。
 `render-profiles/octo-chat/` 只保存当前候选 Profile 源码；历史精确版本由制品库保存，
 需要复现旧卡时从对应 card/profile 制品重新渲染，不在本仓预览。
 
@@ -251,7 +251,7 @@ pnpm prepare:agent-validation -- --scenario docs-forward
 
 卡片 `manifest.renderProfile` 支持：
 
-- 具体版本（如 `octo-chat@1.0.0` / `octo-chat@1.2.0-rc.2`）：钉死，用于历史复现
+- 具体版本（如 `octo-chat@1.0.0` / `octo-chat@1.2.0-rc.3`）：钉死，用于历史复现
 - `octo-chat@latest`：跟随仓库当前基线 `CURRENT_RENDER_PROFILE`
 - 省略字段：等价于 `@latest`
 
@@ -320,12 +320,12 @@ git push origin octo-design-cards-skill/v0.2.1
 发布 Render Profile：
 
 ```bash
-git tag render-profile/octo-chat/v1.2.0-rc.2
-git push origin render-profile/octo-chat/v1.2.0-rc.2
+git tag render-profile/octo-chat/v1.2.0-rc.3
+git push origin render-profile/octo-chat/v1.2.0-rc.3
 ```
 
 这会触发 `publish-render-profile`，验证 `render-profiles/octo-chat/manifest.json` 中的
-`@mlt-org/octo-card-profile-octo-chat@1.2.0-rc.2`，打包并以 `next` tag 发布。
+`@mlt-org/octo-card-profile-octo-chat@1.2.0-rc.3`，打包并以 `next` tag 发布。
 
 两个发布 workflow 都要求 tag 指向已经合入 `main` 的 commit，并使用 `npm-publish`
 environment 与 `NPM_TOKEN`。

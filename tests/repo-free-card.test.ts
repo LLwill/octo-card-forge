@@ -49,7 +49,7 @@ describe("repo-free card package authoring", () => {
       profile,
     });
     expect(result.cardId).toBe("ai.reasoning-process");
-    expect(result.renderProfile).toBe("octo-chat@1.2.0-rc.2");
+    expect(result.renderProfile).toBe("octo-chat@1.2.0-rc.3");
     expect(result.payload.type).toBe("AdaptiveCard");
     expect(result.issues).toEqual([]);
   });

@@ -10,14 +10,14 @@ import {
 } from "../src/profile.js";
 import type { RenderCapabilities } from "../src/types.js";
 
-const REFERENCE = "octo-chat@1.2.0-rc.2";
+const REFERENCE = "octo-chat@1.2.0-rc.3";
 
 describe("render profile bundle", () => {
   it("validates a profile without creating a bundle", async () => {
     await expect(validateRenderProfile(REFERENCE)).resolves.toMatchObject({
       reference: REFERENCE,
       packageName: "@mlt-org/octo-card-profile-octo-chat",
-      version: "1.2.0-rc.2",
+      version: "1.2.0-rc.3",
       compatibility: "octo-chat/v1",
     });
   });
@@ -44,7 +44,7 @@ describe("render profile bundle", () => {
 
     expect(packageJson).toMatchObject({
       name: "@mlt-org/octo-card-profile-octo-chat",
-      version: "1.2.0-rc.2",
+      version: "1.2.0-rc.3",
       publishConfig: {
         access: "public",
         registry: "https://registry.npmjs.org/",
