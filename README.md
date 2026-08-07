@@ -282,7 +282,16 @@ pnpm install --prod --frozen-lockfile
 pnpm start
 ```
 
-服务从 `PORT` 环境变量读取端口，默认监听 `0.0.0.0:4318`。同目录的 manifest 文件包含入口、Profile 和 SHA-256 校验值。
+服务从 `PORT` 环境变量读取端口，默认监听 `0.0.0.0:4318`；通过 `BASE_PATH` 可以在反向代理子路径下部署，例如 `BASE_PATH=/card-forge` 会使用 `/card-forge/` 作为 Web 根路径。`BASE_PATH` 不要包含查询字符串，末尾斜杠可省略。示例：
+
+```bash
+PORT=4318 BASE_PATH=/card-forge pnpm start
+```
+
+反向代理需要保留这个前缀转发给服务：浏览器请求 `/card-forge/api/...` 时，服务也应收到
+`/card-forge/api/...`。不要在 Ingress 或网关中配置 `rewrite-target`、`StripPrefix` 等剥离前缀规则。
+
+同目录的 manifest 文件包含入口、Profile、BASE_PATH 配置名和 SHA-256 校验值。
 
 普通分支 push 和 PR 不会发布 npm 包。PR 只运行验证；合并到 `main` 也只运行 CI 和
 候选 artifact 打包。真正发布需要手动 workflow，或在已经合入 `main` 的 commit 上打 tag。

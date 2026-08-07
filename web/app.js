@@ -24,6 +24,7 @@ const contract = document.querySelector("#contract");
 const editorMessage = document.querySelector("#editorMessage");
 const exportButton = document.querySelector("#exportButton");
 const homeThemeToggle = document.querySelector("#homeThemeToggle");
+const basePath = window.__OCTO_BASE_PATH__ || "";
 let cards = [];
 let catalogItems = [];
 let cardGroups = new Map();
@@ -78,6 +79,8 @@ const copy = {
 };
 
 function t(key) { return copy[locale][key] || copy.en[key] || key; }
+
+function publicUrl(path) { return `${basePath}${path}`; }
 
 function applyLocale() {
   document.documentElement.lang = locale === "zh" ? "zh-CN" : "en";
@@ -137,7 +140,7 @@ AdaptiveCards.AdaptiveCard.onProcessMarkdown = (text, result) => {
 };
 
 async function json(url, init) {
-  const response = await fetch(url, init);
+  const response = await fetch(publicUrl(url), init);
   const body = await response.json();
   if (!response.ok) throw new Error(body.message || JSON.stringify(body.errors || body));
   return body;
@@ -226,7 +229,7 @@ function renderCatalog() {
     meta.textContent = `${packageKindLabel(item.card)} · ${item.card.version} · ${Object.keys(item.card.samples).length} ${t("card.views")} · ${item.sampleCount} ${t("card.samples")}`;
     const open = document.createElement("a");
     open.className = "card-open-link";
-    open.href = `/?card=${encodeURIComponent(item.card.reference)}`;
+    open.href = publicUrl(`/?card=${encodeURIComponent(item.card.reference)}`);
     open.textContent = t("card.open");
     footer.append(meta, open);
     entry.append(header, previewShell, footer);
@@ -365,8 +368,8 @@ async function openCard(reference, replace = false) {
   const card = cards.find((item) => item.reference === reference);
   if (!card) return;
   const group = cardGroups.get(card.id) || { latest: card, versions: [card] };
-  if (replace) history.replaceState({}, "", `/?card=${encodeURIComponent(reference)}`);
-  else history.pushState({}, "", `/?card=${encodeURIComponent(reference)}`);
+  if (replace) history.replaceState({}, "", publicUrl(`/?card=${encodeURIComponent(reference)}`));
+  else history.pushState({}, "", publicUrl(`/?card=${encodeURIComponent(reference)}`));
   currentCard = card;
   catalogView.hidden = true;
   detailView.hidden = false;
@@ -398,7 +401,7 @@ async function openCard(reference, replace = false) {
 }
 
 function closeCard() {
-  history.pushState({}, "", "/");
+  history.pushState({}, "", publicUrl("/"));
   detailView.hidden = true;
   catalogView.hidden = false;
   currentCard = undefined;
@@ -409,7 +412,7 @@ async function downloadHandoff() {
   if (!currentCard) return;
   setDetailStatus(locale === "zh" ? "正在生成交付包…" : "Building handoff package…");
   try {
-    const response = await fetch(`/api/cards/${encodeURIComponent(currentCard.reference)}/handoff`);
+    const response = await fetch(publicUrl(`/api/cards/${encodeURIComponent(currentCard.reference)}/handoff`));
     if (!response.ok) throw new Error((await response.json()).message || t("errors.export"));
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);
