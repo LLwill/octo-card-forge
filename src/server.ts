@@ -28,6 +28,61 @@ interface ServerContext {
   profile?: RenderProfileSource;
 }
 
+export function normalizeBasePath(value = "/"): string {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === "/") return "";
+  const withLeadingSlash = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+  const normalized = withLeadingSlash.replace(/\/+$/, "");
+  const segments = normalized.split("/").slice(1);
+  if (
+    !normalized ||
+    segments.some((segment) => segment === "." || segment === "..") ||
+    !/^\/(?:[A-Za-z0-9._~-]+\/)*[A-Za-z0-9._~-]+$/.test(normalized)
+  ) {
+    throw new Error(`Invalid BASE_PATH: ${value}`);
+  }
+  return normalized;
+}
+
+function publicPath(basePath: string, pathname: string): string {
+  return `${basePath}${pathname}` || "/";
+}
+
+function stripBasePath(pathname: string, basePath: string): string | undefined {
+  if (!basePath) return pathname;
+  if (pathname === basePath || pathname === `${basePath}/`) return "/";
+  if (pathname.startsWith(`${basePath}/`)) return pathname.slice(basePath.length);
+  return undefined;
+}
+
+function escapeHtmlAttribute(value: string): string {
+  return value.replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[character] ?? character);
+}
+
+function escapeInlineScript(value: string): string {
+  return value
+    .replaceAll("<", "\\u003C")
+    .replaceAll(">", "\\u003E")
+    .replaceAll("&", "\\u0026")
+    .replaceAll("\u2028", "\\u2028")
+    .replaceAll("\u2029", "\\u2029");
+}
+
+function renderHtml(value: string, basePath: string): string {
+  const baseHref = `${basePath || ""}/`;
+  const runtimePath = escapeInlineScript(JSON.stringify(basePath));
+  return value.replace(
+    "<head>",
+    `<head>\n    <base href="${escapeHtmlAttribute(baseHref)}" />\n    <script>window.__OCTO_BASE_PATH__ = ${runtimePath};</script>`,
+  );
+}
+
 function sendJson(res: ServerResponse, status: number, value: unknown): void {
   res.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
@@ -77,7 +132,8 @@ async function handleApi(
   req: IncomingMessage,
   res: ServerResponse,
   url: URL,
-  context: ServerContext
+  context: ServerContext,
+  basePath: string,
 ): Promise<boolean> {
   if (req.method === "GET" && url.pathname === "/api/cards") {
     const cards = context.card ? [context.card] : await listCards();
@@ -162,7 +218,7 @@ async function handleApi(
       renderProfile: profile.manifest,
       hostConfig: profile.hostConfig,
       capabilities: profile.capabilities,
-      stylesheetUrl: `/api/render-styles/${encodeURIComponent(profile.reference)}`,
+      stylesheetUrl: publicPath(basePath, `/api/render-styles/${encodeURIComponent(profile.reference)}`),
       sections: buildComponentBaseline(profile.capabilities),
       groups: buildComponentBaselineGroups(profile.capabilities),
     });
@@ -232,7 +288,7 @@ async function handleApi(
         renderProfile: profile.manifest,
         renderProfileSource: profile.source ?? "workspace",
         hostConfig: profile.hostConfig,
-        stylesheetUrl: `/api/render-styles/${encodeURIComponent(profile.reference)}`,
+        stylesheetUrl: publicPath(basePath, `/api/render-styles/${encodeURIComponent(profile.reference)}`),
       });
     }
     return true;
@@ -340,9 +396,11 @@ export async function startServer(options: {
   host?: string;
   cardRoot?: string;
   profile?: RenderProfileSource;
+  basePath?: string;
 } = {}): Promise<void> {
   const port = options.port ?? 4318;
   const host = options.host ?? "127.0.0.1";
+  const basePath = normalizeBasePath(options.basePath);
   const card = options.cardRoot ? await loadCardPackage(options.cardRoot) : undefined;
   const profile = card
     ? await loadRenderProfileForReference(card.manifest.renderProfile, options.profile)
@@ -352,7 +410,19 @@ export async function startServer(options: {
   const server = createServer(async (req, res) => {
     try {
       const url = new URL(req.url ?? "/", `http://${req.headers.host ?? host}`);
-      if (await handleApi(req, res, url, context)) return;
+      if (basePath && url.pathname === basePath) {
+        res.writeHead(308, { location: `${basePath}/${url.search}` });
+        res.end();
+        return;
+      }
+      const routePath = stripBasePath(url.pathname, basePath);
+      if (routePath === undefined) {
+        sendJson(res, 404, { code: "not_found" });
+        return;
+      }
+      const routeUrl = new URL(url);
+      routeUrl.pathname = routePath;
+      if (await handleApi(req, res, routeUrl, context, basePath)) return;
       const files: Record<string, [string, string]> = {
         "/": ["index.html", "text/html"],
         "/components": ["components.html", "text/html"],
@@ -364,9 +434,10 @@ export async function startServer(options: {
         "/install.js": ["install.js", "text/javascript"],
         "/styles.css": ["styles.css", "text/css"],
       };
-      const file = files[url.pathname];
+      const file = files[routePath];
       if (req.method === "GET" && file) {
-        sendText(res, 200, file[1], await readText(path.join(webRoot, file[0])));
+        const content = await readText(path.join(webRoot, file[0]));
+        sendText(res, 200, file[1], file[1] === "text/html" ? renderHtml(content, basePath) : content);
         return;
       }
       sendJson(res, 404, { code: "not_found" });
@@ -382,5 +453,5 @@ export async function startServer(options: {
     server.listen(port, host, () => resolve());
   });
   const label = card ? ` (${card.manifest.id})` : "";
-  console.log(`Octo Card Forge${label}: http://${host}:${port}`);
+  console.log(`Octo Card Forge${label}: http://${host}:${port}${basePath || "/"}`);
 }

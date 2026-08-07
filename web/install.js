@@ -9,6 +9,7 @@ const copy = {
 
 let locale = localStorage.getItem("octo-card-locale") === "en" ? "en" : "zh";
 let installData;
+const basePath = window.__OCTO_BASE_PATH__ || "";
 
 function t(key) { return copy[locale][key] || copy.en[key] || key; }
 
@@ -122,7 +123,7 @@ function renderInstallData(data) {
 }
 
 async function loadInstallData() {
-  const response = await fetch("/api/install");
+  const response = await fetch(`${basePath}/api/install`);
   const data = await response.json();
   if (!response.ok) throw new Error(data.message || "install metadata unavailable");
   renderInstallData({ ...data, skillChecksum: data.skill.sha256 });
