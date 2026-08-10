@@ -150,6 +150,10 @@ describe("new Card Package versions", () => {
       "reasoning_toggle_collapsed",
       "reasoning_toggle_expanded",
     ]);
+    expect((result.payload.body as JsonObject[])[0]).toMatchObject({
+      type: "Container",
+      bleed: true,
+    });
   });
 
   it("compiles the AI decision 0.2 choice", async () => {
@@ -230,6 +234,10 @@ describe("ai.reasoning-process compiler", () => {
     expect(result.renderProfile).toBe("octo-chat@1.2.0-rc.3");
     expect(result.wireProfile).toBe(wireProfile);
     expect(JSON.stringify(result.payload)).not.toContain("${");
+    expect((result.payload.body as JsonObject[])[0]).toMatchObject({
+      type: "Container",
+      bleed: true,
+    });
   });
 
   it("keeps the v1.2 producer shape compatible without phaseState", async () => {
