@@ -14,6 +14,7 @@ const themeToggle = document.querySelector("#themeToggle");
 let previewWidth = 640;
 let activeFilter = "all";
 let baseline;
+const basePath = window.__OCTO_BASE_PATH__ || "";
 let locale = localStorage.getItem("octo-card-locale") === "en" ? "en" : "zh";
 
 const componentCopy = {
@@ -90,7 +91,7 @@ AdaptiveCards.AdaptiveCard.onProcessMarkdown = (text, result) => {
 };
 
 async function json(url) {
-  const response = await fetch(url);
+  const response = await fetch(`${basePath}${url}`);
   const body = await response.json();
   if (!response.ok) throw new Error(body.message || "组件基线加载失败");
   return body;

@@ -18,7 +18,12 @@ async function checkCardPackages(
       for (const samplePath of definition.samples) {
         const sample = path.basename(samplePath, path.extname(samplePath));
         try {
-          const result = await compileSampleFromPackage({ card, sample, profile });
+          const result = await compileSampleFromPackage({
+            card,
+            sample,
+            view,
+            profile,
+          });
           const valid = !result.issues.some((issue) => issue.severity === "error");
           item.samples.push({
             name: sample,

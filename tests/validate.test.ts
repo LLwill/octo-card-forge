@@ -118,6 +118,47 @@ describe("render and wire profile validation", () => {
     );
   });
 
+  it("accepts base64 image data URLs when the render profile enables data URLs", () => {
+    const imageCapabilities: RenderCapabilities = {
+      ...capabilities,
+      allowedElements: [...capabilities.allowedElements, "Image"],
+      imageUrlSchemes: ["https", "data"],
+    };
+    const payload: JsonObject = {
+      type: "AdaptiveCard",
+      version: "1.5",
+      body: [
+        {
+          type: "Image",
+          url: "data:image/svg+xml;base64,PHN2Zy8+",
+          altText: "Chevron",
+        },
+      ],
+    };
+
+    expect(validateCompiledCard(payload, imageCapabilities, "octo/v2")).toEqual([]);
+  });
+
+  it("rejects non-image or malformed base64 data URLs", () => {
+    const imageCapabilities: RenderCapabilities = {
+      ...capabilities,
+      allowedElements: [...capabilities.allowedElements, "Image"],
+      imageUrlSchemes: ["https", "data"],
+    };
+    const payload: JsonObject = {
+      type: "AdaptiveCard",
+      version: "1.5",
+      body: [
+        { type: "Image", url: "data:text/html;base64,PGgxPk5vdCBhbiBpbWFnZTwvaDE+" },
+        { type: "Image", url: "data:image/png;base64,not-valid-base64!" },
+      ],
+    };
+
+    expect(validateCompiledCard(payload, imageCapabilities, "octo/v2").filter(
+      (issue) => issue.code === "security.invalid_url"
+    )).toHaveLength(2);
+  });
+
   it("enforces octo/v1 interaction boundaries and standard properties", () => {
     const payload: JsonObject = {
       type: "AdaptiveCard",

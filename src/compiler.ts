@@ -6,6 +6,7 @@ import { inspectCard } from "./inspect.js";
 import {
   getCard,
   loadCardPackage,
+  resolveCardAssetPath,
   resolveRenderProfileReference,
 } from "./registry.js";
 import { loadRenderProfileForReference } from "./profile-source.js";
@@ -46,7 +47,7 @@ export async function compileCardPackage(options: {
   if (!view) throw new Error(`Unknown view ${options.view} for ${card.reference}`);
 
   const schema = await readJson<JsonObject>(
-    path.join(card.root, card.manifest.dataSchema)
+    resolveCardAssetPath(card.root, card.manifest.dataSchema, "dataSchema")
   );
   const ajv = new Ajv({ allErrors: true, strict: false });
   addFormats(ajv);
@@ -66,9 +67,21 @@ export async function compileCardPackage(options: {
   const renderProfile = resolveRenderProfileReference(card.manifest.renderProfile);
   let payload: JsonObject = {};
   if (!issues.some((issue) => issue.severity === "error")) {
-    const templateJson = await readJson<JsonObject>(path.join(card.root, view.template));
+    const templateJson = await readJson<JsonObject>(
+      resolveCardAssetPath(card.root, view.template, `views.${options.view}.template`)
+    );
     const template = new ACData.Template(templateJson);
     payload = template.expand({ $root: options.data }) as JsonObject;
+    if (payload.version !== card.manifest.adaptiveCardVersion) {
+      issues.push({
+        severity: "error",
+        code: "schema.adaptive_card_version",
+        path: "$.version",
+        message:
+          `Template emits Adaptive Card ${String(payload.version)}, ` +
+          `manifest declares ${card.manifest.adaptiveCardVersion}`,
+      });
+    }
     const profile = await loadRenderProfileForReference(renderProfile, options.profile);
     issues.push(...validateCompiledCard(payload, profile.capabilities, view.wireProfile));
   }
@@ -101,19 +114,33 @@ export async function compileCard(options: {
 export async function compileSampleFromPackage(options: {
   card: CardPackage;
   sample: string;
+  view?: string;
   profile?: RenderProfileSource;
 }): Promise<CompileResult & { data: JsonObject }> {
   const { card } = options;
+  const matches: Array<{ viewName: string; samplePath: string }> = [];
   for (const [viewName, view] of Object.entries(card.manifest.views)) {
+    if (options.view && options.view !== viewName) continue;
     const match = view.samples.find(
       (samplePath) => path.basename(samplePath, path.extname(samplePath)) === options.sample
     );
-    if (!match) continue;
-    const data = await readJson<JsonObject>(path.join(card.root, match));
+    if (match) matches.push({ viewName, samplePath: match });
+  }
+  if (matches.length > 1) {
+    throw new Error(
+      `Sample ${options.sample} is ambiguous for ${card.reference}; choose a view: ` +
+        matches.map((match) => match.viewName).join(", ")
+    );
+  }
+  const match = matches[0];
+  if (match) {
+    const data = await readJson<JsonObject>(
+      resolveCardAssetPath(card.root, match.samplePath, `views.${match.viewName}.samples`)
+    );
     return {
       ...(await compileCardPackage({
         card,
-        view: viewName,
+        view: match.viewName,
         data,
         profile: options.profile,
       })),
@@ -150,11 +177,13 @@ export async function compileCardDirectory(options: {
 export async function compileSampleFromDirectory(options: {
   cardRoot: string;
   sample: string;
+  view?: string;
   profile?: RenderProfileSource;
 }): Promise<CompileResult & { data: JsonObject }> {
   return compileSampleFromPackage({
     card: await loadCardPackage(options.cardRoot),
     sample: options.sample,
+    view: options.view,
     profile: options.profile,
   });
 }

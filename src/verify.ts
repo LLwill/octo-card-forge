@@ -13,12 +13,18 @@ export interface VerifyCardOptions {
   cardRoot: string;
   profile?: RenderProfileSource;
   sample?: string;
+  /** Apply the immutable release-package gate instead of draft validation. */
+  release?: boolean;
   emitDir?: string;
   handoffDir?: string;
 }
 
 export interface VerifyCardReport {
   valid: boolean;
+  package: {
+    kind: "draft" | "release";
+    mutable: boolean;
+  };
   card: {
     id: string;
     version: string;
@@ -68,6 +74,11 @@ export async function verifyCardPackage(
   options: VerifyCardOptions
 ): Promise<VerifyCardReport> {
   const card = await loadCardPackage(options.cardRoot);
+  if (options.release && card.kind !== "release") {
+    throw new Error(
+      `Release verification requires a versioned package under versions/${card.manifest.version}`
+    );
+  }
   const entries = sampleEntries(card, options.sample);
   if (entries.length === 0) {
     throw new Error(
@@ -89,6 +100,7 @@ export async function verifyCardPackage(
     const result = await compileSampleFromDirectory({
       cardRoot: options.cardRoot,
       sample: entry.name,
+      view: entry.view,
       profile: options.profile,
     });
     const output = emitDir
@@ -113,6 +125,10 @@ export async function verifyCardPackage(
     : undefined;
   return {
     valid: check.valid && lint.valid && samples.every((sample) => sample.valid),
+    package: {
+      kind: card.kind,
+      mutable: card.mutable,
+    },
     card: {
       id: card.manifest.id,
       version: card.manifest.version,
@@ -127,6 +143,7 @@ export async function verifyCardPackage(
 export function verifySummary(report: VerifyCardReport): JsonObject {
   return {
     valid: report.valid,
+    package: report.package,
     card: report.card,
     samples: report.samples.map((sample) => ({
       name: sample.name,

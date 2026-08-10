@@ -15,7 +15,7 @@ describe("render profile resolution", () => {
     expect(resolveRenderProfileReference("octo-chat@1.0.0")).toBe("octo-chat@1.0.0");
     const latest = await getRenderProfile("octo-chat@latest");
     expect(latest.reference).toBe(CURRENT_RENDER_PROFILE);
-    expect(latest.manifest.version).toBe("1.2.0-rc.2");
+    expect(latest.manifest.version).toBe("1.2.0-rc.3");
   });
 
   it("does not load historical profile artifacts from the workspace", async () => {
@@ -30,10 +30,19 @@ describe("versioned Card Package registry", () => {
     const cards = await listCards();
     expect(cards.map((card) => card.reference)).toEqual([
       "ai.decision-action@0.2.0",
-      "ai.reasoning-process",
       "ai.reasoning-process@0.2.0",
+      "ai.reasoning-process",
+      "ai.reasoning-process@0.3.1",
       "docs.access-request@0.3.0",
     ]);
+    expect(cards.find((card) => card.reference === "ai.reasoning-process")).toMatchObject({
+      kind: "draft",
+      mutable: true,
+    });
+    expect(cards.find((card) => card.reference === "ai.reasoning-process@0.3.1")).toMatchObject({
+      kind: "release",
+      mutable: false,
+    });
   });
 
   it("leaves historical card packages to artifacts instead of local preview", async () => {

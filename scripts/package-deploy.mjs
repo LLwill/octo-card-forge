@@ -46,6 +46,7 @@ const deploymentManifest = {
   entrypoint: "pnpm start",
   host: "0.0.0.0",
   port: "PORT",
+  basePath: "BASE_PATH",
   renderProfile: `octo-chat@${profileManifest.version}`,
   files,
 };

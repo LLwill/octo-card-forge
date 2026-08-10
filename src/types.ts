@@ -6,6 +6,8 @@ export interface CardViewDefinition {
   wireProfile: WireProfile;
   template: string;
   samples: string[];
+  states?: string[];
+  submit_actions?: string[];
 }
 
 export interface CardManifest {
@@ -17,6 +19,7 @@ export interface CardManifest {
   adaptiveCardVersion: string;
   /** Concrete pin, `id@latest` (follows CURRENT_RENDER_PROFILE), or omit for current baseline. */
   renderProfile?: string;
+  renderProfileCompatibility?: string;
   defaultLocale: string;
   views: Record<string, CardViewDefinition>;
   dataSchema: string;
@@ -77,6 +80,8 @@ export interface RenderCapabilities {
 export interface RenderProfileSource {
   root: string;
   reference: string;
+  /** Where the preview/validator loaded the profile from. */
+  source?: "workspace" | "package" | "directory";
   manifest: RenderProfileManifest;
   capabilities: RenderCapabilities;
   hostConfig: Record<string, unknown>;
@@ -120,9 +125,11 @@ export interface CardInspection {
 }
 
 export interface CardPackage {
-  /** Stable lookup key. Base packages use id; additional versions use id@version. */
+  /** Stable lookup key. Draft packages use id; releases use id@version. */
   reference: string;
   root: string;
+  kind: "draft" | "release";
+  mutable: boolean;
   manifest: CardManifest;
 }
 

@@ -118,7 +118,7 @@ registry 保存。Forge 本地 Catalog 和默认校验只覆盖当前 Profile �
 }
 ```
 
-当前 `1.2.0-rc.2` 仍直接保存具体值 `host-config.json`、`theme.css` 和 `tokens.json`；
+当前 `1.2.0-rc.3` 仍直接保存具体值 `host-config.json`、`theme.css` 和 `tokens.json`；
 把 HostConfig 改为由 Token 生成是本实施方案中的剩余工作，不能标记为已完成。
 
 ### 4.2 编译后 npm 包
@@ -235,7 +235,7 @@ PR 1 的 Token 单一来源、PR 2 的 HostConfig Token 展开、PR 3 的 Previe
 
 修改内容：
 
-1. 确认候选精确版本。若 1.0/1.1 从未正式发布，可使用 `1.2.0-rc.2`；正式发布前再升为 `1.2.0`。
+1. 确认候选精确版本。若 1.0/1.1 从未正式发布，可使用 `1.2.0-rc.3`；正式发布前再升为 `1.2.0`。
 2. Manifest 增加 `compatibility: "octo-chat/v1"`。
 3. 将最终主题值集中到 `tokens.json`。
 4. HostConfig 源改为模板，Bundle 阶段解析为具体值。
@@ -268,9 +268,9 @@ PR 1 的 Token 单一来源、PR 2 的 HostConfig Token 展开、PR 3 的 Previe
 CLI：
 
 ```bash
-pnpm cli profile validate octo-chat@1.2.0-rc.2
-pnpm cli profile bundle octo-chat@1.2.0-rc.2 --output .release
-pnpm cli profile pack octo-chat@1.2.0-rc.2 --output .release
+pnpm cli profile validate octo-chat@1.2.0-rc.3
+pnpm cli profile bundle octo-chat@1.2.0-rc.3 --output .release
+pnpm cli profile pack octo-chat@1.2.0-rc.3 --output .release
 ```
 
 Bundle 必须完成：
@@ -291,7 +291,7 @@ Bundle 必须完成：
 pnpm typecheck
 pnpm test
 pnpm cli check
-pnpm cli profile pack octo-chat@1.2.0-rc.2
+pnpm cli profile pack octo-chat@1.2.0-rc.3
 ```
 
 解开 `.tgz` 后只允许包含约定文件，不允许包含源码模板、Samples、缓存或密钥。
@@ -328,7 +328,7 @@ pnpm cli profile pack octo-chat@1.2.0-rc.2
 Tag：
 
 ```text
-render-profile/octo-chat/v1.2.0-rc.2
+render-profile/octo-chat/v1.2.0-rc.3
 ```
 
 CI 顺序：
@@ -374,7 +374,7 @@ Profile 版本升级由 Forge CI 生成新的不可变 deploy artifact；部署�
 安装：
 
 ```bash
-pnpm add @mlt-org/octo-card-profile-octo-chat@1.2.0-rc.2 --save-exact
+pnpm add @mlt-org/octo-card-profile-octo-chat@1.2.0-rc.3 --save-exact
 ```
 
 修改内容：

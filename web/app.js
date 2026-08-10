@@ -24,6 +24,7 @@ const contract = document.querySelector("#contract");
 const editorMessage = document.querySelector("#editorMessage");
 const exportButton = document.querySelector("#exportButton");
 const homeThemeToggle = document.querySelector("#homeThemeToggle");
+const basePath = window.__OCTO_BASE_PATH__ || "";
 let cards = [];
 let catalogItems = [];
 let cardGroups = new Map();
@@ -50,7 +51,7 @@ const copy = {
     "status.loading": "正在加载…", "status.assembling": "组装中…", "status.ready": "就绪",
     "status.validated": "校验通过", "status.checkJson": "请检查 JSON", "status.cards": "张成品卡片 · 当前基线",
     "status.shown": "张卡片 · 共", "status.shownSuffix": "张",
-    "card.ai": "AI 工作流", "card.docs": "文档工作流", "card.open": "打开详情 ↗",
+    "card.ai": "AI 工作流", "card.docs": "文档工作流", "card.draft": "草稿", "card.release": "发布版", "card.open": "打开详情 ↗",
     "card.views": "个视图", "card.samples": "个样例", "empty.title": "没有找到卡片", "empty.body": "请尝试其他搜索词或分类。",
     "meta.version": "卡片版本", "meta.contract": "契约版本", "meta.adaptive": "Adaptive Cards", "meta.profile": "Render Profile",
     "errors.selectSample": "请选择一个样例状态", "errors.export": "导出失败"
@@ -70,7 +71,7 @@ const copy = {
     "status.loading": "Loading…", "status.assembling": "Assembling…", "status.ready": "Ready",
     "status.validated": "Validated", "status.checkJson": "Check JSON", "status.cards": "finished cards · current baseline",
     "status.shown": "of", "status.shownSuffix": "cards",
-    "card.ai": "AI WORKFLOW", "card.docs": "DOCUMENT WORKFLOW", "card.open": "Open details ↗",
+    "card.ai": "AI WORKFLOW", "card.docs": "DOCUMENT WORKFLOW", "card.draft": "DRAFT", "card.release": "RELEASE", "card.open": "Open details ↗",
     "card.views": "views", "card.samples": "samples", "empty.title": "No cards found", "empty.body": "Try another search or category.",
     "meta.version": "Card version", "meta.contract": "Contract", "meta.adaptive": "Adaptive Cards", "meta.profile": "Render profile",
     "errors.selectSample": "Select a sample state", "errors.export": "Export failed"
@@ -78,6 +79,8 @@ const copy = {
 };
 
 function t(key) { return copy[locale][key] || copy.en[key] || key; }
+
+function publicUrl(path) { return `${basePath}${path}`; }
 
 function applyLocale() {
   document.documentElement.lang = locale === "zh" ? "zh-CN" : "en";
@@ -137,7 +140,7 @@ AdaptiveCards.AdaptiveCard.onProcessMarkdown = (text, result) => {
 };
 
 async function json(url, init) {
-  const response = await fetch(url, init);
+  const response = await fetch(publicUrl(url), init);
   const body = await response.json();
   if (!response.ok) throw new Error(body.message || JSON.stringify(body.errors || body));
   return body;
@@ -161,6 +164,16 @@ function setTheme(theme) {
 
 function cardKind(card) {
   return card.id.startsWith("ai.") ? "ai" : "docs";
+}
+
+function packageKindLabel(card) {
+  return card.kind === "draft" ? t("card.draft") : t("card.release");
+}
+
+function preferCardVersion(candidate, current) {
+  const versionOrder = candidate.version.localeCompare(current.version, undefined, { numeric: true });
+  if (versionOrder !== 0) return versionOrder > 0;
+  return candidate.kind === "release" && current.kind === "draft";
 }
 
 function firstSample(card) {
@@ -213,10 +226,10 @@ function renderCatalog() {
     previewShell.append(cardPreview(item));
     const footer = document.createElement("footer");
     const meta = document.createElement("span");
-    meta.textContent = `${item.card.version} · ${Object.keys(item.card.samples).length} ${t("card.views")} · ${item.sampleCount} ${t("card.samples")}`;
+    meta.textContent = `${packageKindLabel(item.card)} · ${item.card.version} · ${Object.keys(item.card.samples).length} ${t("card.views")} · ${item.sampleCount} ${t("card.samples")}`;
     const open = document.createElement("a");
     open.className = "card-open-link";
-    open.href = `/?card=${encodeURIComponent(item.card.reference)}`;
+    open.href = publicUrl(`/?card=${encodeURIComponent(item.card.reference)}`);
     open.textContent = t("card.open");
     footer.append(meta, open);
     entry.append(header, previewShell, footer);
@@ -271,7 +284,7 @@ function updateDetailPreview(result) {
 function populateDetailMeta(card) {
   detailMeta.replaceChildren();
   const values = [
-    [t("meta.version"), card.version],
+    [t("meta.version"), `${packageKindLabel(card)} · ${card.version}`],
     [t("meta.contract"), card.contractVersion],
     [t("meta.adaptive"), card.adaptiveCardVersion || currentContext.renderProfile.adaptiveCardsSdkVersion],
     [t("meta.profile"), currentContext.renderProfile.version],
@@ -355,15 +368,15 @@ async function openCard(reference, replace = false) {
   const card = cards.find((item) => item.reference === reference);
   if (!card) return;
   const group = cardGroups.get(card.id) || { latest: card, versions: [card] };
-  if (replace) history.replaceState({}, "", `/?card=${encodeURIComponent(reference)}`);
-  else history.pushState({}, "", `/?card=${encodeURIComponent(reference)}`);
+  if (replace) history.replaceState({}, "", publicUrl(`/?card=${encodeURIComponent(reference)}`));
+  else history.pushState({}, "", publicUrl(`/?card=${encodeURIComponent(reference)}`));
   currentCard = card;
   catalogView.hidden = true;
   detailView.hidden = false;
   detailCardSelect.value = group.latest.reference;
   detailVersionSelect.replaceChildren();
   for (const version of group.versions) {
-    detailVersionSelect.add(new Option(version.version, version.reference));
+    detailVersionSelect.add(new Option(`${packageKindLabel(version)} · ${version.version}`, version.reference));
   }
   detailVersionSelect.value = card.reference;
   detailVersionSwitcher.hidden = group.versions.length < 2;
@@ -388,7 +401,7 @@ async function openCard(reference, replace = false) {
 }
 
 function closeCard() {
-  history.pushState({}, "", "/");
+  history.pushState({}, "", publicUrl("/"));
   detailView.hidden = true;
   catalogView.hidden = false;
   currentCard = undefined;
@@ -399,7 +412,7 @@ async function downloadHandoff() {
   if (!currentCard) return;
   setDetailStatus(locale === "zh" ? "正在生成交付包…" : "Building handoff package…");
   try {
-    const response = await fetch(`/api/cards/${encodeURIComponent(currentCard.reference)}/handoff`);
+    const response = await fetch(publicUrl(`/api/cards/${encodeURIComponent(currentCard.reference)}/handoff`));
     if (!response.ok) throw new Error((await response.json()).message || t("errors.export"));
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);
@@ -424,7 +437,7 @@ async function start() {
   for (const card of cards) {
     const group = cardGroups.get(card.id) || { latest: card, versions: [] };
     group.versions.push(card);
-    if (card.version.localeCompare(group.latest.version, undefined, { numeric: true }) > 0) {
+    if (preferCardVersion(card, group.latest)) {
       group.latest = card;
     }
     cardGroups.set(card.id, group);
@@ -457,7 +470,12 @@ async function start() {
   }));
   renderCatalog();
   const reference = new URLSearchParams(location.search).get("card");
-  if (reference) await openCard(reference, true);
+  if (reference) {
+    const canonicalCard = reference.includes("@")
+      ? cards.find((card) => card.reference === reference)
+      : cardGroups.get(reference)?.latest;
+    if (canonicalCard) await openCard(canonicalCard.reference, true);
+  }
 }
 
 cardSearch.addEventListener("input", renderCatalog);
