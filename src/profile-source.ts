@@ -31,7 +31,27 @@ function referenceForManifest(manifest: RenderProfileManifest): string {
   return `${manifest.id}@${manifest.version}`;
 }
 
-async function loadFromRoot(root: string): Promise<RenderProfileSource> {
+function resolveProfileAssetPath(root: string, relativePath: string): string {
+  if (
+    !relativePath ||
+    path.isAbsolute(relativePath) ||
+    relativePath.split(/[\\/]/).some((segment) => segment === "..")
+  ) {
+    throw new Error(`${root}/manifest.json: Profile resource must stay inside the package`);
+  }
+  const resolvedRoot = path.resolve(root);
+  const resolvedPath = path.resolve(resolvedRoot, relativePath);
+  const relative = path.relative(resolvedRoot, resolvedPath);
+  if (relative === "" || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+    throw new Error(`${root}/manifest.json: Profile resource must stay inside the package`);
+  }
+  return resolvedPath;
+}
+
+async function loadFromRoot(
+  root: string,
+  source: "workspace" | "package" | "directory" = "directory"
+): Promise<RenderProfileSource> {
   const resolvedRoot = path.resolve(root);
   const sourceManifestPath = path.join(resolvedRoot, "manifest.json");
   const packageManifestPath = path.join(resolvedRoot, "dist", "manifest.json");
@@ -45,9 +65,9 @@ async function loadFromRoot(root: string): Promise<RenderProfileSource> {
 
   const manifest = await readJson<RenderProfileManifest>(manifestPath);
   const readProfileJson = <T>(file: string) =>
-    readJson<T>(path.join(resolvedRoot, file));
+    readJson<T>(resolveProfileAssetPath(resolvedRoot, file));
   const readProfileText = (file: string) =>
-    readText(path.join(resolvedRoot, file));
+    readText(resolveProfileAssetPath(resolvedRoot, file));
 
   const [capabilities, hostConfig, theme, stylesheet] = await Promise.all([
     readProfileJson<RenderCapabilities>(manifest.capabilities),
@@ -59,6 +79,7 @@ async function loadFromRoot(root: string): Promise<RenderProfileSource> {
   return {
     root: resolvedRoot,
     reference: referenceForManifest(manifest),
+    source,
     manifest,
     capabilities,
     hostConfig,
@@ -69,7 +90,7 @@ async function loadFromRoot(root: string): Promise<RenderProfileSource> {
 export async function loadRenderProfileFromDirectory(
   root: string
 ): Promise<RenderProfileSource> {
-  return loadFromRoot(root);
+  return loadFromRoot(root, "directory");
 }
 
 export async function loadRenderProfileFromPackage(
@@ -80,7 +101,7 @@ export async function loadRenderProfileFromPackage(
     packageNameOrRoot.startsWith(".") ||
     (await exists(packageNameOrRoot))
   ) {
-    return loadFromRoot(packageNameOrRoot);
+    return loadFromRoot(packageNameOrRoot, "package");
   }
 
   const manifestPath = require.resolve(`${packageNameOrRoot}/manifest.json`);
@@ -89,7 +110,7 @@ export async function loadRenderProfileFromPackage(
     path.basename(manifestDir) === "dist"
       ? path.dirname(manifestDir)
       : manifestDir;
-  return loadFromRoot(packageRoot);
+  return loadFromRoot(packageRoot, "package");
 }
 
 function isModuleNotFound(error: unknown, packageName: string): boolean {

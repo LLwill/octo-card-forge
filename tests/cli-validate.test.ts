@@ -38,7 +38,7 @@ describe("standalone Adaptive Card validation", () => {
 
     expect(report).toMatchObject({
       valid: true,
-      profile: "octo-chat@1.2.0-rc.2",
+      profile: "octo-chat@1.2.0-rc.3",
       wireProfile: "octo/v1",
       issues: [],
     });

@@ -854,7 +854,13 @@ export function buildUtilityTokenSections(
     groups.set(definition.group, specimens);
   }
 
-  const groupOrder = ["surface", "badge", "inset", "line", "motion"];
+  const groupOrder = [
+    "surface",
+    "badge",
+    "inset",
+    "line",
+    "motion",
+  ];
   return [...groups.entries()]
     .sort(
       ([left], [right]) =>

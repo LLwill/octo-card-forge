@@ -81,7 +81,7 @@ function usage(): void {
   validate --input <card.json> [--wire-profile octo/v1|octo/v2] [--profile octo-chat@latest] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
   contract <card-id> [--format json]
   inspect <card-id> [--card <dir>] [--profile-dir <dir> | --profile-package <pkg>] [--sample <name>] [--format json]
-  verify --card <dir> [--sample <name>] [--emit-dir <dir>] [--handoff <dir>] [--format json]
+  verify --card <dir> [--release] [--sample <name>] [--emit-dir <dir>] [--handoff <dir>] [--format json]
   handoff <card-id> [--output handoff] [--format json]
   handoff --card <dir> [--profile-dir <dir> | --profile-package <pkg>] [--output handoff] [--format json]
   handoff <card-id> --output -  # print the aggregate JSON to stdout
@@ -394,7 +394,12 @@ try {
     const sample = flag("--sample");
     if (sample) {
       const result = cardRoot
-        ? await compileSampleFromDirectory({ cardRoot, sample, profile: profileSource })
+        ? await compileSampleFromDirectory({
+            cardRoot,
+            sample,
+            view: flag("--view"),
+            profile: profileSource,
+          })
         : await compileSample({ cardId: cardId!, sample });
       if (result.issues.some((issue) => issue.severity === "error")) {
         throw new Error(`Cannot inspect invalid sample ${sample}`);
@@ -423,6 +428,7 @@ try {
             ? await compileSampleFromDirectory({
                 cardRoot,
                 sample: sampleName,
+                view,
                 profile: profileSource,
               })
             : await compileSample({ cardId: cardId!, sample: sampleName });
@@ -444,6 +450,7 @@ try {
     const report = await verifyCardPackage({
       cardRoot,
       profile: profileSource,
+      release: args.includes("--release"),
       sample: flag("--sample"),
       emitDir: flag("--emit-dir"),
       handoffDir: flag("--handoff"),
@@ -510,7 +517,12 @@ try {
     if (!sample && !dataPath) throw new Error("--data is required without --sample");
     const result = sample
       ? cardRoot
-        ? await compileSampleFromDirectory({ cardRoot, sample, profile: profileSource })
+        ? await compileSampleFromDirectory({
+            cardRoot,
+            sample,
+            view: flag("--view"),
+            profile: profileSource,
+          })
         : await compileSample({ cardId: cardId!, sample })
       : cardRoot
         ? await compileCardDirectory({

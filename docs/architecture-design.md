@@ -239,6 +239,11 @@ checksum 属于后续扩展，见专项设计与 Render Profile 实施方案，�
 | `renderProfile` | 设计、预览和验证使用的平台渲染规范 |
 | `wireProfile` | 该 View 发送时使用 `octo/v1` 或 `octo/v2` |
 
+仓库根目录的 `cards/<id>/` 是可变 Draft，版本目录 `cards/<id>/versions/<version>/` 是不可变
+Release。两者可以暂时拥有相同的 Card 版本号，但 Registry 会分别标记为 `draft` 和 `release`；
+Release 必须固定具体的 Render Profile，不能使用 `@latest`。发布前使用
+`octo-card verify --card ./<id>/versions/<version> --release` 作为门禁。
+
 交互 View 使用 `octo/v2`；不包含 Input/Submit 的结果 View 优先使用 `octo/v1`。
 
 ### 5.3 Card ViewModel
@@ -344,14 +349,14 @@ Card Forge 修改 Profile
 ```
 
 Card Manifest 的 `renderProfile` 固定 Forge 设计与验证使用的精确制品版本，例如
-`octo-chat@1.2.0-rc.2`。消息信封只发送稳定兼容代际，例如 `octo-chat/v1`；无该字段
+`octo-chat@1.2.0-rc.3`。消息信封只发送稳定兼容代际，例如 `octo-chat/v1`；无该字段
 永久走 legacy，未知非空值进入升级提示。Web 将稳定代际映射到一个审核通过的精确包。
 
 ### 6.4 Profile CLI
 
 ```bash
-octo-card profile bundle octo-chat@1.2.0-rc.2 --output .release
-octo-card profile pack octo-chat@1.2.0-rc.2 --output .release
+octo-card profile bundle octo-chat@1.2.0-rc.3 --output .release
+octo-card profile pack octo-chat@1.2.0-rc.3 --output .release
 ```
 
 `validate`、`diff`、`publish` 是目标 CLI 能力；当前发布由 Bundle/Pack 与 CI workflow

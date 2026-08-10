@@ -98,3 +98,18 @@ Report:
 - Components/utilities used and Tier 2 candidate patterns.
 - Whether unpublished Profile capabilities are required.
 - Commands/results, preview command, prototype assets, unresolved choices, and remaining Web work.
+
+### Draft and release checks
+
+The card directory root is a mutable Draft and may use `octo-chat@latest`. A directory under
+`versions/<card-version>/` is an immutable Release and must pin a concrete Render Profile version.
+The registry and Web catalog show these as separate package kinds even when their Card version is
+the same. Before publishing a Release, run:
+
+```bash
+octo-card verify --card ./<card-id>/versions/<version> --release --format json
+```
+
+This gate checks the version directory, referenced assets, contract, compiled samples, Profile
+capabilities, and handoff output. Do not edit a released directory in place; create the next
+version directory for changes.

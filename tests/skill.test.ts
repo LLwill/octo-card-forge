@@ -35,6 +35,11 @@ describe("octo-design-cards skill", () => {
     expect(workflow).toContain("octo-card verify --card ./<card-id> --emit-dir compiled --handoff handoff --format json");
     expect(skill).toContain("missing decisions that affect");
     expect(skill).toContain("octo-card presets --format json");
+    expect(skill).toContain("## Draft and Release");
+    expect(skill).toContain("octo-card verify --card ./<card-id>/versions/<version> --release --format json");
+    expect(skill).toContain("Remove contract fields");
+    expect(openaiAgent).toContain("versions/<version> as immutable Release");
+    expect(openaiAgent).toContain("never modify a shared Profile for a single card");
     expect(skill).toContain(
       'octo-card init <card-id> --name "<display-name>" --out ./<card-id> [--preset <preset-id>]'
     );

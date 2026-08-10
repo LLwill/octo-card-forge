@@ -31,7 +31,7 @@ describe("agent lifecycle bootstrap", () => {
     expect(initReport.state).toMatchObject({
       skill: { version: versions.skill },
       cli: { version: versions.cli },
-      renderProfile: { reference: "octo-chat@1.2.0-rc.2" },
+      renderProfile: { reference: "octo-chat@1.2.0-rc.3" },
     });
     const firstAgents = await readFile(agentsPath, "utf8");
     expect(firstAgents).toContain("Keep this instruction.");
