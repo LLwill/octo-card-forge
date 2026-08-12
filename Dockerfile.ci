@@ -1,0 +1,87 @@
+# dmwork private CI Dockerfile for octo-card-forge.
+# GitLab runners pull base images from the internal TCR mirror instead of Docker Hub.
+#
+# Differs from a plain Node Dockerfile in three CI-only ways:
+#   1. base image + npm/pnpm registry are build-args pointing at internal mirrors
+#   2. runs as a non-root user (uid 10001)
+#   3. stamps OCI image labels from the CI git context
+#
+# The runtime server (src/server.ts) is stateless: it only reads the card /
+# render-profile / web assets baked into this image. No DB, no queue, no
+# ConfigMap/Secret needed — see manifests/deploy.yaml.
+
+ARG NODE_IMAGE=tbj7-xtiao-tcr1.tencentcloudcr.com/xtiao-release/node:22-alpine
+ARG NPM_REGISTRY=https://registry.npmmirror.com
+ARG PNPM_VERSION=10.32.0
+
+FROM ${NODE_IMAGE} AS deps
+
+ARG NPM_REGISTRY
+ARG PNPM_VERSION
+RUN npm config set registry "${NPM_REGISTRY}" && npm install -g "pnpm@${PNPM_VERSION}" --force
+
+WORKDIR /app
+
+COPY package.json pnpm-lock.yaml .npmrc ./
+RUN pnpm install --frozen-lockfile --registry="${NPM_REGISTRY}"
+
+FROM ${NODE_IMAGE} AS builder
+
+ARG NPM_REGISTRY
+ARG PNPM_VERSION
+RUN npm config set registry "${NPM_REGISTRY}" && npm install -g "pnpm@${PNPM_VERSION}" --force
+
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY package.json tsconfig.json tsconfig.build.json ./
+COPY src ./src
+COPY scripts/clean-build-output.mjs ./scripts/clean-build-output.mjs
+
+RUN pnpm build
+
+FROM ${NODE_IMAGE} AS prod-deps
+
+ARG NPM_REGISTRY
+ARG PNPM_VERSION
+RUN npm config set registry "${NPM_REGISTRY}" && npm install -g "pnpm@${PNPM_VERSION}" --force
+
+WORKDIR /app
+
+COPY package.json pnpm-lock.yaml .npmrc ./
+RUN pnpm install --frozen-lockfile --prod --registry="${NPM_REGISTRY}"
+
+FROM ${NODE_IMAGE} AS runner
+
+ARG GIT_COMMIT=unknown
+ARG GIT_BRANCH=unknown
+ARG GIT_TAG=unknown
+ARG BUILD_DATE=unknown
+
+LABEL org.opencontainers.image.title="octo-card-forge" \
+      org.opencontainers.image.revision="${GIT_COMMIT}" \
+      org.opencontainers.image.ref.name="${GIT_BRANCH}" \
+      org.opencontainers.image.version="${GIT_TAG}" \
+      org.opencontainers.image.created="${BUILD_DATE}"
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV TZ=Asia/Shanghai
+
+RUN addgroup -S octo && adduser -S -u 10001 -G octo octo
+
+COPY --from=prod-deps --chown=octo:octo /app/node_modules ./node_modules
+COPY --from=prod-deps --chown=octo:octo /app/package.json ./package.json
+COPY --from=builder --chown=octo:octo /app/dist ./dist
+COPY --chown=octo:octo web ./web
+COPY --chown=octo:octo cards ./cards
+COPY --chown=octo:octo render-profiles ./render-profiles
+COPY --chown=octo:octo skills ./skills
+COPY --chown=octo:octo scripts/start-service.mjs ./scripts/start-service.mjs
+
+USER octo
+
+EXPOSE 4318
+
+CMD ["node", "scripts/start-service.mjs"]

@@ -1,0 +1,95 @@
+# octo-card-forge K8s manifest.
+# GitLab CI renders this file, pushes it to deploy-files, and ArgoCD syncs it.
+#
+# Placeholders:
+#   {{REPO_URL}}      image repository without tag or digest
+#   {{IMAGE_DIGEST}}  immutable image digest from the package job
+#   {{BRANCH}}        environment name (currently always "prod" — single env)
+#
+# Stateless HTTP service: only reads the cards / render-profiles / web assets
+# baked into the image. No DB, no queue, no ConfigMap/Secret needed.
+#
+# `replicas` is intentionally omitted so `kubectl scale` sticks across ArgoCD
+# syncs (ArgoCD only reconciles fields present in git); defaults to 1.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: octo-card-forge-{{BRANCH}}
+  labels:
+    app: octo-card-forge
+    app.kubernetes.io/name: octo-card-forge
+    octo.card-forge/env: "{{BRANCH}}"
+spec:
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: octo-card-forge
+      octo.card-forge/env: "{{BRANCH}}"
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: octo-card-forge
+        app.kubernetes.io/name: octo-card-forge
+        octo.card-forge/env: "{{BRANCH}}"
+    spec:
+      imagePullSecrets:
+        - name: tcr-image-xtiao
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: octo-card-forge
+          image: "{{REPO_URL}}@{{IMAGE_DIGEST}}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 4318
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: HOST
+              value: "0.0.0.0"
+            - name: PORT
+              value: "4318"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: octo-card-forge-{{BRANCH}}
+  labels:
+    app: octo-card-forge
+    app.kubernetes.io/name: octo-card-forge
+    octo.card-forge/env: "{{BRANCH}}"
+spec:
+  type: ClusterIP
+  selector:
+    app: octo-card-forge
+    octo.card-forge/env: "{{BRANCH}}"
+  ports:
+    - name: http
+      port: 4318
+      targetPort: http
