@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { mkdtemp } from "node:fs/promises";
+import { mkdtemp, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -37,4 +37,9 @@ describe("CLI package contents", () => {
     expect(files.some((file) => file.startsWith("package/cards/"))).toBe(false);
     expect(files.some((file) => file.startsWith("package/render-profiles/"))).toBe(false);
   }, 15_000);
+
+  it("copies the Skill manifest into the production image", async () => {
+    const dockerfile = await readFile("Dockerfile.ci", "utf8");
+    expect(dockerfile).toContain("COPY --chown=octo:octo skills ./skills");
+  });
 });
