@@ -6,6 +6,7 @@ import type {
   WireProfile,
 } from "./types.js";
 import { isUtilityId, parseUtilityId } from "./utility-id.js";
+import { validateRuntimeEffects } from "./runtime-capabilities.js";
 
 const ACTION_PREFIX = "Action.";
 const INPUT_PREFIX = "Input.";
@@ -258,7 +259,8 @@ function validateUtilityId(
 export function validateCompiledCard(
   payload: JsonObject,
   capabilities: RenderCapabilities,
-  wireProfile: WireProfile
+  wireProfile: WireProfile,
+  runtimeCapabilities?: import("./types.js").RuntimeCapabilityRequirement[]
 ): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   const ids = new Set<string>();
@@ -550,5 +552,6 @@ export function validateCompiledCard(
   if (JSON.stringify(payload).includes("${")) {
     error("compiler.unexpanded_expression", "$", "Payload contains template expressions");
   }
+  issues.push(...validateRuntimeEffects(payload, runtimeCapabilities));
   return issues;
 }

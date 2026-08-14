@@ -92,6 +92,7 @@ export async function buildHandoffPackageForCard(
     dataContract: await readJson<JsonObject>(
       resolveCardAssetPath(card.root, card.manifest.dataSchema, "dataSchema")
     ),
+    runtimeCapabilities: card.manifest.runtimeCapabilities ?? [],
     views,
   };
 }
@@ -170,6 +171,13 @@ export async function buildHandoffArchiveForCard(
     .digest("hex");
   addFile("render-profile/checksums.json", json(profileChecksums));
   addFile("contract/data.schema.json", json(handoff.dataContract));
+  addFile(
+    "runtime-capabilities.json",
+    json({
+      capabilities: handoff.runtimeCapabilities ?? [],
+      note: "These are Web/local behavior dependencies, separate from render-profile/capabilities.json.",
+    })
+  );
 
   const views = handoff.views as JsonObject;
   for (const [viewName, rawView] of Object.entries(views)) {
@@ -197,6 +205,7 @@ export async function buildHandoffArchiveForCard(
       `- Render Profile: \`${renderProfileLabel}\`\n\n` +
       `Use \`contract/data.schema.json\` to map backend data. ` +
       `Use \`render-profile/capabilities.json\` for Server-side final validation. ` +
+      `Use \`runtime-capabilities.json\` to configure Web/local action behavior. ` +
       `Octo Web must load the matching Render Profile package resources together; do not mix CSS/theme/tokens from another version. ` +
       `The \`goldens/\` directory contains expected compiled Card JSON for each sample. ` +
       `The \`reports/\` directory documents standard Action/Input/Toggle behavior.\n`

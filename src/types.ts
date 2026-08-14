@@ -2,6 +2,20 @@ export type JsonObject = Record<string, unknown>;
 
 export type WireProfile = "octo/v1" | "octo/v2";
 
+export interface RuntimeCapabilityRequirement {
+  id: string;
+  /** Semver range, for example `>=1.0.0 <2.0.0`. */
+  version: string;
+  required?: boolean;
+}
+
+export interface RuntimeEffectDeclaration {
+  effect: string;
+  effectVersion?: number;
+  effectRequired?: boolean;
+  messageSource?: JsonObject;
+}
+
 export interface CardViewDefinition {
   wireProfile: WireProfile;
   template: string;
@@ -23,6 +37,8 @@ export interface CardManifest {
   defaultLocale: string;
   views: Record<string, CardViewDefinition>;
   dataSchema: string;
+  /** Web/local behavior dependencies. Kept separate from Render Profile capabilities. */
+  runtimeCapabilities?: RuntimeCapabilityRequirement[];
 }
 
 export interface RenderProfileManifest {
@@ -95,6 +111,10 @@ export interface InspectedAction {
   associatedInputs?: "auto" | "none";
   inputIds?: string[];
   dataKeys?: string[];
+  effect?: string;
+  effectVersion?: number;
+  effectRequired?: boolean;
+  messageSource?: JsonObject;
 }
 
 export interface InspectedInput {

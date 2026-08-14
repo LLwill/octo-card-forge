@@ -151,7 +151,18 @@
                         "action": "decision_send",
                         "decisionId": "${decisionId}",
                         "mode": "choose",
-                        "replyTargetName": "${replyTargetName}"
+                        "replyTargetName": "${replyTargetName}",
+                        "effect": "send_current_user_message",
+                        "effect_version": 1,
+                        "effect_required": true,
+                        "message_source": {
+                          "type": "compose",
+                          "separator": "\n",
+                          "parts": [
+                            { "type": "choice_labels", "input_id": "decision_choice", "separator": "\n" },
+                            { "type": "input_text", "input_id": "decision_note" }
+                          ]
+                        }
                       }
                     }
                   ]

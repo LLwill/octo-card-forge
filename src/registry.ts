@@ -8,6 +8,7 @@ import type {
   RenderProfileManifest,
   RenderProfileSource,
 } from "./types.js";
+import { validateRuntimeCapabilities } from "./runtime-capabilities.js";
 
 /** 仓库当前唯一的组件基线。历史 Profile 由制品库负责复现。 */
 export const CURRENT_RENDER_PROFILE = "octo-chat@1.2.0-rc.3";
@@ -72,6 +73,9 @@ export function assertCardManifest(value: CardManifest, filePath: string): void 
   if (!value.views || Object.keys(value.views).length === 0) {
     throw new Error(`${filePath}: at least one view is required`);
   }
+  const runtimeIssues = validateRuntimeCapabilities(value.runtimeCapabilities, filePath);
+  const runtimeError = runtimeIssues.find((issue) => issue.severity === "error");
+  if (runtimeError) throw new Error(`${filePath}: ${runtimeError.message}`);
   for (const [viewName, view] of Object.entries(value.views)) {
     if (view.wireProfile !== "octo/v1" && view.wireProfile !== "octo/v2") {
       throw new Error(`${filePath}: view ${viewName} has an invalid wireProfile`);

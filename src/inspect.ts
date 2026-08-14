@@ -54,6 +54,13 @@ export function inspectCard(payload: JsonObject): CardInspection {
       if (type === "Action.Submit") {
         action.associatedInputs = value.associatedInputs === "none" ? "none" : "auto";
         action.dataKeys = isObject(value.data) ? Object.keys(value.data).sort() : [];
+        if (isObject(value.data) && typeof value.data.effect === "string") {
+          action.effect = value.data.effect;
+          if (typeof value.data.effect_version === "number") action.effectVersion = value.data.effect_version;
+          if (typeof value.data.effect_required === "boolean") action.effectRequired = value.data.effect_required;
+          const source = value.data.message_source ?? value.data.messageSource;
+          if (isObject(source)) action.messageSource = source;
+        }
       }
       actions.push(action);
 
