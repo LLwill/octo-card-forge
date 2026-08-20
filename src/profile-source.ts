@@ -153,7 +153,7 @@ export async function loadRenderProfileForReference(
     : parseRenderProfileReference(resolveRenderProfileReference());
   const localRoot = resolveInProject("render-profiles", requested.id);
   if (await exists(path.join(localRoot, "manifest.json"))) {
-    const profile = await getRenderProfile(reference);
+    const profile = await loadFromRoot(localRoot, "workspace");
     assertProfileMatchesRequest(profile, reference);
     return profile;
   }
