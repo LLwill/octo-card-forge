@@ -108,6 +108,12 @@ describe("catalog HTTP API", () => {
       expect.arrayContaining([expect.objectContaining({ code: "contract.required" })])
     );
   });
+
+  it("serves the current Profile CSS for an unbound catalog session", async () => {
+    const response = await fetch(`${baseUrl}/api/preview/v1/profile/styles.css`);
+    expect(response.status).toBe(200);
+    expect(await response.text()).toContain(".octo-card-profile");
+  });
 });
 
 describe("Preview API v1", () => {

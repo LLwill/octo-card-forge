@@ -202,7 +202,7 @@ async function resolvePreviewProfile(
     return (await loadCardRuntime(card, context.profile)).profile;
   }
   if (context.profile) return context.profile;
-  return getCurrentRenderProfile();
+  return loadRenderProfileForReference();
 }
 
 async function readPreviewBody(req: IncomingMessage): Promise<JsonObject> {

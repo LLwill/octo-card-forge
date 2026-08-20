@@ -14,5 +14,8 @@ export default defineConfig({
   },
   test: {
     include: ["tests/**/*.test.ts"],
+    // Several characterization tests invoke build/pack against the shared workspace.
+    // Keep file-level execution serial so those commands cannot clean each other's dist.
+    fileParallelism: false,
   },
 });
