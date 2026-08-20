@@ -1,5 +1,11 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@mlt-org/octo-card-core": ["packages/core/src/index.ts"],
+      "@mlt-org/octo-card-spec": ["packages/card-spec/src/index.ts"],
+      "@mlt-org/octo-card-workspace": ["packages/workspace/src/index.ts"]
+    },
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",

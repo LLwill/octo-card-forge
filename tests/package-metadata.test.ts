@@ -21,9 +21,12 @@ describe("CLI package metadata", () => {
     expect(manifest.files).not.toContain("render-profiles");
     expect(manifest.scripts?.prebuild).toBe("node scripts/clean-build-output.mjs");
     expect(manifest.scripts?.build).toBe(
-      "pnpm run workspace:check && pnpm run build:legacy && pnpm run build:packages"
+      "pnpm run workspace:check && pnpm run build:packages && pnpm run build:legacy && pnpm run build:entries"
     );
     expect(manifest.scripts?.["build:legacy"]).toBe("tsc -p tsconfig.build.json");
+    expect(manifest.scripts?.["build:entries"]).toBe(
+      "node scripts/bundle-entrypoints.mjs"
+    );
     expect(manifest.scripts?.["workspace:check"]).toBe(
       "node scripts/check-workspace-dependencies.mjs"
     );
@@ -42,5 +45,14 @@ describe("CLI package metadata", () => {
     expect(manifest.scripts?.["skill:pack"]).toBe("node scripts/package-skill.mjs");
     expect(manifest.dependencies).not.toHaveProperty("tsx");
     expect(manifest.devDependencies).toHaveProperty("tsx");
+    expect(manifest.devDependencies).toHaveProperty("esbuild");
+    expect(manifest.devDependencies).toHaveProperty(
+      "@mlt-org/octo-card-core",
+      "workspace:*"
+    );
+    expect(manifest.devDependencies).toHaveProperty(
+      "@mlt-org/octo-card-workspace",
+      "workspace:*"
+    );
   });
 });

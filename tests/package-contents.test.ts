@@ -71,6 +71,24 @@ describe("CLI package contents", () => {
       : path.join(output, tarball!);
     const { stdout: listing } = await execFileAsync("tar", ["-tzf", packed]);
     const files = listing.trim().split(/\r?\n/).sort();
+    const { stdout: packedManifestText } = await execFileAsync("tar", [
+      "-xOf",
+      packed,
+      "package/package.json",
+    ]);
+    const packedManifest = JSON.parse(packedManifestText) as {
+      dependencies?: Record<string, string>;
+    };
+    const { stdout: bundledCli } = await execFileAsync("tar", [
+      "-xOf",
+      packed,
+      "package/dist/cli.js",
+    ]);
+    const { stdout: bundledServer } = await execFileAsync("tar", [
+      "-xOf",
+      packed,
+      "package/dist/server.js",
+    ]);
 
     expect(files).toContain("package/dist/cli.js");
     expect(files).toContain("package/skills/octo-design-cards/SKILL.md");
@@ -83,6 +101,15 @@ describe("CLI package contents", () => {
     expect(files.some((file) => file.endsWith(".handoff.zip"))).toBe(false);
     expect(files.some((file) => file.startsWith("package/cards/"))).toBe(false);
     expect(files.some((file) => file.startsWith("package/render-profiles/"))).toBe(false);
+    for (const packageName of [
+      "@mlt-org/octo-card-core",
+      "@mlt-org/octo-card-spec",
+      "@mlt-org/octo-card-workspace",
+    ]) {
+      expect(packedManifest.dependencies).not.toHaveProperty(packageName);
+      expect(bundledCli).not.toContain(packageName);
+      expect(bundledServer).not.toContain(packageName);
+    }
   }, 15_000);
 
   it("copies the Skill manifest into the production image", async () => {

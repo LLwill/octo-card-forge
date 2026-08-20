@@ -29,9 +29,10 @@
   },
   "scripts": {
     "prebuild": "node scripts/clean-build-output.mjs",
-    "build": "pnpm run workspace:check && pnpm run build:legacy && pnpm run build:packages",
+    "build": "pnpm run workspace:check && pnpm run build:packages && pnpm run build:legacy && pnpm run build:entries",
     "build:legacy": "tsc -p tsconfig.build.json",
     "build:packages": "pnpm --recursive --filter './packages/**' --filter './apps/**' --if-present run build",
+    "build:entries": "node scripts/bundle-entrypoints.mjs",
     "package:deploy": "pnpm build && node scripts/package-deploy.mjs",
     "skill:pack": "node scripts/package-skill.mjs",
     "start": "node scripts/start-service.mjs",
@@ -58,7 +59,11 @@
     "jszip": "3.10.1"
   },
   "devDependencies": {
+    "@mlt-org/octo-card-core": "workspace:*",
+    "@mlt-org/octo-card-spec": "workspace:*",
+    "@mlt-org/octo-card-workspace": "workspace:*",
     "@types/node": "24.0.13",
+    "esbuild": "0.25.12",
     "tsx": "4.20.3",
     "typescript": "5.8.3",
     "vitest": "3.2.4"

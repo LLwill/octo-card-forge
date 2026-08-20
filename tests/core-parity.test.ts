@@ -19,7 +19,7 @@ async function resolveSource(cardRoot: string) {
   };
 }
 
-describe("legacy/Core compile parity", () => {
+describe("compiler facade/Core parity", () => {
   it("keeps every current draft sample byte-equivalent", async () => {
     const drafts = (await listCards()).filter((card) => card.kind === "draft");
     for (const card of drafts) {
@@ -27,16 +27,16 @@ describe("legacy/Core compile parity", () => {
       for (const [viewName, view] of Object.entries(card.manifest.views)) {
         for (const samplePath of view.samples) {
           const sample = path.basename(samplePath, path.extname(samplePath));
-          const legacy = await compileSampleFromPackage({ card, view: viewName, sample });
+          const facade = await compileSampleFromPackage({ card, view: viewName, sample });
           const core = compileCardSource({
             source: resolved.source,
             view: viewName,
-            data: legacy.data,
+            data: facade.data,
             profile: { reference: resolved.reference, capabilities: resolved.profile },
           });
-          expect(core.payload, `${card.reference}/${viewName}/${sample}`).toEqual(legacy.payload);
-          expect(core.issues, `${card.reference}/${viewName}/${sample}`).toEqual(legacy.issues);
-          expect(core.inspection, `${card.reference}/${viewName}/${sample}`).toEqual(legacy.inspection);
+          expect(core.payload, `${card.reference}/${viewName}/${sample}`).toEqual(facade.payload);
+          expect(core.issues, `${card.reference}/${viewName}/${sample}`).toEqual(facade.issues);
+          expect(core.inspection, `${card.reference}/${viewName}/${sample}`).toEqual(facade.inspection);
         }
       }
     }
@@ -49,7 +49,7 @@ describe("legacy/Core compile parity", () => {
     expect(card).toBeDefined();
     const resolved = await resolveSource(card!.root);
     const view = Object.keys(card!.manifest.views)[0];
-    const legacy = await compileCardPackage({ card: card!, view, data: {} });
+    const facade = await compileCardPackage({ card: card!, view, data: {} });
     const core = compileCardSource({
       source: resolved.source,
       view,
@@ -57,7 +57,7 @@ describe("legacy/Core compile parity", () => {
       profile: { reference: resolved.reference, capabilities: resolved.profile },
     });
 
-    expect(core).toEqual(legacy);
+    expect(core).toEqual(facade);
     expect(core.payload).toEqual({});
     expect(core.issues.some((issue) => issue.code.startsWith("contract."))).toBe(true);
   });
