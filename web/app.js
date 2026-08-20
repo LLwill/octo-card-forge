@@ -479,9 +479,20 @@ async function start() {
   );
   catalogItems = await Promise.all(latestCards.map(async (card) => {
     const selected = firstSample(card);
-    const result = await json(
+    const sample = await json(
       `/api/cards/${encodeURIComponent(card.reference)}/samples/${encodeURIComponent(selected.sample)}`
     );
+    const session = await previewClient.getSession(card.reference);
+    const result = await previewClient.render({
+      cardId: card.reference,
+      revision: session.revision,
+      view: selected.view,
+      data: sample.data,
+    });
+    if (!result.valid) {
+      const issue = result.issues.find((item) => item.severity === "error");
+      throw new Error(issue ? `${issue.code} ${issue.path}: ${issue.message}` : t("status.checkJson"));
+    }
     return {
       card,
       result,
