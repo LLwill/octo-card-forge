@@ -52,7 +52,8 @@
 - 当前 Draft/Release Manifest 可被 Decoder 和 legacy validator 双向对账；
 - 未知版本、未知字段和非法路径 fail-close；
 - Profile canonical v1 与 legacy compatibility 路径均有测试；
-- Artifact/Snapshot 的 canonical media type、digest、reference 和 volatile field 约束已固定。
+- Artifact/Snapshot 的 media type、reference 和 volatile field 约束已固定；
+- Snapshot 中的 Artifact digest 已约束 SHA-256 字符串格式，Artifact canonical bytes 和 digest 算法留在 Phase 4 定义。
 
 ## 后续工作
 

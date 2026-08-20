@@ -16,7 +16,10 @@
 6. 每个阶段必须有退出 Gate 和旧路径删除条件。
 7. 本轮不引入数据库、账号体系、Forge API 或 Worker。
 
-## 2. 阶段顺序
+## 2. 阶段划分与依赖
+
+Phase 编号用于表达里程碑和主要依赖，不表示所有工作严格串行。Phase 0-2 先建立稳定基础；Phase 2
+Gate 关闭后，Phase 3 的 Profile/Preview 工作与 Phase 4 Artifact Builder 可以按下文 Gate 并行推进。
 
 ```text
 Phase 0  架构与行为基线
@@ -37,14 +40,15 @@ Phase 8  逐 Card 迁移与 Legacy 删除
 | Phase 0 | 已完成 | 架构、ADR、Characterization Tests 和 Golden 已建立 |
 | Phase 1 | 已完成 | Monorepo 外壳、依赖检查和兼容构建已建立 |
 | Phase 2 | 收尾中 | Contract、Core、Workspace 编译链路已完成；legacy Validator/Inspection 尚未删除 |
-| Phase 3 | 进行中 | Preview API、Preview Kit client 和现有 Card 页面接入已完成；共享浏览器渲染、组件预览、CLI/Profile 分包待完成 |
+| Phase 3 | 进行中 | Preview API、Preview Kit client 和现有 Card 页面接入已完成；Profile package、共享浏览器渲染、组件预览和 CLI 分包待完成 |
 | Phase 4 | 未开始实现 | Artifact Contract 已定义，Builder、digest 和 verify 尚未实现 |
 | Phase 5 | 未开始 | Catalog 仓库和 GitHub Delivery 尚未建立 |
 | Phase 6 | 未开始实现 | Snapshot Contract 已定义；`apps/forge-web` 仍为空壳，当前改动只发生在 legacy `web/` |
 | Phase 7 | 未开始 | 尚未进行真实业务后端交付验证 |
 | Phase 8 | 未开始 | Card Source 尚未迁出 Forge，Legacy 尚未删除 |
 
-阶段状态以退出 Gate 是否满足为准，不能因为目标目录或 Contract 空壳已经建立就标记完成。
+阶段状态以退出 Gate 是否满足为准，不能因为目标目录或 Contract 空壳已经建立就标记完成。Phase 2
+收尾后，Phase 3 的 Profile/Preview 工作与 Phase 4 Artifact Builder 可以按各自 Gate 并行推进。
 
 ## 3. Phase 0：架构与行为基线
 
@@ -185,8 +189,9 @@ card-spec
 | --- | --- | --- |
 | Phase 3A Workspace Runtime | 已完成 | 路径安全、Resolved Source、`Workspace → Core` facade |
 | Phase 3B Preview Transport | 已完成 | Preview API v1、revision、Preview Kit client、legacy Card 页面接入 |
-| Phase 3C Component Preview | 下一阶段 | Component Catalog Contract、Profile specimen、共享浏览器渲染、legacy Components 页面迁移 |
-| Phase 3D Package Convergence | 待实施 | `profile-octo-chat`、`packages/cli`、repo-free npm 消费验证 |
+| Phase 3C Profile Package Foundation | 下一阶段 | `profile-octo-chat`、独立 validate/build/pack、精确版本消费 |
+| Phase 3D Component Preview | 待实施，可与 Phase 4 并行 | Component Catalog Contract、Profile specimen、共享浏览器渲染、legacy Components 页面迁移 |
+| Phase 3E CLI Package Convergence | 待实施 | `packages/cli`、Artifact 命令编排、repo-free npm 消费验证 |
 
 工作：
 
@@ -198,7 +203,29 @@ card-spec
 - 使用 `packages/preview-kit`，供本地 Preview 和 Forge Web 共用；
 - 在 Preview Kit 稳定前，不引入 SSE、热刷新或新的服务端状态。
 
-### 6.1 Phase 3C：Component Preview
+### 6.1 Phase 3C：Profile Package Foundation
+
+Profile package 是 Component Preview 的前置。该阶段只稳定 Profile 的发布与消费边界，不要求先
+完成组件展示页面；Artifact Builder 可以继续接收现有 Resolved Profile 对象，因此不被 package 迁移阻塞。
+
+实施顺序：
+
+1. 将当前 `render-profiles/octo-chat` 的加载、校验和构建能力迁入 `packages/profile-octo-chat`；
+2. 保持现有 CLI/Profile bundle 行为兼容；
+3. 提供独立 validate/build/pack 和精确版本 manifest；
+4. 让 Preview runtime 优先消费 package，Forge 源码只作开发回退；
+5. 验证未来 `octo-web` 可以消费同一发布包。
+
+退出 Gate：
+
+- Profile 可脱离 Forge 根源码独立 validate/build/pack；
+- Preview 使用精确 Profile reference；
+- package 内容覆盖 HostConfig、CSS、capabilities、tokens 和 manifest；
+- npm pack 不依赖 Forge 私有目录结构。
+
+Phase 3C Gate 只约束 Component Preview 和最终 package 收敛，不是 Artifact Builder 的硬前置。
+
+### 6.2 Phase 3D：Component Preview
 
 组件预览用于验证 Render Profile 的能力、样式和标准组合，不是另一套 Card Engine，也不新增数据库、
 在线组件服务或独立账号体系。
@@ -376,8 +403,9 @@ card-spec
 当前执行顺序：
 
 1. 完成 Phase 2 Validator/Inspection 单一实现收尾；
-2. 执行 Phase 3C Component Preview，稳定 Profile 与 Preview Kit 的边界；
-3. 执行 Phase 3D CLI/Profile package 收敛；
-4. 进入 Phase 4 Artifact v1。
+2. Phase 4 Artifact v1 进入主线实现；
+3. Phase 3C Profile Package Foundation 与 Artifact 主线并行推进；
+4. Phase 3D Component Preview 在 Profile Gate 通过后继续并行推进；
+5. Artifact API 稳定后执行 Phase 3E CLI Package Convergence，避免 CLI 迁移后再次重排命令边界。
 
-Card Source 目录和 npm 发布边界在 Phase 3D Gate 通过前不移动。
+Card Source 目录在 Phase 5 Catalog Gate 通过前不移动。根 CLI 发布入口在 Phase 3E Gate 通过前保持兼容。

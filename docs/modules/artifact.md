@@ -10,7 +10,8 @@
 
 ## 当前实现
 
-- `packages/card-spec` 已定义 `CardArtifactV1`、Decoder、media type、digest 和 volatile field 约束；
+- `packages/card-spec` 已定义 `CardArtifactV1`、Decoder、media type 和 volatile field 约束；
+- `CatalogSnapshotV1` 的 Artifact 引用已约束 SHA-256 字符串格式；Artifact canonical bytes 和 digest 算法尚未定义；
 - `packages/artifact` 当前仍为空壳；
 - 现有 Handoff 是 legacy 实现，尚未由 Artifact 派生。
 

@@ -225,12 +225,13 @@ loading session
 
 下一阶段：
 
-1. 定义版本化 Component Catalog 和 Component Specimen Contract；
-2. 增加共享 Adaptive Cards 浏览器适配，避免 Card/Components 页面分别初始化 SDK；
-3. 迁移 legacy Components 页面，Profile 提供 specimen 内容，Preview Kit 负责渲染；
-4. Phase 6 在 `apps/forge-web` 中接入 Preview Kit，先接 Fixture，再接 `catalog-snapshot.v1`；
-5. PR Preview 使用 Snapshot/Artifact，而不是在生产 Web 中扫描目录；
-6. 最终移除 Web 对目录型 API 的依赖，保留 Preview API 作为本地开发和 CI 适配层。
+1. 先完成 `profile-octo-chat` package 基础，使 Preview 可以消费独立、精确版本的 Profile；
+2. 定义版本化 Component Catalog 和 Component Specimen Contract；
+3. 增加共享 Adaptive Cards 浏览器适配，避免 Card/Components 页面分别初始化 SDK；
+4. 迁移 legacy Components 页面，Profile 提供 specimen 内容，Preview Kit 负责渲染；
+5. Phase 6 在 `apps/forge-web` 中接入 Preview Kit，先接 Fixture，再接 `catalog-snapshot.v1`；
+6. PR Preview 使用 Snapshot/Artifact，而不是在生产 Web 中扫描目录；
+7. 最终移除 Web 对目录型 API 的依赖，保留 Preview API 作为本地开发和 CI 适配层。
 
 SSE、文件监听和热刷新不属于 v1 必需协议，等静态页面和 Snapshot Contract 稳定后再增加。
 
