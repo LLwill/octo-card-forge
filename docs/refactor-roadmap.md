@@ -144,6 +144,7 @@ actions/
 - 当前 Draft 的全部 View/Sample 已完成 legacy/Core 的 payload、issues、inspection parity；
 - Workspace Loader 已将目录解析为无路径 `ResolvedCardSourceV1`；
 - 根 CLI 已通过 `Workspace → Core` facade 编译，npm 入口会 bundle 私有 workspace 代码；
+- npm tarball 只发布 bundle 后的 CLI；Server bundle 只进入部署包，不暴露依赖私有 workspace 包的 legacy 编译中间文件；
 - Preview API v1 已提供 session、revision、render 和 Profile 资源，旧 `/api/render` 保持兼容；
 - 根 `src/validate.ts`、`src/inspect.ts` 和 `src/utility-id.ts` 已成为 Core 的精确兼容 facade；
 - facade identity、CLI validate、组件基线和 Core parity tests 已覆盖单一实现边界；

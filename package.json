@@ -10,7 +10,8 @@
     "octo-card": "./dist/cli.js"
   },
   "files": [
-    "dist",
+    "dist/cli.js",
+    "dist/cli.js.map",
     "web",
     "skills",
     "README.md"

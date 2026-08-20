@@ -37,5 +37,7 @@
 - `packages/preview-kit` 已提供 Preview API client 和共享 session/render 契约；
 - legacy `web/app.js` 已消费 Preview Kit client，但 Adaptive Cards 浏览器渲染仍在页面内；
 - legacy `web/components.js` 尚未接入 Preview Kit 或版本化 Component Catalog；
-- 根 CLI/Server 的发布入口会 bundle 私有 workspace 包，独立 npm 安装不需要这些私有包；
+- 根 CLI/Server 的构建入口会 bundle 私有 workspace 包，npm tarball 只发布 CLI bundle 和必要 Web/Skill 资源；
+- Server bundle 只进入部署包，不作为 npm 可导入入口发布；
+- legacy `dist/*.js` 编译中间文件不进入 npm tarball，独立安装不需要私有 workspace 包；
 - `packages/cli` 仍是后续迁移目标，当前根 CLI 继续保持兼容。

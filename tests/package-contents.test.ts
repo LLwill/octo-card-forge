@@ -84,13 +84,13 @@ describe("CLI package contents", () => {
       packed,
       "package/dist/cli.js",
     ]);
-    const { stdout: bundledServer } = await execFileAsync("tar", [
-      "-xOf",
-      packed,
-      "package/dist/server.js",
-    ]);
+    const bundledServer = await readFile("dist/server.js", "utf8");
 
     expect(files).toContain("package/dist/cli.js");
+    expect(files.filter((file) => file.startsWith("package/dist/"))).toEqual([
+      "package/dist/cli.js",
+      "package/dist/cli.js.map",
+    ]);
     expect(files).toContain("package/skills/octo-design-cards/SKILL.md");
     expect(files).toContain("package/skills/octo-design-cards/skill-manifest.json");
     expect(files).toContain("package/skills/octo-design-cards/references/card-package-workflow.md");
