@@ -98,6 +98,7 @@ describe("CLI package contents", () => {
     expect(files).toContain("package/web/install.html");
     expect(files).toContain("package/web/install.js");
     expect(files).toContain("package/web/install-manifest.json");
+    expect(files).toContain("package/web/preview-kit.js");
     expect(files.some((file) => file.endsWith(".handoff.zip"))).toBe(false);
     expect(files.some((file) => file.startsWith("package/cards/"))).toBe(false);
     expect(files.some((file) => file.startsWith("package/render-profiles/"))).toBe(false);

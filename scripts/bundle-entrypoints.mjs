@@ -29,3 +29,15 @@ await build({
   external,
   logLevel: "info",
 });
+
+await build({
+  absWorkingDir: root,
+  entryPoints: ["packages/preview-kit/src/index.ts"],
+  outfile: "web/preview-kit.js",
+  bundle: true,
+  platform: "browser",
+  format: "esm",
+  target: "es2020",
+  sourcemap: false,
+  logLevel: "info",
+});

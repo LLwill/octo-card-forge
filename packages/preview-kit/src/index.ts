@@ -143,7 +143,7 @@ export class PreviewClient {
   }
 
   async render(request: PreviewRenderRequest): Promise<PreviewRenderResponse> {
-    return this.requestJson<PreviewRenderResponse>(
+    const response = await this.fetcher(
       endpoint(this.baseUrl, "/api/preview/v1/render"),
       {
         method: "POST",
@@ -151,6 +151,20 @@ export class PreviewClient {
         body: JSON.stringify(request),
       }
     );
+    const body = await readJsonBody(response);
+    if (response.status === 422 && isPreviewRenderResponse(body)) {
+      return body;
+    }
+    if (!response.ok) throw errorFromResponse(response.status, body);
+    if (!isPreviewRenderResponse(body)) {
+      throw new PreviewApiError(
+        response.status,
+        "preview.invalid_response",
+        "Preview service returned an invalid render response",
+        body
+      );
+    }
+    return body;
   }
 
   async getHostConfig(cardId?: string): Promise<JsonObject> {
@@ -181,6 +195,17 @@ export class PreviewClient {
     }
     return body as T;
   }
+}
+
+function isPreviewRenderResponse(value: unknown): value is PreviewRenderResponse {
+  if (typeof value !== "object" || value === null) return false;
+  const body = value as Partial<PreviewRenderResponse>;
+  return body.schemaVersion === 1 &&
+    typeof body.revision === "string" &&
+    typeof body.valid === "boolean" &&
+    typeof body.cardId === "string" &&
+    typeof body.view === "string" &&
+    Array.isArray(body.issues);
 }
 
 export function createPreviewClient(options: PreviewClientOptions = {}): PreviewClient {

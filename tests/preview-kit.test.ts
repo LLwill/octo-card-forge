@@ -95,4 +95,30 @@ describe("Preview Client", () => {
     });
     await expect(client.getStyles()).resolves.toBe(".octo-card-profile {}");
   });
+
+  it("returns structured validation results for HTTP 422", async () => {
+    const client = new PreviewClient({
+      fetch: async () => response(422, {
+        schemaVersion: 1,
+        revision: "sha256:abc",
+        valid: false,
+        cardId: "docs.access-request",
+        cardVersion: "0.2.0",
+        contractVersion: "1.0.0",
+        renderProfile: "octo-chat@1.2.0-rc.3",
+        wireProfile: "octo/v2",
+        view: "pending",
+        payload: {},
+        inspection: {},
+        issues: [{ severity: "error", code: "contract.required", path: "$", message: "Required" }],
+      }),
+    });
+
+    await expect(client.render({
+      cardId: "docs.access-request",
+      revision: "sha256:abc",
+      view: "pending",
+      data: {},
+    })).resolves.toMatchObject({ valid: false, issues: [{ code: "contract.required" }] });
+  });
 });

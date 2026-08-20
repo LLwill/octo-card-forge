@@ -114,6 +114,13 @@ describe("catalog HTTP API", () => {
     expect(response.status).toBe(200);
     expect(await response.text()).toContain(".octo-card-profile");
   });
+
+  it("serves the browser Preview Kit entrypoint", async () => {
+    const response = await fetch(`${baseUrl}/preview-kit.js`);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/javascript");
+    expect(await response.text()).toContain("createPreviewClient");
+  });
 });
 
 describe("Preview API v1", () => {

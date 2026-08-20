@@ -615,6 +615,7 @@ async function prepareForgeServer(options: ForgeServerOptions = {}): Promise<{
         "/install": ["install.html", "text/html"],
         "/install/": ["install.html", "text/html"],
         "/app.js": ["app.js", "text/javascript"],
+        "/preview-kit.js": ["preview-kit.js", "text/javascript"],
         "/components.js": ["components.js", "text/javascript"],
         "/install.js": ["install.js", "text/javascript"],
         "/styles.css": ["styles.css", "text/css"],
