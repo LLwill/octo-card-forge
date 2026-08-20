@@ -414,10 +414,12 @@ Forge Web 默认只读。CLI 使用开发者现有的 Git/`gh` 凭证，不实�
 
 当前仓库仍然：
 
-- 使用根 `src/` 单 package；
+- 使用 pnpm Monorepo，但根 `src/` 仍承担兼容 CLI/Server 和部分 legacy 实现；
+- `packages/card-spec`、`packages/core`、`packages/workspace` 和 `packages/preview-kit` 已有实际实现，其他目标 package/app 仍有空壳；
 - 将正式 Card 和版本放在 `cards/`；
 - 通过 `src/registry.ts` 扫描文件；
 - 通过本地 Node HTTP 服务向 `web/` 提供 Catalog API 和 Preview API v1；
+- legacy Card 页面已接入 Preview API，Components 页面仍使用 `/api/component-baseline`；
 - 将 `cards/` 打进部署包；
 - 使用 TypeScript `adaptivecards-templating` 编译。
 
@@ -425,8 +427,9 @@ Forge Web 默认只读。CLI 使用开发者现有的 Git/`gh` 凭证，不实�
 
 目标：
 
-- Forge 变为 pnpm Monorepo；
-- Card Contract/Core/Workspace/Artifact 分包；
+- 完成 CLI/Profile/Artifact/Snapshot/Forge Web 的 package 迁移；
+- 收敛 legacy Validator/Inspection，确保 Core 是唯一业务规则实现；
+- 建立版本化 Component Catalog，并让 Card/Component Preview 共享浏览器渲染适配；
 - 正式 Card 移到 `octo-card-catalog`；
 - Forge Web 只消费 Catalog Snapshot；
 - GitHub Actions 代替 Forge Worker；

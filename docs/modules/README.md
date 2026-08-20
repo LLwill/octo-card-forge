@@ -9,12 +9,12 @@
 | 顺序 | 模块 | 文档 | 当前状态 |
 | ---: | --- | --- | --- |
 | 1 | Card Contract | [`card-contract.md`](./card-contract.md) | Phase 2A 第一版已完成 |
-| 2 | Card Engine | [`card-engine.md`](./card-engine.md) | Phase 2B facade 已完成 |
-| 3 | Developer Toolkit | [`developer-toolkit.md`](./developer-toolkit.md) | Workspace facade、Preview Kit client 已完成 |
-| 4 | Render Profile | [`render-profile.md`](./render-profile.md) | 现有能力较多，待收敛 |
-| 5 | Artifact | [`artifact.md`](./artifact.md) | 待设计 v1 |
+| 2 | Card Engine | [`card-engine.md`](./card-engine.md) | Core 已完成，legacy Validator/Inspection 待收敛 |
+| 3 | Developer Toolkit | [`developer-toolkit.md`](./developer-toolkit.md) | Workspace、Preview transport 已完成；浏览器适配和 CLI 迁移待实施 |
+| 4 | Render Profile | [`render-profile.md`](./render-profile.md) | 源码能力已存在，package 和 Component Catalog 待迁移 |
+| 5 | Artifact | [`artifact.md`](./artifact.md) | Contract 已定义，Builder 待实现 |
 | 6 | GitHub Delivery | [`github-delivery.md`](./github-delivery.md) | 待设计 |
-| 7 | Forge Web | [`forge-web.md`](./forge-web.md) | 现有页面待重构，Preview API v1 可接入 |
+| 7 | Forge Web | [`forge-web.md`](./forge-web.md) | legacy Card 页面已接 Preview API，目标应用仍为空壳 |
 
 工程支撑包 `testkit` 不作为业务模块单独讨论。
 

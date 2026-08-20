@@ -30,6 +30,22 @@ Phase 7  业务后端交付验证
 Phase 8  逐 Card 迁移与 Legacy 删除
 ```
 
+### 2.1 当前实施快照
+
+| 阶段 | 当前状态 | 实际完成情况 |
+| --- | --- | --- |
+| Phase 0 | 已完成 | 架构、ADR、Characterization Tests 和 Golden 已建立 |
+| Phase 1 | 已完成 | Monorepo 外壳、依赖检查和兼容构建已建立 |
+| Phase 2 | 收尾中 | Contract、Core、Workspace 编译链路已完成；legacy Validator/Inspection 尚未删除 |
+| Phase 3 | 进行中 | Preview API、Preview Kit client 和现有 Card 页面接入已完成；共享浏览器渲染、组件预览、CLI/Profile 分包待完成 |
+| Phase 4 | 未开始实现 | Artifact Contract 已定义，Builder、digest 和 verify 尚未实现 |
+| Phase 5 | 未开始 | Catalog 仓库和 GitHub Delivery 尚未建立 |
+| Phase 6 | 未开始实现 | Snapshot Contract 已定义；`apps/forge-web` 仍为空壳，当前改动只发生在 legacy `web/` |
+| Phase 7 | 未开始 | 尚未进行真实业务后端交付验证 |
+| Phase 8 | 未开始 | Card Source 尚未迁出 Forge，Legacy 尚未删除 |
+
+阶段状态以退出 Gate 是否满足为准，不能因为目标目录或 Contract 空壳已经建立就标记完成。
+
 ## 3. Phase 0：架构与行为基线
 
 目标：在拆包前确定当前行为和目标边界。
@@ -113,7 +129,7 @@ actions/
 
 目标：形成唯一数据契约和唯一纯业务逻辑实现。
 
-状态：**Phase 2A/2B/2C 已完成，进入 Developer Toolkit 收敛（2026-08-20）**。
+状态：**主体实现完成，退出 Gate 收尾中（2026-08-20）**。
 
 已落地：
 
@@ -153,15 +169,24 @@ card-spec
 
 当前剩余：
 
-- 将 Preview Kit 的浏览器渲染适配补齐，并接入现有 Web；
-- 删除 legacy `src/validate.ts` / `src/inspect.ts` 前，先确认没有第二套业务规则；
-- 将根 CLI 逐步迁入 `packages/cli`，保留 npm 包名和 bin 兼容。
+- 将根 CLI 的独立 Adaptive Card 校验改为调用 Core Validator；
+- 将 legacy `src/validate.ts` / `src/inspect.ts` 收敛为兼容 facade；
+- 保留 parity tests，确认没有第二套业务规则后删除重复实现。
 
 ## 6. Phase 3：Developer Toolkit 与 Render Profile
 
 目标：让本地 Card Workspace 和 Profile 成为稳定的可分发能力。
 
-状态：**Phase 3A Preview API 和 3B Preview Kit client 已完成，Web 接入待实施。**
+状态：**进行中。Workspace、Preview API、Preview Kit client 和现有 Card 页面接入已完成；组件预览、共享浏览器渲染、CLI/Profile 分包待实施。**
+
+子阶段：
+
+| 子阶段 | 状态 | 范围 |
+| --- | --- | --- |
+| Phase 3A Workspace Runtime | 已完成 | 路径安全、Resolved Source、`Workspace → Core` facade |
+| Phase 3B Preview Transport | 已完成 | Preview API v1、revision、Preview Kit client、legacy Card 页面接入 |
+| Phase 3C Component Preview | 下一阶段 | Component Catalog Contract、Profile specimen、共享浏览器渲染、legacy Components 页面迁移 |
+| Phase 3D Package Convergence | 待实施 | `profile-octo-chat`、`packages/cli`、repo-free npm 消费验证 |
 
 工作：
 
@@ -169,9 +194,39 @@ card-spec
 - 将 CLI 迁入 `packages/cli`，保持 npm 包名与 bin；
 - 将 `octo-chat` Profile 迁入独立 package；
 - CLI 优先消费发布 Profile，Forge 源码只作开发回退；
-- 保留 repo-free 本地开发和 Agent Skill。
+- 保留 repo-free 本地开发和 Agent Skill；
 - 使用 `packages/preview-kit`，供本地 Preview 和 Forge Web 共用；
 - 在 Preview Kit 稳定前，不引入 SSE、热刷新或新的服务端状态。
+
+### 6.1 Phase 3C：Component Preview
+
+组件预览用于验证 Render Profile 的能力、样式和标准组合，不是另一套 Card Engine，也不新增数据库、
+在线组件服务或独立账号体系。
+
+职责边界：
+
+- `packages/card-spec` 定义 `ComponentCatalogV1` 和 `ComponentSpecimenV1`；
+- `packages/profile-octo-chat` 拥有组件、utility、token、pattern 和 specimen 内容；
+- `packages/preview-kit` 提供共享 Adaptive Cards 浏览器渲染适配；
+- 当前 `web/components.*` 和未来 `apps/forge-web` 负责搜索、分类、尺寸切换和状态展示；
+- Core 只校验 specimen payload/capability，不拥有组件展示内容。
+
+实施顺序：
+
+1. 固定现有 `/components` 行为和 specimen Golden；
+2. 定义并测试版本化 Component Catalog Contract；
+3. 将 `src/component-baseline.ts` 的内容迁入 `profile-octo-chat`；
+4. 将 Adaptive Cards SDK、HostConfig 和 Profile CSS 适配抽入 Preview Kit；
+5. 让现有 `/components` 页面消费新 Contract 和共享渲染器；
+6. Phase 6 再让静态 Forge Web 从 Snapshot/Profile Artifact 加载同一目录。
+
+退出 Gate：
+
+- Card Preview 和 Component Preview 使用同一个浏览器渲染适配；
+- Component Catalog 有版本、Decoder、稳定诊断和 Golden；
+- Profile 是 specimen 内容的唯一来源；
+- `web/components.js` 不再直接初始化 Adaptive Cards SDK 或读取旧 stylesheet URL；
+- 组件预览不依赖数据库、账号、GitHub Token 或 `octo-server`。
 
 退出 Gate：
 
@@ -183,6 +238,8 @@ card-spec
 ## 7. Phase 4：Artifact v1
 
 目标：建立与 Git 目录无关的正式发布内容。
+
+状态：**未开始实现。Artifact Contract 已定义，`packages/artifact` 仍为空壳。**
 
 工作：
 
@@ -202,6 +259,8 @@ card-spec
 ## 8. Phase 5：Catalog 仓库与 GitHub Delivery
 
 目标：将 Card Source 与平台代码分离。
+
+状态：**未开始。**
 
 工作：
 
@@ -223,6 +282,8 @@ card-spec
 
 目标：把当前页面改造成静态 Card 工作台。
 
+状态：**未开始实现。Snapshot Contract 已定义，`apps/forge-web` 仍为空壳；legacy `web/` 的 Preview API 接入只作为迁移基础。**
+
 工作：
 
 - 定义 `catalog-snapshot.v1.json`；
@@ -242,6 +303,8 @@ card-spec
 ## 10. Phase 7：业务后端交付验证
 
 目标：证明版本化 Artifact/Handoff 可以被业务后端按现有方式接入。
+
+状态：**未开始。**
 
 工作：
 
@@ -263,6 +326,8 @@ card-spec
 ## 11. Phase 8：迁移与删除 Legacy
 
 目标：删除 Forge 中的正式 Card 内容和生产文件 Registry。
+
+状态：**未开始。**
 
 单 Card 迁移：
 
@@ -308,5 +373,11 @@ card-spec
 7. Forge Web
 ```
 
-当前下一阶段：**Phase 3B Preview Kit 与 CLI package facade**。先稳定 Preview Client 和本地页面
-接入，再迁移 CLI 入口；Card Source 目录和 npm 发布边界暂不移动。
+当前执行顺序：
+
+1. 完成 Phase 2 Validator/Inspection 单一实现收尾；
+2. 执行 Phase 3C Component Preview，稳定 Profile 与 Preview Kit 的边界；
+3. 执行 Phase 3D CLI/Profile package 收敛；
+4. 进入 Phase 4 Artifact v1。
+
+Card Source 目录和 npm 发布边界在 Phase 3D Gate 通过前不移动。

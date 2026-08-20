@@ -1,12 +1,18 @@
 # Artifact 模块
 
-> 状态：待设计 v1
+> 状态：Artifact v1 Contract 已定义，Builder、digest 和 verify 待实现
 >
 > 目标代码：`packages/artifact`
 
 ## 定位
 
 把已验证的 Card Source 构建为可验证、可发布、可部署的不可变内容。
+
+## 当前实现
+
+- `packages/card-spec` 已定义 `CardArtifactV1`、Decoder、media type、digest 和 volatile field 约束；
+- `packages/artifact` 当前仍为空壳；
+- 现有 Handoff 是 legacy 实现，尚未由 Artifact 派生。
 
 ## 目标职责
 

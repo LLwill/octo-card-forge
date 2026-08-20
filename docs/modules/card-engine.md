@@ -1,6 +1,6 @@
 # Card Engine 模块
 
-> 状态：Phase 2B 第一版和根 facade 已完成
+> 状态：Core 第一版和编译 facade 已完成，legacy Validator/Inspection 待收敛
 >
 > 目标代码：`packages/core`
 
@@ -45,6 +45,6 @@ Card Engine 是唯一的纯编译、校验、Inspection 和能力分析实现。
 
 ## 下一步
 
-1. 补齐 Preview Kit 的浏览器渲染适配并接入 Web；
-2. 将旧 Validator/Inspection 调用逐个迁移并删除重复实现；
-3. 将根 CLI 逐步迁入 `packages/cli`，保持发布入口兼容。
+1. 将根 CLI 的独立 Adaptive Card 校验切换到 Core Validator；
+2. 将旧 Validator/Inspection 调用逐个迁移为兼容 facade；
+3. 保留 parity tests，在确认无第二套规则后删除重复实现。

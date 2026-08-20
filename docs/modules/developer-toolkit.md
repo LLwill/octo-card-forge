@@ -1,8 +1,8 @@
 # Developer Toolkit 模块
 
-> 状态：Workspace facade 和 Preview Kit client 已完成，CLI package 迁移待实施
+> 状态：Workspace facade、Preview Kit client 和 legacy Card 页面 transport 接入已完成；共享浏览器适配和 CLI package 迁移待实施
 >
-> 目标代码：`packages/workspace`、`packages/cli`
+> 目标代码：`packages/workspace`、`packages/preview-kit`、`packages/cli`
 
 ## 定位
 
@@ -35,5 +35,7 @@
 - `packages/workspace` 已负责目录、Manifest、Template、Sample 和路径安全；
 - 根 `src/core-adapter.ts` 将 Workspace Source、Profile 和 revision 交给 `packages/core`；
 - `packages/preview-kit` 已提供 Preview API client 和共享 session/render 契约；
+- legacy `web/app.js` 已消费 Preview Kit client，但 Adaptive Cards 浏览器渲染仍在页面内；
+- legacy `web/components.js` 尚未接入 Preview Kit 或版本化 Component Catalog；
 - 根 CLI/Server 的发布入口会 bundle 私有 workspace 包，独立 npm 安装不需要这些私有包；
 - `packages/cli` 仍是后续迁移目标，当前根 CLI 继续保持兼容。

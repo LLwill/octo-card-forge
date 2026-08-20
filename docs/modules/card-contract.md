@@ -13,6 +13,7 @@
 `packages/card-spec` 已提供无 IO 的 Contract API：
 
 - `CardSourceManifestV2` / `decodeCardSourceManifest`；
+- `ResolvedCardSourceV1` / `decodeResolvedCardSourceV1`；
 - `RenderProfileManifestV1` / `RenderCapabilitiesV1`，支持 legacy unversioned compatibility mode；
 - `CardArtifactV1` 和 `CatalogSnapshotV1` 的结构与语义 Decoder；
 - RFC 6901 JSON Pointer 诊断、稳定错误码、ID/SemVer/Profile reference 解析；
@@ -26,6 +27,7 @@
 - Render Profile Contract；
 - Artifact v1 Schema；
 - Catalog Snapshot v1 Schema；
+- Component Catalog / Component Specimen Schema；
 - 稳定 ID、版本和错误结构；
 - Decoder 与兼容读取策略。
 
@@ -54,7 +56,7 @@
 
 ## 后续工作
 
-1. 增加 Resolved Source v1 的真实 Decoder，供 Core 纯编译使用；
+1. 定义 `ComponentCatalogV1` 和 `ComponentSpecimenV1`，供 Profile、Preview Kit 和 Forge Web 交换组件样例；
 2. 用 AJV/Schema fixture 做结构 parity，Decoder 负责语义 invariant；
 3. 将 Profile capabilities 的组件/utility 深层结构约束收紧；
 4. 根 CLI 迁移到 workspace package 后再删除 legacy contract facade。

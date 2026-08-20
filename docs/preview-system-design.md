@@ -1,6 +1,6 @@
 # Preview System v1 设计
 
-> 状态：Preview API v1 和 Preview Kit client 已实现，Web 渲染适配待接入
+> 状态：Preview API v1、Preview Kit client 和现有 Card 页面接入已实现；共享浏览器渲染与组件预览待实施
 >
 > 生效日期：2026-08-20
 
@@ -201,6 +201,10 @@ loading session
 - Preview session/render/profile 的共享 TypeScript 契约；
 - HTTP 错误映射、base path 和 revision 透传。
 
+当前 legacy `web/app.js` 已通过该 Client 获取 session、render result、HostConfig 和 Profile CSS，
+但 Adaptive Cards SDK 初始化和 DOM 渲染仍由页面自己完成。因此这是 transport 接入完成，不代表共享
+浏览器渲染适配或目标 `apps/forge-web` 已完成。
+
 后续在同一个包中增加的浏览器适配负责：
 
 - Profile/HostConfig 注入；
@@ -212,19 +216,21 @@ loading session
 
 ## 6. 演进路径
 
-当前阶段：
+已完成：
 
 1. 根 Server 提供 Preview API v1；
 2. 根 CLI、旧 `/api/render` 和 Preview 使用同一 Core facade；
-3. 通过测试固定 session、revision、错误码和 Profile 资源行为。
+3. 通过测试固定 session、revision、错误码和 Profile 资源行为；
+4. legacy Card Catalog 页面通过 Preview Kit client 使用 Preview API v1。
 
 下一阶段：
 
-1. 在 `apps/forge-web` 中接入 Preview Kit，先接 Fixture，再接 `catalog-snapshot.v1`；
-2. 增加共享 Adaptive Cards 浏览器适配，避免 Web 自己复制请求状态机；
-3. `apps/local-preview` 复用同一 Preview Kit，但保留本地目录加载和热刷新；
-4. PR Preview 使用 Snapshot/Artifact，而不是在生产 Web 中扫描目录；
-5. 最终移除 Web 对目录型 API 的依赖，保留 Preview API 作为本地开发和 CI 适配层。
+1. 定义版本化 Component Catalog 和 Component Specimen Contract；
+2. 增加共享 Adaptive Cards 浏览器适配，避免 Card/Components 页面分别初始化 SDK；
+3. 迁移 legacy Components 页面，Profile 提供 specimen 内容，Preview Kit 负责渲染；
+4. Phase 6 在 `apps/forge-web` 中接入 Preview Kit，先接 Fixture，再接 `catalog-snapshot.v1`；
+5. PR Preview 使用 Snapshot/Artifact，而不是在生产 Web 中扫描目录；
+6. 最终移除 Web 对目录型 API 的依赖，保留 Preview API 作为本地开发和 CI 适配层。
 
 SSE、文件监听和热刷新不属于 v1 必需协议，等静态页面和 Snapshot Contract 稳定后再增加。
 
