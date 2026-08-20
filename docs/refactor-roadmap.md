@@ -113,6 +113,17 @@ actions/
 
 目标：形成唯一数据契约和唯一纯业务逻辑实现。
 
+状态：**Phase 2A/2B 第一版已完成，进入 Workspace facade 收敛（2026-08-20）**。
+
+已落地：
+
+- `packages/card-spec` 提供 Source Manifest v2、Resolved Source v1、Render Profile v1、Artifact v1、Catalog Snapshot v1；
+- 所有 Decoder 都是纯对象输入，使用稳定诊断和 JSON Pointer，未知版本 fail-close；
+- 当前 Profile 已切换到 canonical `schemaVersion: 1`，legacy unversioned compatibility 仍有测试；
+- `packages/core` 提供纯对象 `compileCardSource`、`validateCompiledCard`、`inspectCard`；
+- 当前 Draft 的全部 View/Sample 已完成 legacy/Core 的 payload、issues、inspection parity；
+- 根 CLI 尚未依赖私有 workspace 包，npm 独立安装能力保持不变。
+
 顺序：
 
 ```text
@@ -136,6 +147,12 @@ card-spec
 - Validator 只有一份权威实现；
 - 正式 Card 编译输出无未解释差异；
 - 现有 CLI 输出保持兼容。
+
+当前剩余：
+
+- Workspace Loader 将文件目录解析为 `ResolvedCardSourceV1`；
+- 根 CLI 通过兼容 facade 调用 Core，完成一次真实 CLI parity 后再迁移入口；
+- 删除 legacy `src/validate.ts` / `src/inspect.ts` 前，先确认没有第二套业务规则。
 
 ## 6. Phase 3：Developer Toolkit 与 Render Profile
 
@@ -284,5 +301,5 @@ card-spec
 7. Forge Web
 ```
 
-当前下一阶段：**Phase 2 Card Contract 与 Card Engine**。先固定 Source/Manifest/Profile 的
-版本化 Decoder 和纯对象契约，再按 Golden 对账抽取 compile/validate/inspect。
+当前下一阶段：**Phase 3A Workspace Loader 与 CLI facade**。先把文件路径限制在 Workspace 层，
+再让根 CLI 通过 `ResolvedCardSourceV1` 调用 Core；Card Source 目录和 npm 发布边界暂不移动。
