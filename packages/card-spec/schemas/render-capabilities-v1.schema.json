@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:octo-card:schema:render-capabilities:1",
+  "title": "Octo Render Capabilities v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "maxAdaptiveCardVersion", "allowedElements", "allowedActions", "maxNodes", "maxDepth", "maxPayloadBytes", "imageUrlSchemes", "openUrlSchemes"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "maxAdaptiveCardVersion": { "type": "string", "pattern": "^\\d+\\.\\d+$" },
+    "allowedElements": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "allowedActions": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "components": { "type": "object" },
+    "utilities": { "type": "object" },
+    "utilityRules": { "type": "object", "additionalProperties": false, "properties": { "maxTokensPerElement": { "type": "integer", "minimum": 1 } } },
+    "maxNodes": { "type": "integer", "minimum": 1 },
+    "maxDepth": { "type": "integer", "minimum": 1 },
+    "maxPayloadBytes": { "type": "integer", "minimum": 1 },
+    "imageUrlSchemes": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "openUrlSchemes": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+  }
+}
