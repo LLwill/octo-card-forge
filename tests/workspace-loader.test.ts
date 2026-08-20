@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -31,6 +31,28 @@ describe("workspace source loader", () => {
       views: {
         main: { wireProfile: "octo/v1", template: "template.json", samples: ["sample.json"] },
       },
+    }));
+    await expect(loadResolvedCardSource(root)).rejects.toBeInstanceOf(WorkspaceLoadError);
+  });
+
+  it("rejects assets whose symlink resolves outside the package", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "octo-workspace-symlink-"));
+    await mkdir(path.join(root, "contract"), { recursive: true });
+    await writeFile(path.join(root, "template.json"), JSON.stringify({ type: "AdaptiveCard", version: "1.5", body: [] }));
+    await writeFile(path.join(root, "sample.json"), JSON.stringify({}));
+    const outside = path.join(root, "..", "octo-outside-schema.json");
+    await writeFile(outside, JSON.stringify({ type: "object" }));
+    await symlink(outside, path.join(root, "contract", "data.schema.json"));
+    await writeFile(path.join(root, "manifest.json"), JSON.stringify({
+      schemaVersion: 2,
+      id: "demo.card",
+      name: "Demo",
+      version: "1.0.0",
+      contractVersion: "1.0.0",
+      adaptiveCardVersion: "1.5",
+      defaultLocale: "en-US",
+      dataSchema: "contract/data.schema.json",
+      views: { main: { wireProfile: "octo/v1", template: "template.json", samples: ["sample.json"] } },
     }));
     await expect(loadResolvedCardSource(root)).rejects.toBeInstanceOf(WorkspaceLoadError);
   });
