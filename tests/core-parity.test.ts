@@ -1,56 +1,19 @@
-import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { compileCardSource } from "../packages/core/src/index.js";
-import type { RenderCapabilities as CoreRenderCapabilities, ResolvedCardSource } from "../packages/core/src/index.js";
-import type { JsonObject as ContractJsonObject } from "../packages/card-spec/src/index.js";
-import { compileSampleFromPackage } from "../src/compiler.js";
-import { resolveCardAssetPath, listCards } from "../src/registry.js";
+import type { RenderCapabilities as CoreRenderCapabilities } from "../packages/core/src/index.js";
+import { loadResolvedCardSource } from "../packages/workspace/src/index.js";
+import { compileCardPackage, compileSampleFromPackage } from "../src/compiler.js";
+import { listCards } from "../src/registry.js";
 import { getCurrentRenderProfile } from "../src/registry.js";
 
-async function readJson(filePath: string): Promise<ContractJsonObject> {
-  return JSON.parse(await readFile(filePath, "utf8")) as ContractJsonObject;
-}
-
-async function resolveSource(cardRoot: string): Promise<{ source: ResolvedCardSource; profile: CoreRenderCapabilities; reference: string }> {
-  const manifest = await readJson(path.join(cardRoot, "manifest.json"));
-  const profile = await getCurrentRenderProfile();
-  const views: ResolvedCardSource["views"] = {};
-  for (const [viewName, viewValue] of Object.entries(manifest.views as Record<string, ContractJsonObject>)) {
-    const template = await readJson(resolveCardAssetPath(cardRoot, String(viewValue.template), `views.${viewName}.template`));
-    const samples = [];
-    for (const samplePath of (viewValue.samples as string[])) {
-      samples.push({
-        name: path.basename(samplePath, path.extname(samplePath)),
-        data: await readJson(resolveCardAssetPath(cardRoot, samplePath, `views.${viewName}.samples`)),
-      });
-    }
-    views[viewName] = {
-      wireProfile: viewValue.wireProfile as "octo/v1" | "octo/v2",
-      ...(Array.isArray(viewValue.states) ? { states: viewValue.states as string[] } : {}),
-      ...(Array.isArray(viewValue.submit_actions) ? { submit_actions: viewValue.submit_actions as string[] } : {}),
-      template,
-      samples,
-    };
-  }
-  const idParts = String(manifest.id).split(".");
-  const source = {
-    formatVersion: 1 as const,
-    card: {
-      id: manifest.id,
-      namespace: idParts[0],
-      key: idParts.slice(1).join("."),
-      name: manifest.name,
-      version: manifest.version,
-      contractVersion: manifest.contractVersion,
-      adaptiveCardVersion: manifest.adaptiveCardVersion,
-      defaultLocale: manifest.defaultLocale,
-    },
-    dataContract: await readJson(resolveCardAssetPath(cardRoot, String(manifest.dataSchema), "dataSchema")),
-    views,
-  } as unknown as ResolvedCardSource;
+async function resolveSource(cardRoot: string) {
+  const [loaded, profile] = await Promise.all([
+    loadResolvedCardSource(cardRoot),
+    getCurrentRenderProfile(),
+  ]);
   return {
-    source,
+    source: loaded.source,
     profile: profile.capabilities as unknown as CoreRenderCapabilities,
     reference: profile.reference,
   };
@@ -77,5 +40,44 @@ describe("legacy/Core compile parity", () => {
         }
       }
     }
+  });
+
+  it("keeps invalid data contract diagnostics equivalent", async () => {
+    const card = (await listCards()).find(
+      (candidate) => candidate.kind === "draft" && candidate.manifest.id === "docs.access-request"
+    );
+    expect(card).toBeDefined();
+    const resolved = await resolveSource(card!.root);
+    const view = Object.keys(card!.manifest.views)[0];
+    const legacy = await compileCardPackage({ card: card!, view, data: {} });
+    const core = compileCardSource({
+      source: resolved.source,
+      view,
+      data: {},
+      profile: { reference: resolved.reference, capabilities: resolved.profile },
+    });
+
+    expect(core).toEqual(legacy);
+    expect(core.payload).toEqual({});
+    expect(core.issues.some((issue) => issue.code.startsWith("contract."))).toBe(true);
+  });
+
+  it("keeps unknown view failures equivalent", async () => {
+    const card = (await listCards()).find((candidate) => candidate.kind === "draft");
+    expect(card).toBeDefined();
+    const resolved = await resolveSource(card!.root);
+    const message = `Unknown view missing for ${card!.reference}`;
+
+    await expect(
+      compileCardPackage({ card: card!, view: "missing", data: {} })
+    ).rejects.toThrow(message);
+    expect(() =>
+      compileCardSource({
+        source: resolved.source,
+        view: "missing",
+        data: {},
+        profile: { reference: resolved.reference, capabilities: resolved.profile },
+      })
+    ).toThrow(message);
   });
 });

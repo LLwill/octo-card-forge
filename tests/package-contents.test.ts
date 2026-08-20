@@ -39,6 +39,22 @@ async function waitForJson(url: string): Promise<unknown> {
 }
 
 describe("CLI package contents", () => {
+  it("keeps the private Core package boundary explicit", async () => {
+    const manifest = JSON.parse(await readFile("packages/core/package.json", "utf8")) as {
+      private?: boolean;
+      version?: string;
+      files?: string[];
+      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
+    };
+
+    expect(manifest.private).toBe(true);
+    expect(manifest.version).toBe("0.0.0");
+    expect(manifest.files).toEqual(["dist"]);
+    expect(manifest.dependencies).not.toHaveProperty("@mlt-org/octo-card-spec");
+    expect(manifest.devDependencies).toHaveProperty("@mlt-org/octo-card-spec", "workspace:*");
+  });
+
   it("does not publish generated cards, handoff zips or profile source", async () => {
     const output = await mkdtemp(path.join(os.tmpdir(), "octo-card-pack-"));
     await execFileAsync("pnpm", ["build"]);

@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Reserved workspace boundary for Card and Profile filesystem loading.",
+  "files": ["dist"],
   "dependencies": {
     "@mlt-org/octo-card-spec": "workspace:*"
   },

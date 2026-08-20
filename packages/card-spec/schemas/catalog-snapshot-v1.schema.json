@@ -10,6 +10,97 @@
     "mediaType": { "const": "application/vnd.octo.card-catalog-snapshot+json;version=1" },
     "channel": { "enum": ["release", "preview"] },
     "revision": { "type": "string", "minLength": 1 },
-    "cards": { "type": "array" }
+    "cards": { "type": "array", "items": { "$ref": "#/$defs/card" } }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "channel": { "const": "release" } } },
+      "then": {
+        "properties": {
+          "cards": {
+            "items": {
+              "properties": {
+                "versions": {
+                  "items": {
+                    "required": ["release"],
+                    "properties": {
+                      "renderProfile": { "pattern": "^[a-z][a-z0-9.-]*@\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "card": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "defaultLocale", "versions"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*\\.[a-z][a-z0-9-]*$" },
+        "name": { "type": "string", "minLength": 1 },
+        "defaultLocale": { "type": "string", "minLength": 1 },
+        "latest": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$" },
+        "versions": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/version" } }
+      }
+    },
+    "version": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reference", "version", "contractVersion", "renderProfile", "artifact", "source"],
+      "properties": {
+        "reference": { "type": "string", "pattern": "^[a-z][a-z0-9-]*\\.[a-z][a-z0-9-]*@\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$" },
+        "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$" },
+        "contractVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$" },
+        "renderProfile": { "type": "string", "pattern": "^[a-z][a-z0-9.-]*@(latest|\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?)$" },
+        "artifact": { "$ref": "#/$defs/artifact" },
+        "handoff": { "$ref": "#/$defs/handoff" },
+        "source": { "$ref": "#/$defs/source" },
+        "release": { "$ref": "#/$defs/release" }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url", "sha256", "mediaType"],
+      "properties": {
+        "url": { "type": "string", "minLength": 1 },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "mediaType": { "const": "application/vnd.octo.card-artifact+json;version=1" }
+      }
+    },
+    "handoff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url", "sha256"],
+      "properties": {
+        "url": { "type": "string", "minLength": 1 },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "commit", "path"],
+      "properties": {
+        "repository": { "type": "string", "minLength": 1 },
+        "commit": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "pattern": "^(?![\\\\/])(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)[^\\\\]+$" },
+        "pullRequestUrl": { "type": "string", "minLength": 1 }
+      }
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tag", "url"],
+      "properties": {
+        "tag": { "type": "string", "minLength": 1 },
+        "url": { "type": "string", "minLength": 1 }
+      }
+    }
   }
 }

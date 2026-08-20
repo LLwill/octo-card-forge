@@ -10,13 +10,70 @@
     "maxAdaptiveCardVersion": { "type": "string", "pattern": "^\\d+\\.\\d+$" },
     "allowedElements": { "type": "array", "items": { "type": "string", "minLength": 1 } },
     "allowedActions": { "type": "array", "items": { "type": "string", "minLength": 1 } },
-    "components": { "type": "object" },
-    "utilities": { "type": "object" },
-    "utilityRules": { "type": "object", "additionalProperties": false, "properties": { "maxTokensPerElement": { "type": "integer", "minimum": 1 } } },
+    "components": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/component" }
+    },
+    "utilities": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/utility" }
+    },
+    "utilityRules": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "maxTokensPerElement": { "type": "integer", "minimum": 1 }
+      }
+    },
     "maxNodes": { "type": "integer", "minimum": 1 },
     "maxDepth": { "type": "integer", "minimum": 1 },
     "maxPayloadBytes": { "type": "integer", "minimum": 1 },
     "imageUrlSchemes": { "type": "array", "items": { "type": "string", "minLength": 1 } },
     "openUrlSchemes": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+  },
+  "$defs": {
+    "jsonObject": {
+      "type": "object"
+    },
+    "stringArray": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["appliesTo", "variants"],
+      "properties": {
+        "appliesTo": { "$ref": "#/$defs/stringArray", "minItems": 1 },
+        "variants": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "$ref": "#/$defs/componentVariant" }
+        }
+      }
+    },
+    "componentVariant": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fallback": { "$ref": "#/$defs/jsonObject" },
+        "deprecated": { "type": "boolean" }
+      }
+    },
+    "utility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["group", "appliesTo", "description"],
+      "properties": {
+        "group": { "type": "string", "minLength": 1 },
+        "appliesTo": { "$ref": "#/$defs/stringArray", "minItems": 1 },
+        "fallback": { "$ref": "#/$defs/jsonObject" },
+        "description": { "type": "string", "minLength": 1 },
+        "useWhen": { "$ref": "#/$defs/stringArray" },
+        "avoidWhen": { "$ref": "#/$defs/stringArray" },
+        "cssRequired": { "type": "boolean" },
+        "deprecated": { "type": "boolean" }
+      }
+    }
   }
 }

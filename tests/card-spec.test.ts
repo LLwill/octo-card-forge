@@ -158,6 +158,50 @@ describe("render profile compatibility decoder", () => {
     });
     expect(capabilities.ok).toBe(true);
   });
+
+  it("fails closed on malformed capability subcontracts", () => {
+    const result = decodeRenderCapabilities({
+      schemaVersion: 1,
+      maxAdaptiveCardVersion: "latest",
+      allowedElements: ["TextBlock"],
+      allowedActions: [],
+      utilityRules: { maxTokensPerElement: 0, extra: true },
+      components: {
+        "octo-badge": {
+          appliesTo: ["TextBlock"],
+          variants: {
+            warning: { fallback: { color: "Warning" }, extra: true },
+          },
+          extra: true,
+        },
+      },
+      utilities: {
+        "surface-subtle": {
+          group: "surface",
+          appliesTo: ["Container"],
+          description: "Subtle surface",
+          extra: true,
+        },
+      },
+      maxNodes: 20,
+      maxDepth: 10,
+      maxPayloadBytes: 10000,
+      imageUrlSchemes: ["https"],
+      openUrlSchemes: ["https"],
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.issues).toEqual(expect.arrayContaining([
+        expect.objectContaining({ code: "contract.pattern", path: "/maxAdaptiveCardVersion" }),
+        expect.objectContaining({ code: "contract.unknown_property", path: "/utilityRules/extra" }),
+        expect.objectContaining({ code: "contract.invariant", path: "/utilityRules/maxTokensPerElement" }),
+        expect.objectContaining({ code: "contract.unknown_property", path: "/components/octo-badge/extra" }),
+        expect.objectContaining({ code: "contract.unknown_property", path: "/components/octo-badge/variants/warning/extra" }),
+        expect.objectContaining({ code: "contract.unknown_property", path: "/utilities/surface-subtle/extra" }),
+      ]));
+    }
+  });
 });
 
 describe("decoder robustness", () => {
@@ -263,6 +307,87 @@ describe("artifact and snapshot contracts", () => {
     });
     expect(invalid.ok).toBe(false);
   });
+
+  it("rejects artifact nested unknown keys, malformed inspection, and invalid view metadata", () => {
+    const invalid = decodeCardArtifactV1({
+      formatVersion: 1,
+      mediaType: CARD_ARTIFACT_MEDIA_TYPE,
+      card: {
+        id: "docs.access-request",
+        name: "Access",
+        version: "0.3.0",
+        contractVersion: "1.0.0",
+        adaptiveCardVersion: "1.5",
+        defaultLocale: "en-US",
+        extra: true,
+      },
+      profile: { reference: "octo-chat@1.2.0", manifest: profileManifest, capabilities: profileCapabilities },
+      dataContract: { type: "object" },
+      views: {
+        result: {
+          wireProfile: "octo/v1",
+          states: ["approved", "approved"],
+          submit_actions: [1],
+          template: { type: "AdaptiveCard", version: "1.5" },
+          extra: true,
+          samples: [{
+            name: "approved",
+            data: {},
+            card: { type: "AdaptiveCard", version: "1.5" },
+            inspection: { actions: [{ path: "$.body[0]", type: "Action.Submit", extra: true }], inputs: [], toggles: [] },
+            extra: true,
+          }],
+        },
+      },
+      validation: { valid: true, issues: [] },
+    });
+
+    expect(invalid.ok).toBe(false);
+    if (!invalid.ok) {
+      expect(invalid.issues).toEqual(expect.arrayContaining([
+        expect.objectContaining({ code: "contract.unknown_property", path: "/card/extra" }),
+        expect.objectContaining({ code: "contract.unknown_property", path: "/views/result/extra" }),
+        expect.objectContaining({ code: "contract.duplicate", path: "/views/result/states" }),
+        expect.objectContaining({ code: "contract.type", path: "/views/result/submit_actions" }),
+        expect.objectContaining({ code: "contract.unknown_property", path: "/views/result/samples/0/extra" }),
+        expect.objectContaining({ code: "contract.unknown_property", path: "/views/result/samples/0/inspection/actions/0/extra" }),
+      ]));
+    }
+  });
+
+  it("requires release snapshots to pin profiles and use Card Artifact media type", () => {
+    const invalid = decodeCatalogSnapshotV1({
+      formatVersion: 1,
+      mediaType: CATALOG_SNAPSHOT_MEDIA_TYPE,
+      channel: "release",
+      revision: "abc123",
+      cards: [{
+        id: "docs.access-request",
+        name: "Access",
+        defaultLocale: "en-US",
+        versions: [{
+          reference: "docs.access-request@0.3.0",
+          version: "0.3.0",
+          contractVersion: "1.0.0",
+          renderProfile: "octo-chat@latest",
+          artifact: { url: "https://example.test/artifact.json", sha256: "a".repeat(64), mediaType: "application/vnd.octo.handoff+zip;version=1" },
+          source: { repository: "octo-card-catalog", commit: "abc123", path: "cards/docs.access-request" },
+          extra: true,
+        }],
+        extra: true,
+      }],
+    });
+
+    expect(invalid.ok).toBe(false);
+    if (!invalid.ok) {
+      expect(invalid.issues).toEqual(expect.arrayContaining([
+        expect.objectContaining({ code: "contract.unknown_property", path: "/cards/0/extra" }),
+        expect.objectContaining({ code: "contract.unknown_property", path: "/cards/0/versions/0/extra" }),
+        expect.objectContaining({ code: "contract.invariant", path: "/cards/0/versions/0/renderProfile" }),
+        expect.objectContaining({ code: "contract.type", path: "/cards/0/versions/0/artifact" }),
+      ]));
+    }
+  });
 });
 
 describe("resolved source contract", () => {
@@ -318,5 +443,40 @@ describe("resolved source contract", () => {
     if (!result.ok) expect(result.issues).toEqual(expect.arrayContaining([
       expect.objectContaining({ code: "contract.invariant", path: "/card/namespace" }),
     ]));
+  });
+
+  it("rejects unknown keys in resolved source objects", () => {
+    const result = decodeResolvedCardSourceV1({
+      formatVersion: 1,
+      extra: true,
+      card: {
+        id: "docs.access-request",
+        namespace: "docs",
+        key: "access-request",
+        name: "Access",
+        version: "0.3.0",
+        contractVersion: "1.0.0",
+        adaptiveCardVersion: "1.5",
+        defaultLocale: "en-US",
+      },
+      dataContract: { type: "object" },
+      views: {
+        result: {
+          wireProfile: "octo/v1",
+          template: { type: "AdaptiveCard", version: "1.5" },
+          samples: [{ name: "approved", data: {}, extra: true }],
+          extra: true,
+        },
+      },
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.issues).toEqual(expect.arrayContaining([
+        expect.objectContaining({ code: "contract.unknown_property", path: "/extra" }),
+        expect.objectContaining({ code: "contract.unknown_property", path: "/views/result/extra" }),
+        expect.objectContaining({ code: "contract.unknown_property", path: "/views/result/samples/0/extra" }),
+      ]));
+    }
   });
 });

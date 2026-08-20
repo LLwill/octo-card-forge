@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Reserved workspace boundary for versioned Catalog snapshots.",
+  "files": ["dist"],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": "./dist/index.js",
@@ -12,4 +13,3 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   }
 }
-

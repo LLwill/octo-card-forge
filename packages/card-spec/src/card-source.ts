@@ -64,6 +64,10 @@ const ROOT_KEYS = new Set([
   "schemaVersion", "id", "name", "version", "contractVersion", "adaptiveCardVersion",
   "renderProfile", "renderProfileCompatibility", "defaultLocale", "views", "dataSchema",
 ]);
+const RESOLVED_ROOT_KEYS = new Set(["formatVersion", "card", "dataContract", "views"]);
+const RESOLVED_CARD_KEYS = new Set(["id", "namespace", "key", "name", "version", "contractVersion", "adaptiveCardVersion", "defaultLocale"]);
+const RESOLVED_VIEW_KEYS = new Set(["wireProfile", "states", "submit_actions", "template", "samples"]);
+const RESOLVED_SAMPLE_KEYS = new Set(["name", "data"]);
 const VIEW_KEYS = new Set(["wireProfile", "template", "samples", "states", "submit_actions"]);
 const SEMVER = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
 const ADAPTIVE_CARD_VERSION = /^\d+\.\d+$/;
@@ -203,22 +207,25 @@ export function validateCardManifestPolicy(manifest: CardSourceManifestV2, optio
 export function decodeResolvedCardSourceV1(input: unknown): DecodeResult<ResolvedCardSourceV1> {
   const issues: DecodeIssue[] = [];
   if (!isJsonObject(input)) return { ok: false, issues: [issue("contract.root_type", "", "resolved card source must be a JSON object")] };
+  checkUnknownKeys(input, RESOLVED_ROOT_KEYS, "", issues);
   if (input.formatVersion !== 1) issues.push(issue("contract.unsupported_version", "/formatVersion", "only resolved card source formatVersion 1 is supported"));
   const rawCard = input.card;
   let card: ResolvedCardSourceV1["card"] | undefined;
   if (!isJsonObject(rawCard)) {
     issues.push(issue("contract.required", "/card", "card is required"));
   } else {
+    checkUnknownKeys(rawCard, RESOLVED_CARD_KEYS, "/card", issues);
     const parsedId = parseCardId(rawCard.id);
     const version = parseSemVer(rawCard.version);
     const contractVersion = parseSemVer(rawCard.contractVersion);
     if (!parsedId) issues.push(issue("contract.pattern", "/card/id", "card.id must match <namespace>.<card-key>"));
     if (!version) issues.push(issue("contract.pattern", "/card/version", "card.version must use SemVer"));
     if (!contractVersion) issues.push(issue("contract.pattern", "/card/contractVersion", "card.contractVersion must use SemVer"));
-    for (const key of ["namespace", "key", "name", "adaptiveCardVersion", "defaultLocale"]) if (!isNonEmptyString(rawCard[key])) issues.push(issue("contract.required", `/card/${key}`, `${key} is required`));
+    for (const key of ["namespace", "key", "name", "defaultLocale"]) if (!isNonEmptyString(rawCard[key])) issues.push(issue("contract.required", `/card/${key}`, `${key} is required`));
+    if (!isNonEmptyString(rawCard.adaptiveCardVersion) || !ADAPTIVE_CARD_VERSION.test(rawCard.adaptiveCardVersion)) issues.push(issue("contract.pattern", "/card/adaptiveCardVersion", "adaptiveCardVersion must use <major>.<minor>"));
     if (parsedId && isNonEmptyString(rawCard.namespace) && rawCard.namespace !== parsedId.namespace) issues.push(issue("contract.invariant", "/card/namespace", "namespace must match card id"));
     if (parsedId && isNonEmptyString(rawCard.key) && rawCard.key !== parsedId.key) issues.push(issue("contract.invariant", "/card/key", "key must match card id"));
-    if (parsedId && version && contractVersion && isNonEmptyString(rawCard.name) && isNonEmptyString(rawCard.adaptiveCardVersion) && isNonEmptyString(rawCard.defaultLocale)) card = { id: parsedId.value, namespace: parsedId.namespace, key: parsedId.key, name: rawCard.name, version, contractVersion, adaptiveCardVersion: rawCard.adaptiveCardVersion, defaultLocale: rawCard.defaultLocale };
+    if (parsedId && version && contractVersion && isNonEmptyString(rawCard.name) && isNonEmptyString(rawCard.adaptiveCardVersion) && ADAPTIVE_CARD_VERSION.test(rawCard.adaptiveCardVersion) && isNonEmptyString(rawCard.defaultLocale)) card = { id: parsedId.value, namespace: parsedId.namespace, key: parsedId.key, name: rawCard.name, version, contractVersion, adaptiveCardVersion: rawCard.adaptiveCardVersion, defaultLocale: rawCard.defaultLocale };
   }
   if (!isJsonObject(input.dataContract)) issues.push(issue("contract.required", "/dataContract", "dataContract must be an object"));
   const rawViews = input.views;
@@ -230,6 +237,7 @@ export function decodeResolvedCardSourceV1(input: unknown): DecodeResult<Resolve
     for (const [viewName, rawView] of Object.entries(rawViews)) {
       const path = `/views/${escapePointer(viewName)}`;
       if (!isJsonObject(rawView)) { issues.push(issue("contract.type", path, "view must be an object")); continue; }
+      checkUnknownKeys(rawView, RESOLVED_VIEW_KEYS, path, issues);
       const wireProfile = rawView.wireProfile;
       if (wireProfile !== "octo/v1" && wireProfile !== "octo/v2") issues.push(issue("contract.enum", `${path}/wireProfile`, "wireProfile must be octo/v1 or octo/v2"));
       if (!isJsonObject(rawView.template)) issues.push(issue("contract.type", `${path}/template`, "template must be an object"));
@@ -241,6 +249,7 @@ export function decodeResolvedCardSourceV1(input: unknown): DecodeResult<Resolve
       const samples: ResolvedCardSourceV1["views"][string]["samples"] = [];
       for (const [index, rawSample] of rawView.samples.entries()) {
         const samplePath = `${path}/samples/${index}`;
+        if (isJsonObject(rawSample)) checkUnknownKeys(rawSample, RESOLVED_SAMPLE_KEYS, samplePath, issues);
         if (!isJsonObject(rawSample) || !isNonEmptyString(rawSample.name) || !isJsonObject(rawSample.data)) { issues.push(issue("contract.type", samplePath, "sample must contain a name and object data")); continue; }
         if (sampleNames.has(rawSample.name)) issues.push(issue("contract.duplicate", `${samplePath}/name`, `sample name ${rawSample.name} is duplicated`));
         sampleNames.add(rawSample.name);

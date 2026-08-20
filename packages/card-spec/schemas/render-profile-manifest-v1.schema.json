@@ -12,10 +12,10 @@
     "compatibility": { "type": "string", "minLength": 1 },
     "packageName": { "type": "string", "minLength": 1 },
     "adaptiveCardsSdkVersion": { "type": "string", "minLength": 1 },
-    "hostConfig": { "type": "string", "minLength": 1 },
-    "theme": { "type": "string", "minLength": 1 },
-    "stylesheet": { "type": "string", "minLength": 1 },
-    "tokens": { "type": "string", "minLength": 1 },
-    "capabilities": { "type": "string", "minLength": 1 }
+    "hostConfig": { "type": "string", "pattern": "^(?![\\\\/])(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)[^\\\\]+$" },
+    "theme": { "type": "string", "pattern": "^(?![\\\\/])(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)[^\\\\]+$" },
+    "stylesheet": { "type": "string", "pattern": "^(?![\\\\/])(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)[^\\\\]+$" },
+    "tokens": { "type": "string", "pattern": "^(?![\\\\/])(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)[^\\\\]+$" },
+    "capabilities": { "type": "string", "pattern": "^(?![\\\\/])(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)[^\\\\]+$" }
   }
 }
