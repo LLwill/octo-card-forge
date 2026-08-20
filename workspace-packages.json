@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "packages": [
+    {
+      "id": "card-spec",
+      "path": "packages/card-spec",
+      "name": "@mlt-org/octo-card-spec",
+      "runtimeDependencies": [],
+      "peerDependencies": []
+    },
+    {
+      "id": "core",
+      "path": "packages/core",
+      "name": "@mlt-org/octo-card-core",
+      "runtimeDependencies": ["card-spec"],
+      "peerDependencies": []
+    },
+    {
+      "id": "workspace",
+      "path": "packages/workspace",
+      "name": "@mlt-org/octo-card-workspace",
+      "runtimeDependencies": ["card-spec"],
+      "peerDependencies": []
+    },
+    {
+      "id": "profile-octo-chat",
+      "path": "packages/profile-octo-chat",
+      "name": "@mlt-org/octo-card-profile-octo-chat",
+      "runtimeDependencies": ["card-spec"],
+      "peerDependencies": []
+    },
+    {
+      "id": "artifact",
+      "path": "packages/artifact",
+      "name": "@mlt-org/octo-card-artifact",
+      "runtimeDependencies": ["card-spec", "core"],
+      "peerDependencies": []
+    },
+    {
+      "id": "catalog-snapshot",
+      "path": "packages/catalog-snapshot",
+      "name": "@mlt-org/octo-card-catalog-snapshot",
+      "runtimeDependencies": ["card-spec", "artifact"],
+      "peerDependencies": []
+    },
+    {
+      "id": "forge-web",
+      "path": "apps/forge-web",
+      "name": "@mlt-org/octo-card-forge-web",
+      "runtimeDependencies": ["catalog-snapshot", "profile-octo-chat"],
+      "peerDependencies": []
+    },
+    {
+      "id": "testkit",
+      "path": "packages/testkit",
+      "name": "@mlt-org/octo-card-testkit",
+      "runtimeDependencies": [],
+      "peerDependencies": []
+    },
+    {
+      "id": "cli",
+      "path": ".",
+      "name": "@mlt-org/octo-card-cli",
+      "legacyRoot": true,
+      "migrationTarget": "packages/cli",
+      "runtimeDependencies": ["card-spec", "core", "workspace", "artifact"],
+      "peerDependencies": ["profile-octo-chat"],
+      "optionalPeerDependencies": ["profile-octo-chat"]
+    }
+  ]
+}

@@ -65,6 +65,18 @@ Phase 8  逐 Card 迁移与 Legacy 删除
 
 目标：建立 workspace，不改变用户行为。
 
+状态：**已完成（2026-08-20）**。
+
+已落地：
+
+- `pnpm-workspace.yaml` 和 8 个私有 package/app 空壳已建立；
+- 根 `@mlt-org/octo-card-cli` 继续保留原包名、bin、源码和发布入口；
+- `typecheck/test/build` 已成为 legacy + workspace 聚合命令；
+- `workspace-packages.json` 明确包级依赖 allowlist；
+- 依赖检查器覆盖非法边、legacy 反向依赖和 runtime cycle；
+- npm pack 继续排除内部源码包，部署包已通过解压、离线生产安装和 HTTP smoke；
+- 尚未移动根 `src/`、`web/`、`cards/` 或 `render-profiles/`。
+
 目标目录：
 
 ```text
@@ -272,5 +284,5 @@ card-spec
 7. Forge Web
 ```
 
-当前下一阶段：**Phase 1 Monorepo 工程外壳**。先建立 workspace 和统一命令，不移动
-现有源码；Card Contract 的代码抽取从 Phase 2 开始。
+当前下一阶段：**Phase 2 Card Contract 与 Card Engine**。先固定 Source/Manifest/Profile 的
+版本化 Decoder 和纯对象契约，再按 Golden 对账抽取 compile/validate/inspect。

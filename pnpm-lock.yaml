@@ -37,6 +37,22 @@ importers:
         specifier: 3.2.4
         version: 3.2.4(@types/node@24.0.13)(tsx@4.20.3)
 
+  apps/forge-web: {}
+
+  packages/artifact: {}
+
+  packages/card-spec: {}
+
+  packages/catalog-snapshot: {}
+
+  packages/core: {}
+
+  packages/profile-octo-chat: {}
+
+  packages/testkit: {}
+
+  packages/workspace: {}
+
 packages:
 
   '@esbuild/aix-ppc64@0.25.12':

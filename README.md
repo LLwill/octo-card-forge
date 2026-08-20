@@ -51,6 +51,17 @@ pnpm cli render docs.access-request@0.3.0 --sample pending
 这是迁移前的文件 Registry。目标状态是将正式 Card Source 迁入独立
 `octo-card-catalog` 内容仓库，Forge 只保留平台代码、工具和测试 Fixture。
 
+仓库已经进入 pnpm Monorepo Phase 1。根 package 暂时继续发布
+`@mlt-org/octo-card-cli`；`packages/*` 和 `apps/forge-web` 先建立稳定边界，不在本阶段移动旧
+源码。`workspace-packages.json` 定义允许的内部依赖方向，执行：
+
+```bash
+pnpm workspace:check
+pnpm typecheck
+pnpm test
+pnpm build
+```
+
 当前候选 Render Profile 可生成 Web 直接安装的不可变制品：
 
 ```bash

@@ -1,12 +1,42 @@
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
+import { createServer } from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { describe, expect, it } from "vitest";
 
 const execFileAsync = promisify(execFile);
+
+async function availablePort(): Promise<number> {
+  const server = createServer();
+  await new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", resolve);
+  });
+  const address = server.address();
+  if (!address || typeof address === "string") throw new Error("Unable to reserve test port");
+  await new Promise<void>((resolve, reject) => {
+    server.close((error) => error ? reject(error) : resolve());
+  });
+  return address.port;
+}
+
+async function waitForJson(url: string): Promise<unknown> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 50; attempt++) {
+    try {
+      const response = await fetch(url);
+      if (response.ok) return response.json();
+      lastError = new Error(`${url} returned ${response.status}`);
+    } catch (error) {
+      lastError = error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw lastError ?? new Error(`Timed out waiting for ${url}`);
+}
 
 describe("CLI package contents", () => {
   it("does not publish generated cards, handoff zips or profile source", async () => {
@@ -83,8 +113,44 @@ describe("CLI package contents", () => {
         sha256: actualSha256,
       });
       expect(result.sha256).toBe(actualSha256);
+
+      const runtime = path.join(output, "runtime");
+      await mkdir(runtime);
+      await execFileAsync("tar", ["-xzf", result.artifact, "-C", runtime]);
+      await execFileAsync(
+        "pnpm",
+        ["install", "--prod", "--frozen-lockfile", "--offline"],
+        { cwd: runtime }
+      );
+
+      const port = await availablePort();
+      const service = spawn("pnpm", ["start"], {
+        cwd: runtime,
+        env: {
+          ...process.env,
+          HOST: "127.0.0.1",
+          PORT: String(port),
+          BASE_PATH: "/phase1",
+        },
+        stdio: "ignore",
+      });
+      try {
+        await expect(
+          waitForJson(`http://127.0.0.1:${port}/phase1/healthz`)
+        ).resolves.toEqual({ status: "ok" });
+        const cards = await waitForJson(
+          `http://127.0.0.1:${port}/phase1/api/cards`
+        ) as Array<{ reference: string }>;
+        expect(cards.map((card) => card.reference)).toContain("docs.access-request");
+      } finally {
+        service.kill("SIGTERM");
+        await new Promise<void>((resolve) => {
+          service.once("close", () => resolve());
+          setTimeout(resolve, 2_000);
+        });
+      }
     } finally {
       await rm(output, { recursive: true, force: true });
     }
-  }, 20_000);
+  }, 40_000);
 });

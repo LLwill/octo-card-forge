@@ -160,6 +160,24 @@ Card Catalog + Artifact
 Artifact/Handoff → 业务后端现有接入链路 → octo-server
 ```
 
+`workspace-packages.json` 是 Phase 1 起生效的机器可执行 allowlist。下表中的“允许依赖”指
+左侧包可以声明的内部 runtime dependency：
+
+| 包 | 允许依赖 |
+| --- | --- |
+| `card-spec` | 无 |
+| `core` | `card-spec` |
+| `workspace` | `card-spec` |
+| `profile-octo-chat` | `card-spec` |
+| `artifact` | `card-spec`、`core` |
+| `catalog-snapshot` | `card-spec`、`artifact` |
+| `forge-web` | `catalog-snapshot`、`profile-octo-chat` |
+| `testkit` | 无；只提供无业务依赖的 fixture/helper，业务包仅可通过 devDependency 使用 |
+| 根 legacy `cli` | `card-spec`、`core`、`workspace`、`artifact`；Profile 仅允许 optional peer |
+
+`packages/cli` 在 Phase 1 只是迁移目标目录；发布中的 `@mlt-org/octo-card-cli` 仍位于根目录，
+任何新 workspace 包不得反向依赖根 legacy 包。
+
 约束：
 
 1. `card-spec` 不依赖业务模块。
@@ -169,6 +187,7 @@ Artifact/Handoff → 业务后端现有接入链路 → octo-server
 5. `forge-web` 不直接扫描 Card 目录。
 6. `actions` 只编排 CLI/Package，不复制业务逻辑。
 7. `octo-web`、`octo-server` 和业务后端不进入 Forge workspace。
+8. `scripts/check-workspace-dependencies.mjs` 必须拒绝白名单外依赖、反向依赖和 runtime 循环。
 
 ## 7. Card 生命周期映射
 

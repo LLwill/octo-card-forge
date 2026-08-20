@@ -29,7 +29,9 @@
   },
   "scripts": {
     "prebuild": "node scripts/clean-build-output.mjs",
-    "build": "tsc -p tsconfig.build.json",
+    "build": "pnpm run workspace:check && pnpm run build:legacy && pnpm run build:packages",
+    "build:legacy": "tsc -p tsconfig.build.json",
+    "build:packages": "pnpm --recursive --filter './packages/**' --filter './apps/**' --if-present run build",
     "package:deploy": "pnpm build && node scripts/package-deploy.mjs",
     "skill:pack": "node scripts/package-skill.mjs",
     "start": "node scripts/start-service.mjs",
@@ -40,8 +42,13 @@
     "prepare:agent-validation": "node scripts/create-agent-validation-workspace.mjs",
     "smoke:repo-free-agent": "node scripts/smoke-repo-free-agent.mjs",
     "smoke:published-consumer": "node scripts/smoke-published-consumer.mjs",
-    "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "test": "pnpm run workspace:check && pnpm run test:legacy && pnpm run test:packages",
+    "test:legacy": "vitest run --config vitest.legacy.config.ts",
+    "test:packages": "pnpm --recursive --filter './packages/**' --filter './apps/**' --if-present run test",
+    "typecheck": "pnpm run workspace:check && pnpm run typecheck:legacy && pnpm run typecheck:packages",
+    "typecheck:legacy": "tsc --noEmit",
+    "typecheck:packages": "pnpm --recursive --filter './packages/**' --filter './apps/**' --if-present run typecheck",
+    "workspace:check": "node scripts/check-workspace-dependencies.mjs"
   },
   "dependencies": {
     "adaptive-expressions": "4.23.3",

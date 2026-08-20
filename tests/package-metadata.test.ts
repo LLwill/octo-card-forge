@@ -20,7 +20,16 @@ describe("CLI package metadata", () => {
     expect(manifest.files).not.toContain("cards");
     expect(manifest.files).not.toContain("render-profiles");
     expect(manifest.scripts?.prebuild).toBe("node scripts/clean-build-output.mjs");
-    expect(manifest.scripts?.build).toBe("tsc -p tsconfig.build.json");
+    expect(manifest.scripts?.build).toBe(
+      "pnpm run workspace:check && pnpm run build:legacy && pnpm run build:packages"
+    );
+    expect(manifest.scripts?.["build:legacy"]).toBe("tsc -p tsconfig.build.json");
+    expect(manifest.scripts?.["workspace:check"]).toBe(
+      "node scripts/check-workspace-dependencies.mjs"
+    );
+    expect(manifest.scripts?.["test:legacy"]).toBe(
+      "vitest run --config vitest.legacy.config.ts"
+    );
     expect(manifest.scripts?.["prepare:agent-validation"]).toBe(
       "node scripts/create-agent-validation-workspace.mjs"
     );
