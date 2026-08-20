@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import pathModule from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { assertCardManifest as assertLegacyCardManifest } from "../src/registry.js";
 import {
   decodeCardSourceManifest,
   decodeCardArtifactV1,
@@ -32,7 +33,9 @@ describe("card-spec source manifest decoder", () => {
     ];
 
     for (const path of paths) {
-      const result = decodeCardSourceManifest(await readJson(path));
+      const input = await readJson(path);
+      assertLegacyCardManifest(input as never, path);
+      const result = decodeCardSourceManifest(input);
       expect(result.ok, path).toBe(true);
       if (result.ok) expect(result.value.id).toContain(".");
     }
