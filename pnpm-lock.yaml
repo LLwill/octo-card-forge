@@ -50,6 +50,15 @@ importers:
       '@mlt-org/octo-card-spec':
         specifier: workspace:*
         version: link:../card-spec
+      adaptivecards-templating:
+        specifier: 2.3.1
+        version: 2.3.1(adaptive-expressions@4.23.3)
+      ajv:
+        specifier: 8.17.1
+        version: 8.17.1
+      ajv-formats:
+        specifier: 3.0.1
+        version: 3.0.1(ajv@8.17.1)
 
   packages/profile-octo-chat: {}
 

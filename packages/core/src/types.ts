@@ -2,6 +2,8 @@ import type {
   CardManifest as CardSourceManifest,
   JsonObject as ContractJsonObject,
   RenderCapabilitiesV1,
+  RenderProfileManifestV1,
+  ResolvedCardSourceV1,
   WireProfile as ContractWireProfile,
 } from "@mlt-org/octo-card-spec";
 
@@ -16,6 +18,9 @@ export type WireProfile = ContractWireProfile;
 
 /** Recursive JSON object used by contract definitions and fallback values. */
 export type ContractObject = ContractJsonObject;
+
+/** Resolved, path-free Card Source consumed by the pure engine. */
+export type ResolvedCardSource = ResolvedCardSourceV1;
 
 export interface RenderComponentVariant {
   fallback?: JsonObject;
@@ -93,3 +98,27 @@ export interface ValidationIssue {
   path: string;
   message: string;
 }
+
+export interface RenderProfileInput {
+  capabilities: RenderCapabilities;
+  reference?: string;
+  manifest?: Pick<RenderProfileManifestV1, "id" | "version">;
+}
+
+export interface CompileResult {
+  cardId: string;
+  cardVersion: string;
+  contractVersion: string;
+  renderProfile: string;
+  wireProfile: WireProfile;
+  view: string;
+  payload: JsonObject;
+  inspection: CardInspection;
+  issues: ValidationIssue[];
+}
+
+export type CompileCardSourceOptions = {
+  view: string;
+  data: JsonObject;
+  profile: RenderProfileInput;
+} & ({ card: ResolvedCardSource } | { source: ResolvedCardSource });

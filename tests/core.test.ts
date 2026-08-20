@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  compileCardSource,
   inspectCard,
   validateCompiledCard,
   type JsonObject,
+  type ResolvedCardSource,
   type RenderCapabilities,
 } from "../packages/core/src/index.js";
 
@@ -26,6 +28,46 @@ const capabilities: RenderCapabilities = {
   imageUrlSchemes: ["https"],
   openUrlSchemes: ["https"],
 };
+
+const source = {
+  formatVersion: 1,
+  card: {
+    id: "demo.card",
+    namespace: "demo",
+    key: "card",
+    name: "Demo Card",
+    version: "1.0.0",
+    contractVersion: "1.0.0",
+    adaptiveCardVersion: "1.5",
+    defaultLocale: "en-US",
+  },
+  dataContract: {
+    type: "object",
+    additionalProperties: false,
+    required: ["title"],
+    properties: { title: { type: "string", minLength: 1 } },
+  },
+  views: {
+    main: {
+      wireProfile: "octo/v2",
+      template: {
+        type: "AdaptiveCard",
+        version: "1.5",
+        body: [{ type: "TextBlock", text: "${title}" }],
+      },
+      samples: [],
+    },
+    legacy: {
+      wireProfile: "octo/v2",
+      template: {
+        type: "AdaptiveCard",
+        version: "1.4",
+        body: [{ type: "TextBlock", text: "${title}" }],
+      },
+      samples: [],
+    },
+  },
+} as unknown as ResolvedCardSource;
 
 describe("pure card core", () => {
   it("inspects inputs, submits, and visibility toggles", () => {
@@ -114,6 +156,59 @@ describe("pure card core", () => {
     };
 
     expect(validateCompiledCard(payload, capabilities, "octo/v2")).toEqual([]);
+  });
+
+  it("compiles a resolved source from objects only", () => {
+    const result = compileCardSource({
+      source,
+      view: "main",
+      data: { title: "Ready" },
+      profile: { reference: "octo-chat@1.2.0", capabilities },
+    });
+
+    expect(result).toMatchObject({
+      cardId: "demo.card",
+      cardVersion: "1.0.0",
+      contractVersion: "1.0.0",
+      renderProfile: "octo-chat@1.2.0",
+      wireProfile: "octo/v2",
+      view: "main",
+      issues: [],
+      payload: {
+        type: "AdaptiveCard",
+        version: "1.5",
+        body: [{ type: "TextBlock", text: "Ready" }],
+      },
+    });
+  });
+
+  it("returns data contract issues without expanding an invalid input", () => {
+    const result = compileCardSource({
+      card: source,
+      view: "main",
+      data: {},
+      profile: { manifest: { id: "octo-chat", version: "1.2.0" }, capabilities },
+    });
+
+    expect(result.payload).toEqual({});
+    expect(result.issues).toEqual([
+      expect.objectContaining({ code: "contract.required", path: "$" }),
+    ]);
+  });
+
+  it("reports a template Adaptive Card version mismatch", () => {
+    const result = compileCardSource({
+      source,
+      view: "legacy",
+      data: { title: "Ready" },
+      profile: { reference: "octo-chat@1.2.0", capabilities },
+    });
+
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "schema.adaptive_card_version" }),
+      ])
+    );
   });
 
   it("reports structural, wire, and interaction violations", () => {

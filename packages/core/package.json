@@ -5,7 +5,10 @@
   "type": "module",
   "description": "Reserved workspace boundary for pure Card compilation and validation.",
   "dependencies": {
-    "@mlt-org/octo-card-spec": "workspace:*"
+    "@mlt-org/octo-card-spec": "workspace:*",
+    "adaptivecards-templating": "2.3.1",
+    "ajv": "8.17.1",
+    "ajv-formats": "3.0.1"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
