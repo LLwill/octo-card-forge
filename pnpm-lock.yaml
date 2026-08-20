@@ -24,6 +24,9 @@ importers:
         specifier: 3.10.1
         version: 3.10.1
     devDependencies:
+      '@mlt-org/octo-card-artifact':
+        specifier: workspace:*
+        version: link:packages/artifact
       '@mlt-org/octo-card-core':
         specifier: workspace:*
         version: link:packages/core
@@ -54,7 +57,14 @@ importers:
 
   apps/forge-web: {}
 
-  packages/artifact: {}
+  packages/artifact:
+    dependencies:
+      '@mlt-org/octo-card-core':
+        specifier: workspace:*
+        version: link:../core
+      '@mlt-org/octo-card-spec':
+        specifier: workspace:*
+        version: link:../card-spec
 
   packages/card-spec: {}
 

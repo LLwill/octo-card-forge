@@ -3,13 +3,18 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Reserved workspace boundary for deterministic Card artifacts.",
+  "description": "Deterministic Card Artifact building, hashing and verification.",
+  "dependencies": {
+    "@mlt-org/octo-card-core": "workspace:*",
+    "@mlt-org/octo-card-spec": "workspace:*"
+  },
   "files": ["dist"],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": "./dist/index.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run --root ../.. --config vitest.legacy.config.ts tests/artifact.test.ts"
   }
 }

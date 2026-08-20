@@ -197,13 +197,21 @@
     "validationIssue": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["code", "path", "message"],
+      "required": ["severity", "code", "path", "message", "details"],
       "properties": {
-        "severity": { "enum": ["error", "warning"] },
+        "severity": { "const": "warning" },
         "code": { "type": "string", "minLength": 1 },
         "path": { "type": "string", "minLength": 1 },
         "message": { "type": "string", "minLength": 1 },
-        "details": { "type": "object" }
+        "details": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["view", "sample"],
+          "properties": {
+            "view": { "type": "string", "minLength": 1 },
+            "sample": { "type": "string", "minLength": 1 }
+          }
+        }
       }
     }
   }

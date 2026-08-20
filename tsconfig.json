@@ -2,6 +2,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
+      "@mlt-org/octo-card-artifact": ["packages/artifact/src/index.ts"],
       "@mlt-org/octo-card-core": ["packages/core/src/index.ts"],
       "@mlt-org/octo-card-spec": ["packages/card-spec/src/index.ts"],
       "@mlt-org/octo-card-workspace": ["packages/workspace/src/index.ts"],

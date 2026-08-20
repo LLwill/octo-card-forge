@@ -1,19 +1,28 @@
 import { issue, type DecodeIssue, type DecodeResult } from "./diagnostics.js";
 import { isJsonObject, isNonEmptyString, type JsonObject } from "./json.js";
-import { parseCardId, parseSemVer, isPinnedRenderProfileReference, type CardId, type CardKey, type Namespace, type PinnedRenderProfileReference, type SemVer } from "./identifiers.js";
+import { parseCardId, parseSemVer, isPinnedRenderProfileReference, type CardId, type PinnedRenderProfileReference, type SemVer } from "./identifiers.js";
 import { decodeCardInspection, type CardInspection } from "./inspection.js";
 import { decodeRenderCapabilities, decodeRenderProfileManifest, type RenderCapabilitiesV1, type RenderProfileManifestV1 } from "./render-profile.js";
 import type { WireProfile } from "./card-source.js";
 
 export const CARD_ARTIFACT_MEDIA_TYPE = "application/vnd.octo.card-artifact+json;version=1" as const;
 
+export interface ArtifactValidationIssue {
+  severity: "warning";
+  code: string;
+  path: string;
+  message: string;
+  details: {
+    view: string;
+    sample: string;
+  };
+}
+
 export interface CardArtifactV1 {
   formatVersion: 1;
   mediaType: typeof CARD_ARTIFACT_MEDIA_TYPE;
   card: {
     id: CardId;
-    namespace: Namespace;
-    key: CardKey;
     name: string;
     version: SemVer;
     contractVersion: SemVer;
@@ -33,7 +42,7 @@ export interface CardArtifactV1 {
     template: JsonObject;
     samples: Array<{ name: string; data: JsonObject; card: JsonObject; inspection: CardInspection }>;
   }>;
-  validation: { valid: true; issues: DecodeIssue[] };
+  validation: { valid: true; issues: ArtifactValidationIssue[] };
 }
 
 const VOLATILE_TOP_LEVEL_FIELDS = new Set(["generatedAt", "generatedBy", "repository", "commit", "pullRequestUrl", "environment", "absolutePath", "sourcePath"]);
@@ -42,7 +51,9 @@ const CARD_KEYS = new Set(["id", "name", "version", "contractVersion", "adaptive
 const PROFILE_KEYS = new Set(["reference", "manifest", "capabilities"]);
 const VIEW_KEYS = new Set(["wireProfile", "states", "submit_actions", "template", "samples"]);
 const SAMPLE_KEYS = new Set(["name", "data", "card", "inspection"]);
-const VALIDATION_KEYS = new Set(["severity", "code", "path", "message", "details"]);
+const VALIDATION_KEYS = new Set(["valid", "issues"]);
+const VALIDATION_ISSUE_KEYS = new Set(["severity", "code", "path", "message", "details"]);
+const VALIDATION_DETAILS_KEYS = new Set(["view", "sample"]);
 const ADAPTIVE_CARD_VERSION = /^\d+\.\d+$/;
 
 function escapePointer(value: string): string {
@@ -55,19 +66,36 @@ function unknownKeys(value: JsonObject, allowed: Set<string>, path: string, issu
   }
 }
 
-function validateIssue(value: unknown, path: string, issues: DecodeIssue[]): DecodeIssue | undefined {
+function validateIssue(value: unknown, path: string, issues: DecodeIssue[]): ArtifactValidationIssue | undefined {
   if (!isJsonObject(value)) {
-    issues.push(issue("contract.type", path, "validation issue must contain code, path and message"));
+    issues.push(issue("contract.type", path, "validation issue must be a warning with view and sample details"));
     return undefined;
   }
-  unknownKeys(value, VALIDATION_KEYS, path, issues);
+  unknownKeys(value, VALIDATION_ISSUE_KEYS, path, issues);
+  if (value.severity !== "warning") {
+    issues.push(issue("contract.invariant", `${path}/severity`, "valid artifacts may contain warnings but never errors"));
+  }
   if (!isNonEmptyString(value.code) || !isNonEmptyString(value.path) || !isNonEmptyString(value.message)) {
-    issues.push(issue("contract.type", path, "validation issue must contain code, path and message"));
+    issues.push(issue("contract.type", path, "validation issue must contain severity, code, path, message and details"));
     return undefined;
   }
-  if (value.severity !== undefined && value.severity !== "error" && value.severity !== "warning") issues.push(issue("contract.enum", `${path}/severity`, "severity must be error or warning"));
-  if (value.details !== undefined && !isJsonObject(value.details)) issues.push(issue("contract.type", `${path}/details`, "details must be an object"));
-  return value as unknown as DecodeIssue;
+  if (!isJsonObject(value.details)) {
+    issues.push(issue("contract.type", `${path}/details`, "details must identify the view and sample"));
+    return undefined;
+  }
+  unknownKeys(value.details, VALIDATION_DETAILS_KEYS, `${path}/details`, issues);
+  if (!isNonEmptyString(value.details.view) || !isNonEmptyString(value.details.sample)) {
+    issues.push(issue("contract.type", `${path}/details`, "details must identify the view and sample"));
+    return undefined;
+  }
+  if (value.severity !== "warning") return undefined;
+  return {
+    severity: "warning",
+    code: value.code,
+    path: value.path,
+    message: value.message,
+    details: { view: value.details.view, sample: value.details.sample },
+  };
 }
 
 export function decodeCardArtifactV1(input: unknown): DecodeResult<CardArtifactV1> {
@@ -93,7 +121,7 @@ export function decodeCardArtifactV1(input: unknown): DecodeResult<CardArtifactV
     for (const key of ["name", "defaultLocale"]) if (!isNonEmptyString(rawCard[key])) issues.push(issue("contract.required", `/card/${key}`, `${key} is required`));
     if (!isNonEmptyString(rawCard.adaptiveCardVersion) || !ADAPTIVE_CARD_VERSION.test(rawCard.adaptiveCardVersion)) issues.push(issue("contract.pattern", "/card/adaptiveCardVersion", "card.adaptiveCardVersion must use <major>.<minor>"));
     if (parsedId && version && contractVersion && isNonEmptyString(rawCard.name) && isNonEmptyString(rawCard.adaptiveCardVersion) && ADAPTIVE_CARD_VERSION.test(rawCard.adaptiveCardVersion) && isNonEmptyString(rawCard.defaultLocale)) {
-      card = { id: parsedId.value, namespace: parsedId.namespace, key: parsedId.key, name: rawCard.name, version, contractVersion, adaptiveCardVersion: rawCard.adaptiveCardVersion, defaultLocale: rawCard.defaultLocale };
+      card = { id: parsedId.value, name: rawCard.name, version, contractVersion, adaptiveCardVersion: rawCard.adaptiveCardVersion, defaultLocale: rawCard.defaultLocale };
     }
   }
 
@@ -165,8 +193,9 @@ export function decodeCardArtifactV1(input: unknown): DecodeResult<CardArtifactV
   const rawValidation = input.validation;
   let validation: CardArtifactV1["validation"] | undefined;
   if (!isJsonObject(rawValidation) || rawValidation.valid !== true || !Array.isArray(rawValidation.issues)) {
-    issues.push(issue("contract.invariant", "/validation", "artifact validation must be { valid: true, issues: [] }"));
+    issues.push(issue("contract.invariant", "/validation", "artifact validation must be valid and contain warnings only"));
   } else {
+    unknownKeys(rawValidation, VALIDATION_KEYS, "/validation", issues);
     const validationIssues = rawValidation.issues.flatMap((item, index) => validateIssue(item, `/validation/issues/${index}`, issues) ?? []);
     validation = { valid: true, issues: validationIssues };
   }

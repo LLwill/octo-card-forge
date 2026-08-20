@@ -1,6 +1,6 @@
 # Artifact 模块
 
-> 状态：Artifact v1 Contract 已定义，Builder、digest 和 verify 待实现
+> 状态：Artifact v1 Contract、Builder、canonical bytes、digest 和 verify 已实现；Handoff 迁移待完成
 >
 > 目标代码：`packages/artifact`
 
@@ -10,10 +10,20 @@
 
 ## 当前实现
 
-- `packages/card-spec` 已定义 `CardArtifactV1`、Decoder、media type 和 volatile field 约束；
-- `CatalogSnapshotV1` 的 Artifact 引用已约束 SHA-256 字符串格式；Artifact canonical bytes 和 digest 算法尚未定义；
-- `packages/artifact` 当前仍为空壳；
+- `packages/card-spec` 已定义 `CardArtifactV1`、Decoder、JSON Schema、media type 和 volatile field 约束；
+- `packages/artifact` 已实现纯对象输入的 build、canonical bytes、SHA-256 和 verify；
+- Builder 使用 Core 编译每个 view/sample，拒绝任何 error，并在 Artifact 中保留带 view/sample 来源的 warning；
+- Profile 必须使用与 manifest 一致的精确版本引用；
+- verify 可直接验证对象、JSON 字符串或 UTF-8 bytes，不依赖 Workspace、Git 或 Profile 文件；
 - 现有 Handoff 是 legacy 实现，尚未由 Artifact 派生。
+
+## Canonical bytes
+
+- 对象 key 递归按确定性的字符串顺序排列；
+- 数组顺序保留，Builder 在写入 Artifact 前按 sample name 排序；
+- 使用无缩进、无尾随换行的紧凑 JSON；
+- 编码固定为 UTF-8；
+- digest 是 canonical bytes 的小写 64 位 SHA-256 hex。
 
 ## 目标职责
 

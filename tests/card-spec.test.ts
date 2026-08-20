@@ -259,7 +259,51 @@ describe("artifact and snapshot contracts", () => {
       validation: { valid: true, issues: [] },
     });
     expect(artifact.ok).toBe(true);
+    if (artifact.ok) {
+      expect(artifact.value.card).not.toHaveProperty("namespace");
+      expect(artifact.value.card).not.toHaveProperty("key");
+    }
     expect(decodeCardArtifactV1({ formatVersion: 1, mediaType: "application/vnd.octo.handoff+zip;version=1" }).ok).toBe(false);
+  });
+
+  it("allows validation warnings but rejects errors in valid artifacts", () => {
+    const base = {
+      formatVersion: 1,
+      mediaType: CARD_ARTIFACT_MEDIA_TYPE,
+      card: {
+        id: "docs.access-request",
+        name: "Access",
+        version: "0.3.0",
+        contractVersion: "1.0.0",
+        adaptiveCardVersion: "1.5",
+        defaultLocale: "en-US",
+      },
+      profile: { reference: "octo-chat@1.2.0", manifest: profileManifest, capabilities: profileCapabilities },
+      dataContract: { type: "object" },
+      views: {
+        result: {
+          wireProfile: "octo/v1",
+          template: { type: "AdaptiveCard", version: "1.5" },
+          samples: [{ name: "approved", data: {}, card: { type: "AdaptiveCard", version: "1.5" }, inspection: { actions: [], inputs: [], toggles: [] } }],
+        },
+      },
+    };
+    const details = { view: "result", sample: "approved" };
+
+    expect(decodeCardArtifactV1({
+      ...base,
+      validation: { valid: true, issues: [{ severity: "warning", code: "test.warning", path: "$", message: "warning", details }] },
+    }).ok).toBe(true);
+    const invalid = decodeCardArtifactV1({
+      ...base,
+      validation: { valid: true, issues: [{ severity: "error", code: "test.error", path: "$", message: "error", details }] },
+    });
+    expect(invalid.ok).toBe(false);
+    if (!invalid.ok) {
+      expect(invalid.issues).toEqual(expect.arrayContaining([
+        expect.objectContaining({ code: "contract.invariant", path: "/validation/issues/0/severity" }),
+      ]));
+    }
   });
 
   it("validates snapshot references, digests and release fields", () => {
