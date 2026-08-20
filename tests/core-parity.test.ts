@@ -3,20 +3,20 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { compileCardSource } from "../packages/core/src/index.js";
 import type { RenderCapabilities as CoreRenderCapabilities, ResolvedCardSource } from "../packages/core/src/index.js";
+import type { JsonObject as ContractJsonObject } from "../packages/card-spec/src/index.js";
 import { compileSampleFromPackage } from "../src/compiler.js";
 import { resolveCardAssetPath, listCards } from "../src/registry.js";
 import { getCurrentRenderProfile } from "../src/registry.js";
-import type { JsonObject } from "../src/types.js";
 
-async function readJson(filePath: string): Promise<JsonObject> {
-  return JSON.parse(await readFile(filePath, "utf8")) as JsonObject;
+async function readJson(filePath: string): Promise<ContractJsonObject> {
+  return JSON.parse(await readFile(filePath, "utf8")) as ContractJsonObject;
 }
 
 async function resolveSource(cardRoot: string): Promise<{ source: ResolvedCardSource; profile: CoreRenderCapabilities; reference: string }> {
   const manifest = await readJson(path.join(cardRoot, "manifest.json"));
   const profile = await getCurrentRenderProfile();
   const views: ResolvedCardSource["views"] = {};
-  for (const [viewName, viewValue] of Object.entries(manifest.views as Record<string, JsonObject>)) {
+  for (const [viewName, viewValue] of Object.entries(manifest.views as Record<string, ContractJsonObject>)) {
     const template = await readJson(resolveCardAssetPath(cardRoot, String(viewValue.template), `views.${viewName}.template`));
     const samples = [];
     for (const samplePath of (viewValue.samples as string[])) {
