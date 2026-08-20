@@ -9,12 +9,12 @@
 | 顺序 | 模块 | 文档 | 当前状态 |
 | ---: | --- | --- | --- |
 | 1 | Card Contract | [`card-contract.md`](./card-contract.md) | Phase 2A 第一版已完成 |
-| 2 | Card Engine | [`card-engine.md`](./card-engine.md) | Phase 2B 进行中 |
-| 3 | Developer Toolkit | [`developer-toolkit.md`](./developer-toolkit.md) | 待细化 |
+| 2 | Card Engine | [`card-engine.md`](./card-engine.md) | Phase 2B facade 已完成 |
+| 3 | Developer Toolkit | [`developer-toolkit.md`](./developer-toolkit.md) | Workspace facade 已完成 |
 | 4 | Render Profile | [`render-profile.md`](./render-profile.md) | 现有能力较多，待收敛 |
 | 5 | Artifact | [`artifact.md`](./artifact.md) | 待设计 v1 |
 | 6 | GitHub Delivery | [`github-delivery.md`](./github-delivery.md) | 待设计 |
-| 7 | Forge Web | [`forge-web.md`](./forge-web.md) | 现有页面待重构 |
+| 7 | Forge Web | [`forge-web.md`](./forge-web.md) | 现有页面待重构，Preview API v1 可接入 |
 
 工程支撑包 `testkit` 不作为业务模块单独讨论。
 

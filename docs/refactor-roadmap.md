@@ -109,11 +109,11 @@ actions/
 - 尚未机械移动根源码；
 - 发布物没有未解释差异。
 
-## 5. Phase 2：Card Contract 与 Card Engine
+## 5. Phase 2：Card Contract、Card Engine 与 Preview 基础
 
 目标：形成唯一数据契约和唯一纯业务逻辑实现。
 
-状态：**Phase 2A/2B 第一版已完成，进入 Workspace facade 收敛（2026-08-20）**。
+状态：**Phase 2A/2B/2C 已完成，进入 Developer Toolkit 收敛（2026-08-20）**。
 
 已落地：
 
@@ -122,7 +122,10 @@ actions/
 - 当前 Profile 已切换到 canonical `schemaVersion: 1`，legacy unversioned compatibility 仍有测试；
 - `packages/core` 提供纯对象 `compileCardSource`、`validateCompiledCard`、`inspectCard`；
 - 当前 Draft 的全部 View/Sample 已完成 legacy/Core 的 payload、issues、inspection parity；
-- 根 CLI 尚未依赖私有 workspace 包，npm 独立安装能力保持不变。
+- Workspace Loader 已将目录解析为无路径 `ResolvedCardSourceV1`；
+- 根 CLI 已通过 `Workspace → Core` facade 编译，npm 入口会 bundle 私有 workspace 代码；
+- Preview API v1 已提供 session、revision、render 和 Profile 资源，旧 `/api/render` 保持兼容；
+- 根 CLI 尚未迁入 `packages/cli`，npm 独立安装能力保持不变。
 
 顺序：
 
@@ -150,13 +153,15 @@ card-spec
 
 当前剩余：
 
-- Workspace Loader 将文件目录解析为 `ResolvedCardSourceV1`；
-- 根 CLI 通过兼容 facade 调用 Core，完成一次真实 CLI parity 后再迁移入口；
-- 删除 legacy `src/validate.ts` / `src/inspect.ts` 前，先确认没有第二套业务规则。
+- 将 Preview Client/渲染适配抽为私有 `packages/preview-kit`；
+- 删除 legacy `src/validate.ts` / `src/inspect.ts` 前，先确认没有第二套业务规则；
+- 将根 CLI 逐步迁入 `packages/cli`，保留 npm 包名和 bin 兼容。
 
 ## 6. Phase 3：Developer Toolkit 与 Render Profile
 
 目标：让本地 Card Workspace 和 Profile 成为稳定的可分发能力。
+
+状态：**Phase 3A Preview API 已完成，3B Toolkit/Profile 收敛待实施。**
 
 工作：
 
@@ -165,6 +170,8 @@ card-spec
 - 将 `octo-chat` Profile 迁入独立 package；
 - CLI 优先消费发布 Profile，Forge 源码只作开发回退；
 - 保留 repo-free 本地开发和 Agent Skill。
+- 抽取 `packages/preview-kit`，供本地 Preview 和 Forge Web 共用；
+- 在 Preview Kit 稳定前，不引入 SSE、热刷新或新的服务端状态。
 
 退出 Gate：
 
@@ -301,5 +308,5 @@ card-spec
 7. Forge Web
 ```
 
-当前下一阶段：**Phase 3A Workspace Loader 与 CLI facade**。先把文件路径限制在 Workspace 层，
-再让根 CLI 通过 `ResolvedCardSourceV1` 调用 Core；Card Source 目录和 npm 发布边界暂不移动。
+当前下一阶段：**Phase 3B Preview Kit 与 CLI package facade**。先稳定 Preview Client 和本地页面
+接入，再迁移 CLI 入口；Card Source 目录和 npm 发布边界暂不移动。

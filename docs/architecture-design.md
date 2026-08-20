@@ -22,6 +22,7 @@
 | [`repo-free-card-authoring-implementation.md`](./repo-free-card-authoring-implementation.md) | 外部 Agent 和开发者的本地 Card Workspace；其中历史阶段编号已废弃 |
 | [`render-profile-integration-rollout.md`](./render-profile-integration-rollout.md) | Render Profile 的独立发布和 Web 消费方式 |
 | [`cli-skill-and-component-system.md`](./cli-skill-and-component-system.md) | CLI、Skill 和组件能力边界 |
+| [`preview-system-design.md`](./preview-system-design.md) | Preview API v1、revision 和页面接入边界 |
 
 历史 Proposal：
 
@@ -321,6 +322,22 @@ Forge Web：
 
 PR 可以部署独立 Preview Snapshot，但不需要引入 Forge 用户系统。
 
+### 11.1 本地 Preview 运行面
+
+当前本地 Server 已提供 Preview API v1，作为现有 Web 页面和未来 `preview-kit` 的适配层：
+
+```text
+Web → /api/preview/v1/session
+Web → /api/preview/v1/render
+Web → /api/preview/v1/profile/*
+```
+
+它复用 Workspace Loader、Core 和 Render Profile，不保存 session。Session 中的 revision 用于
+拒绝页面基于旧 Card/Profile 内容提交的渲染请求。该 API 不等于新的 Forge API 服务，也不改变
+Forge Web 最终只消费 Snapshot/Artifact 的目标。
+
+完整字段、错误码和演进路径见 [`preview-system-design.md`](./preview-system-design.md)。
+
 ## 12. Render Profile 与 octo-web
 
 `octo-chat` Render Profile 源码由 Forge Monorepo 管理，独立发布 npm 包：
@@ -400,7 +417,7 @@ Forge Web 默认只读。CLI 使用开发者现有的 Git/`gh` 凭证，不实�
 - 使用根 `src/` 单 package；
 - 将正式 Card 和版本放在 `cards/`；
 - 通过 `src/registry.ts` 扫描文件；
-- 通过本地 Node HTTP 服务向 `web/` 提供 API；
+- 通过本地 Node HTTP 服务向 `web/` 提供 Catalog API 和 Preview API v1；
 - 将 `cards/` 打进部署包；
 - 使用 TypeScript `adaptivecards-templating` 编译。
 

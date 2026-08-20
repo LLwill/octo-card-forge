@@ -1,6 +1,6 @@
 # Card Engine 模块
 
-> 状态：Phase 2B 第一版已完成，兼容 facade 对账中
+> 状态：Phase 2B 第一版和根 facade 已完成
 >
 > 目标代码：`packages/core`
 
@@ -15,8 +15,9 @@ Card Engine 是唯一的纯编译、校验、Inspection 和能力分析实现。
 `ResolvedCardSourceV1`、ViewModel 和 Profile capabilities，输出统一 `CompileResult`。
 它不读取文件、不访问 HTTP/Git、不依赖环境变量。
 
-旧的 `src/compiler.ts`、`src/validate.ts`、`src/inspect.ts` 仍是根 CLI 的兼容入口；纯对象
-Compile API 已可独立调用，old/new Golden parity 和根 CLI facade 切换仍在收敛。
+旧的 `src/validate.ts`、`src/inspect.ts` 仍保留作兼容入口；根 `src/compiler.ts` 已通过
+`src/core-adapter.ts` 调用 Workspace 和 Core。纯对象 Compile API、根 CLI facade 和 Preview API
+共用同一套编译语义。
 
 ## 目标职责
 
@@ -39,11 +40,11 @@ Compile API 已可独立调用，old/new Golden parity 和根 CLI facade 切换�
 
 - `compileCardSource`、`inspectCard` 和 `validateCompiledCard` 可独立测试；
 - Core 无文件系统、HTTP、Git、环境变量依赖；
-- 根 CLI 旧路径行为保持不变，25 个测试文件、137 个测试通过；
-- Compile 已形成纯对象实现，Validator 仍存在 legacy/new 两份实现，直到 parity gate 完成。
+- 根 CLI 旧路径行为保持不变，现有 parity/packaging/deploy 测试通过；
+- Compile 已形成纯对象实现，旧 Validator/Inspection 文件只有在全部调用迁移后才删除。
 
 ## 下一步
 
-1. 用 Workspace Loader 生成并校验 `ResolvedCardSourceV1`；
-2. 将旧 `src/validate.ts` 与 Core 输出逐样本对账；
-3. 建立兼容 facade，再把根 CLI 的文件加载逻辑留在 Workspace 层。
+1. 把 Preview Client/渲染适配抽为私有 `packages/preview-kit`；
+2. 将旧 Validator/Inspection 调用逐个迁移并删除重复实现；
+3. 将根 CLI 逐步迁入 `packages/cli`，保持发布入口兼容。
