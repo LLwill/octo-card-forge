@@ -45,7 +45,11 @@ importers:
 
   packages/catalog-snapshot: {}
 
-  packages/core: {}
+  packages/core:
+    dependencies:
+      '@mlt-org/octo-card-spec':
+        specifier: workspace:*
+        version: link:../card-spec
 
   packages/profile-octo-chat: {}
 

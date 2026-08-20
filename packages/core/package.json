@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "description": "Reserved workspace boundary for pure Card compilation and validation.",
+  "dependencies": {
+    "@mlt-org/octo-card-spec": "workspace:*"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": "./dist/index.js",
@@ -12,4 +15,3 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   }
 }
-
