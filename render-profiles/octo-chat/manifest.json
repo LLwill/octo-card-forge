@@ -1,4 +1,5 @@
 {
+  "schemaVersion": 1,
   "id": "octo-chat",
   "version": "1.2.0-rc.3",
   "compatibility": "octo-chat/v1",

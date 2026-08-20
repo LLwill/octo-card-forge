@@ -106,13 +106,19 @@ describe("render profile compatibility decoder", () => {
   it("accepts current unversioned profile files only in compatibility mode", async () => {
     const input = await readJson("render-profiles/octo-chat/manifest.json");
     const capabilitiesInput = await readJson("render-profiles/octo-chat/capabilities.json");
-    expect(decodeRenderProfileManifest(input).ok).toBe(false);
-    const result = decodeRenderProfileManifest(input, { allowLegacyUnversioned: true });
+    const legacyInput = { ...(input as Record<string, unknown>) };
+    delete legacyInput.schemaVersion;
+    const legacyCapabilitiesInput = { ...(capabilitiesInput as Record<string, unknown>) };
+    delete legacyCapabilitiesInput.schemaVersion;
+    expect(decodeRenderProfileManifest(input).ok).toBe(true);
+    expect(decodeRenderProfileManifest(legacyInput).ok).toBe(false);
+    const result = decodeRenderProfileManifest(legacyInput, { allowLegacyUnversioned: true });
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.notices).toEqual(expect.arrayContaining([
       expect.objectContaining({ path: "/schemaVersion" }),
     ]));
-    const capabilities = decodeRenderCapabilities(capabilitiesInput, { allowLegacyUnversioned: true });
+    expect(decodeRenderCapabilities(capabilitiesInput).ok).toBe(true);
+    const capabilities = decodeRenderCapabilities(legacyCapabilitiesInput, { allowLegacyUnversioned: true });
     expect(capabilities.ok).toBe(true);
     if (capabilities.ok) expect(capabilities.notices).toEqual(expect.arrayContaining([
       expect.objectContaining({ path: "/schemaVersion" }),
