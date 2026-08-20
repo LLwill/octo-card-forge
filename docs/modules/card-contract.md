@@ -1,6 +1,6 @@
 # Card Contract 模块
 
-> 状态：待第一轮细化
+> 状态：Phase 2A 已完成第一版，后续按兼容矩阵演进
 >
 > 目标代码：`packages/card-spec`
 
@@ -10,8 +10,15 @@
 
 ## 当前实现
 
-类型主要位于 `src/types.ts`，Manifest 校验分散在 `src/registry.ts`、`src/validate.ts` 和
-Profile 相关代码中。
+`packages/card-spec` 已提供无 IO 的 Contract API：
+
+- `CardSourceManifestV2` / `decodeCardSourceManifest`；
+- `RenderProfileManifestV1` / `RenderCapabilitiesV1`，支持 legacy unversioned compatibility mode；
+- `CardArtifactV1` 和 `CatalogSnapshotV1` 的结构与语义 Decoder；
+- RFC 6901 JSON Pointer 诊断、稳定错误码、ID/SemVer/Profile reference 解析；
+- `schemas/*.schema.json` 作为结构约束的公开入口。
+
+根 `src/types.ts` 和 `src/registry.ts` 暂时保留为 legacy facade，未切换根 CLI 的运行时依赖。
 
 ## 目标职责
 
@@ -38,17 +45,16 @@ Profile 相关代码中。
 
 不得依赖其他 Forge 业务模块。
 
-## 初始完成标准
+## 已完成标准
 
-- Schema 与 TypeScript 类型一致；
-- 当前 Manifest 可被兼容 Decoder 读取；
-- 未知版本 fail-close；
-- 所有公开 Schema 有 fixture 和版本策略。
+- 当前 Draft/Release Manifest 可被 Decoder 和 legacy validator 双向对账；
+- 未知版本、未知字段和非法路径 fail-close；
+- Profile canonical v1 与 legacy compatibility 路径均有测试；
+- Artifact/Snapshot 的 canonical media type、digest、reference 和 volatile field 约束已固定。
 
-## 待决问题
+## 后续工作
 
-1. Source Manifest v1 的最小字段；
-2. Card ID 与 Namespace 的语法；
-3. Draft 是否保留语义 version hint；
-4. Artifact 与 Source 的字段边界；
-5. Snapshot 是否引用 Artifact URL 或内嵌摘要。
+1. 增加 Resolved Source v1 的真实 Decoder，供 Core 纯编译使用；
+2. 用 AJV/Schema fixture 做结构 parity，Decoder 负责语义 invariant；
+3. 将 Profile capabilities 的组件/utility 深层结构约束收紧；
+4. 根 CLI 迁移到 workspace package 后再删除 legacy contract facade。
