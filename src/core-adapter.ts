@@ -1,7 +1,6 @@
 import { createHash } from "node:crypto";
 import {
   compileCardSource,
-  type RenderCapabilities as CoreRenderCapabilities,
   type ResolvedCardSource,
 } from "@mlt-org/octo-card-core";
 import { loadResolvedCardSource } from "@mlt-org/octo-card-workspace";
@@ -70,7 +69,7 @@ export function compileLoadedCard(
     data,
     profile: {
       reference: runtime.profile.reference,
-      capabilities: runtime.profile.capabilities as unknown as CoreRenderCapabilities,
+      capabilities: runtime.profile.capabilities,
     },
   }) as CompileResult;
 }

@@ -9,7 +9,7 @@
 | 顺序 | 模块 | 文档 | 当前状态 |
 | ---: | --- | --- | --- |
 | 1 | Card Contract | [`card-contract.md`](./card-contract.md) | Phase 2A 第一版已完成 |
-| 2 | Card Engine | [`card-engine.md`](./card-engine.md) | Core compile path 已完成，Validator/Inspection 单一实现 Gate 未完成 |
+| 2 | Card Engine | [`card-engine.md`](./card-engine.md) | Phase 2 单一实现 Gate 已完成 |
 | 3 | Developer Toolkit | [`developer-toolkit.md`](./developer-toolkit.md) | Workspace、Preview transport 已完成；浏览器适配和 CLI 迁移待实施 |
 | 4 | Render Profile | [`render-profile.md`](./render-profile.md) | 源码能力已存在，package 和 Component Catalog 待迁移 |
 | 5 | Artifact | [`artifact.md`](./artifact.md) | Contract 已定义，Builder 待实现 |

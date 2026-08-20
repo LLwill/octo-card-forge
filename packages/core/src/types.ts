@@ -46,12 +46,14 @@ export interface RenderUtilityDefinition {
 /**
  * Runtime-normalized render capabilities.
  *
- * `schemaVersion` and the scalar limits come from the versioned
- * `@mlt-org/octo-card-spec` Render Profile contract. Component and utility
- * entries are narrowed here because the validator needs their semantics.
+ * The Contract decoder validates `schemaVersion` before values reach Core, so
+ * the runtime shape keeps it optional for legacy facade compatibility.
+ * Component and utility entries are narrowed here because the validator needs
+ * their semantics.
  */
 export interface RenderCapabilities
-  extends Omit<RenderCapabilitiesV1, "components" | "utilities"> {
+  extends Omit<RenderCapabilitiesV1, "schemaVersion" | "components" | "utilities"> {
+  schemaVersion?: 1;
   components?: Record<string, RenderComponentDefinition>;
   utilities?: Record<string, RenderUtilityDefinition>;
 }

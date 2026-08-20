@@ -1,11 +1,16 @@
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { compileCardSource } from "../packages/core/src/index.js";
-import type { RenderCapabilities as CoreRenderCapabilities } from "../packages/core/src/index.js";
+import {
+  compileCardSource,
+  inspectCard as inspectCardCore,
+  validateCompiledCard as validateCompiledCardCore,
+} from "../packages/core/src/index.js";
 import { loadResolvedCardSource } from "../packages/workspace/src/index.js";
 import { compileCardPackage, compileSampleFromPackage } from "../src/compiler.js";
+import { inspectCard as inspectCardFacade } from "../src/inspect.js";
 import { listCards } from "../src/registry.js";
 import { getCurrentRenderProfile } from "../src/registry.js";
+import { validateCompiledCard as validateCompiledCardFacade } from "../src/validate.js";
 
 async function resolveSource(cardRoot: string) {
   const [loaded, profile] = await Promise.all([
@@ -14,12 +19,17 @@ async function resolveSource(cardRoot: string) {
   ]);
   return {
     source: loaded.source,
-    profile: profile.capabilities as unknown as CoreRenderCapabilities,
+    profile: profile.capabilities,
     reference: profile.reference,
   };
 }
 
 describe("compiler facade/Core parity", () => {
+  it("keeps legacy validation and inspection entrypoints as exact Core aliases", () => {
+    expect(validateCompiledCardFacade).toBe(validateCompiledCardCore);
+    expect(inspectCardFacade).toBe(inspectCardCore);
+  });
+
   it("keeps every current draft sample byte-equivalent", async () => {
     const drafts = (await listCards()).filter((card) => card.kind === "draft");
     for (const card of drafts) {

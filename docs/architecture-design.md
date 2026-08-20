@@ -416,6 +416,7 @@ Forge Web 默认只读。CLI 使用开发者现有的 Git/`gh` 凭证，不实�
 
 - 使用 pnpm Monorepo，但根 `src/` 仍承担兼容 CLI/Server 和部分 legacy 实现；
 - `packages/card-spec`、`packages/core`、`packages/workspace` 和 `packages/preview-kit` 已有实际实现，其他目标 package/app 仍有空壳；
+- Core 已是编译、校验、Inspection 和 utility ID 解析的唯一实现，根 `src/` 只保留兼容 facade；
 - 将正式 Card 和版本放在 `cards/`；
 - 通过 `src/registry.ts` 扫描文件；
 - 通过本地 Node HTTP 服务向 `web/` 提供 Catalog API 和 Preview API v1；
@@ -428,7 +429,6 @@ Forge Web 默认只读。CLI 使用开发者现有的 Git/`gh` 凭证，不实�
 目标：
 
 - 完成 CLI/Profile/Artifact/Snapshot/Forge Web 的 package 迁移；
-- 收敛 legacy Validator/Inspection，确保 Core 是唯一业务规则实现；
 - 建立版本化 Component Catalog，并让 Card/Component Preview 共享浏览器渲染适配；
 - 正式 Card 移到 `octo-card-catalog`；
 - Forge Web 只消费 Catalog Snapshot；

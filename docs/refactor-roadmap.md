@@ -39,7 +39,7 @@ Phase 8  逐 Card 迁移与 Legacy 删除
 | --- | --- | --- |
 | Phase 0 | 已完成 | 架构、ADR、Characterization Tests 和 Golden 已建立 |
 | Phase 1 | 已完成 | Monorepo 外壳、依赖检查和兼容构建已建立 |
-| Phase 2 | 收尾中 | Contract、Core、Workspace 编译链路已完成；legacy Validator/Inspection 尚未删除 |
+| Phase 2 | 已完成 | Contract、Core、Workspace 编译链路和单一 Validator/Inspection/utility parser Gate 已完成 |
 | Phase 3 | 进行中 | Preview API、Preview Kit client 和现有 Card 页面接入已完成；Profile package、共享浏览器渲染、组件预览和 CLI 分包待完成 |
 | Phase 4 | 未开始实现 | Artifact Contract 已定义，Builder、digest 和 verify 尚未实现 |
 | Phase 5 | 未开始 | Catalog 仓库和 GitHub Delivery 尚未建立 |
@@ -47,8 +47,8 @@ Phase 8  逐 Card 迁移与 Legacy 删除
 | Phase 7 | 未开始 | 尚未进行真实业务后端交付验证 |
 | Phase 8 | 未开始 | Card Source 尚未迁出 Forge，Legacy 尚未删除 |
 
-阶段状态以退出 Gate 是否满足为准，不能因为目标目录或 Contract 空壳已经建立就标记完成。Phase 2
-收尾后，Phase 3 的 Profile/Preview 工作与 Phase 4 Artifact Builder 可以按各自 Gate 并行推进。
+阶段状态以退出 Gate 是否满足为准，不能因为目标目录或 Contract 空壳已经建立就标记完成。Phase 3
+的 Profile/Preview 工作与 Phase 4 Artifact Builder 现在可以按各自 Gate 并行推进。
 
 ## 3. Phase 0：架构与行为基线
 
@@ -133,7 +133,7 @@ actions/
 
 目标：形成唯一数据契约和唯一纯业务逻辑实现。
 
-状态：**主体实现完成，退出 Gate 收尾中（2026-08-20）**。
+状态：**已完成（2026-08-20）**。
 
 已落地：
 
@@ -145,6 +145,8 @@ actions/
 - Workspace Loader 已将目录解析为无路径 `ResolvedCardSourceV1`；
 - 根 CLI 已通过 `Workspace → Core` facade 编译，npm 入口会 bundle 私有 workspace 代码；
 - Preview API v1 已提供 session、revision、render 和 Profile 资源，旧 `/api/render` 保持兼容；
+- 根 `src/validate.ts`、`src/inspect.ts` 和 `src/utility-id.ts` 已成为 Core 的精确兼容 facade；
+- facade identity、CLI validate、组件基线和 Core parity tests 已覆盖单一实现边界；
 - 根 CLI 尚未迁入 `packages/cli`，npm 独立安装能力保持不变。
 
 顺序：
@@ -171,11 +173,7 @@ card-spec
 - 正式 Card 编译输出无未解释差异；
 - 现有 CLI 输出保持兼容。
 
-当前剩余：
-
-- 将根 CLI 的独立 Adaptive Card 校验改为调用 Core Validator；
-- 将 legacy `src/validate.ts` / `src/inspect.ts` 收敛为兼容 facade；
-- 保留 parity tests，确认没有第二套业务规则后删除重复实现。
+删除兼容 facade 属于 Phase 3E CLI package 迁移，不再是 Phase 2 Gate。
 
 ## 6. Phase 3：Developer Toolkit 与 Render Profile
 
@@ -402,10 +400,9 @@ Phase 3C Gate 只约束 Component Preview 和最终 package 收敛，不是 Arti
 
 当前执行顺序：
 
-1. 完成 Phase 2 Validator/Inspection 单一实现收尾；
-2. Phase 4 Artifact v1 进入主线实现；
-3. Phase 3C Profile Package Foundation 与 Artifact 主线并行推进；
-4. Phase 3D Component Preview 在 Profile Gate 通过后继续并行推进；
-5. Artifact API 稳定后执行 Phase 3E CLI Package Convergence，避免 CLI 迁移后再次重排命令边界。
+1. Phase 4 Artifact v1 进入主线实现；
+2. Phase 3C Profile Package Foundation 与 Artifact 主线并行推进；
+3. Phase 3D Component Preview 在 Profile Gate 通过后继续并行推进；
+4. Artifact API 稳定后执行 Phase 3E CLI Package Convergence，避免 CLI 迁移后再次重排命令边界。
 
 Card Source 目录在 Phase 5 Catalog Gate 通过前不移动。根 CLI 发布入口在 Phase 3E Gate 通过前保持兼容。

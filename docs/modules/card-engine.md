@@ -1,6 +1,6 @@
 # Card Engine 模块
 
-> 状态：Core 第一版和编译 facade 已完成，legacy Validator/Inspection 待收敛
+> 状态：Phase 2 单一实现 Gate 已完成
 >
 > 目标代码：`packages/core`
 
@@ -15,9 +15,9 @@ Card Engine 是唯一的纯编译、校验、Inspection 和能力分析实现。
 `ResolvedCardSourceV1`、ViewModel 和 Profile capabilities，输出统一 `CompileResult`。
 它不读取文件、不访问 HTTP/Git、不依赖环境变量。
 
-旧的 `src/validate.ts`、`src/inspect.ts` 仍保留作兼容入口；根 `src/compiler.ts` 已通过
-`src/core-adapter.ts` 调用 Workspace 和 Core。纯对象 Compile API、根 CLI facade 和 Preview API
-共用同一套编译语义。
+根 `src/validate.ts`、`src/inspect.ts` 和 `src/utility-id.ts` 只保留为 Core 的精确 re-export；根
+`src/compiler.ts` 已通过 `src/core-adapter.ts` 调用 Workspace 和 Core。纯对象 Compile API、根 CLI
+facade 和 Preview API 共用同一套编译、校验和 Inspection 语义。
 
 ## 目标职责
 
@@ -40,11 +40,11 @@ Card Engine 是唯一的纯编译、校验、Inspection 和能力分析实现。
 
 - `compileCardSource`、`inspectCard` 和 `validateCompiledCard` 可独立测试；
 - Core 无文件系统、HTTP、Git、环境变量依赖；
-- 根 CLI 旧路径行为保持不变，现有 parity/packaging/deploy 测试通过；
-- Compile 已形成纯对象实现，旧 Validator/Inspection 文件只有在全部调用迁移后才删除。
+- 根 CLI 旧路径行为保持不变，parity、CLI validate、build 和 npm pack 检查通过；
+- Validator、Inspection 和 utility ID parser 只有一份业务实现；
+- facade identity tests 防止根入口重新引入重复规则。
 
 ## 下一步
 
-1. 将根 CLI 的独立 Adaptive Card 校验切换到 Core Validator；
-2. 将旧 Validator/Inspection 调用逐个迁移为兼容 facade；
-3. 保留 parity tests，在确认无第二套规则后删除重复实现。
+1. Phase 3E 迁移根 CLI package 时删除不再需要的 facade 文件；
+2. 在此之前保持旧 import path 和 npm bin 行为兼容。
