@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { assertCardManifest as assertLegacyCardManifest } from "../src/registry.js";
 import {
   decodeCardSourceManifest,
+  decodeResolvedCardSourceV1,
   decodeCardArtifactV1,
   decodeCatalogSnapshotV1,
   CARD_ARTIFACT_MEDIA_TYPE,
@@ -261,5 +262,61 @@ describe("artifact and snapshot contracts", () => {
       }],
     });
     expect(invalid.ok).toBe(false);
+  });
+});
+
+describe("resolved source contract", () => {
+  it("accepts a path-free source for the pure engine", () => {
+    const result = decodeResolvedCardSourceV1({
+      formatVersion: 1,
+      card: {
+        id: "docs.access-request",
+        namespace: "docs",
+        key: "access-request",
+        name: "Access",
+        version: "0.3.0",
+        contractVersion: "1.0.0",
+        adaptiveCardVersion: "1.5",
+        defaultLocale: "en-US",
+      },
+      dataContract: { type: "object" },
+      views: {
+        result: {
+          wireProfile: "octo/v1",
+          template: { type: "AdaptiveCard", version: "1.5" },
+          samples: [{ name: "approved", data: { status: "approved" } }],
+        },
+      },
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it("rejects source path leakage and mismatched identity", () => {
+    const result = decodeResolvedCardSourceV1({
+      formatVersion: 1,
+      card: {
+        id: "docs.access-request",
+        namespace: "wrong",
+        key: "access-request",
+        name: "Access",
+        version: "0.3.0",
+        contractVersion: "1.0.0",
+        adaptiveCardVersion: "1.5",
+        defaultLocale: "en-US",
+        root: "/tmp/card",
+      },
+      dataContract: { type: "object" },
+      views: {
+        result: {
+          wireProfile: "octo/v1",
+          template: { type: "AdaptiveCard", version: "1.5" },
+          samples: [{ name: "approved", data: { status: "approved" } }],
+        },
+      },
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "contract.invariant", path: "/card/namespace" }),
+    ]));
   });
 });
