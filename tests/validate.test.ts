@@ -82,6 +82,23 @@ const capabilities: RenderCapabilities = {
 };
 
 describe("render and wire profile validation", () => {
+  it("rejects a TextBlock without its required text property", () => {
+    const payload: JsonObject = {
+      type: "AdaptiveCard",
+      version: "1.5",
+      body: [{ type: "TextBlock", wrap: true }],
+    };
+
+    expect(validateCompiledCard(payload, capabilities, "octo/v2")).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "schema.required_property",
+          path: "$.body[0].text",
+        }),
+      ])
+    );
+  });
+
   it("detects unsupported elements and actions", () => {
     const payload: JsonObject = {
       type: "AdaptiveCard",

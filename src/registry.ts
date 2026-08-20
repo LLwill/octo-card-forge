@@ -72,6 +72,7 @@ export function assertCardManifest(value: CardManifest, filePath: string): void 
   if (!value.views || Object.keys(value.views).length === 0) {
     throw new Error(`${filePath}: at least one view is required`);
   }
+  const sampleOwners = new Map<string, string>();
   for (const [viewName, view] of Object.entries(value.views)) {
     if (view.wireProfile !== "octo/v1" && view.wireProfile !== "octo/v2") {
       throw new Error(`${filePath}: view ${viewName} has an invalid wireProfile`);
@@ -85,6 +86,16 @@ export function assertCardManifest(value: CardManifest, filePath: string): void 
       (!Array.isArray(view.submit_actions) ||
         view.submit_actions.some((action) => typeof action !== "string" || action.length === 0))) {
       throw new Error(`${filePath}: view ${viewName} submit_actions must be a string array`);
+    }
+    for (const sample of view.samples) {
+      const sampleName = path.basename(sample, path.extname(sample));
+      const owner = sampleOwners.get(sampleName);
+      if (owner) {
+        throw new Error(
+          `${filePath}: sample name ${sampleName} must be unique across views (${owner}, ${viewName})`
+        );
+      }
+      sampleOwners.set(sampleName, viewName);
     }
   }
 }
@@ -184,9 +195,10 @@ export async function listCards(): Promise<CardPackage[]> {
     const root = path.join(cardsRoot, entry.name);
     const draft = await loadCardPackage(root);
     const manifest = draft.manifest;
-    if (isCurrentRenderProfile(manifest)) {
-      cards.push(draft);
-    }
+    // The root package is the current editable source and must remain
+    // discoverable. Drafts normally follow @latest; check/compile surfaces an
+    // explicit profile error instead of silently removing a stale draft.
+    cards.push(draft);
 
     const versionsRoot = path.join(root, "versions");
     let versions: import("node:fs").Dirent[] = [];
@@ -218,6 +230,7 @@ export async function listCards(): Promise<CardPackage[]> {
   }
   return cards.sort((a, b) =>
     a.manifest.id.localeCompare(b.manifest.id) ||
+    (a.kind === b.kind ? 0 : a.kind === "draft" ? -1 : 1) ||
     a.manifest.version.localeCompare(b.manifest.version, undefined, {
       numeric: true,
     })
@@ -229,7 +242,7 @@ export async function getCard(cardId: string): Promise<CardPackage> {
   const card = cards.find((item) => item.reference === cardId);
   if (!card) {
     throw new Error(
-      `Unknown current card: ${cardId} (historical packages are rendered from artifacts, not this workspace)`
+      `Unknown card reference: ${cardId} (historical packages are rendered from artifacts, not this workspace)`
     );
   }
   return card;

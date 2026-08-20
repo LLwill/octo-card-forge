@@ -74,7 +74,7 @@ function usage(): void {
   console.log(`octo-card commands:
   init <card-id> --name <name> [--out <dir>] [--preset blank|bot-token|docs-forward] [--view default] [--wire-profile octo/v1|octo/v2] [--render-profile octo-chat@latest] [--format json]
   presets [--format json]
-  list
+  list [--format json]
   discover [query] [--profile octo-chat@latest] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
   explain utility <token> [--profile octo-chat@latest] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
   lint [card-id] [--card <dir>] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
@@ -175,7 +175,9 @@ function printLintText(report: Awaited<ReturnType<typeof lintCardsForAgent>>): v
     console.log(`Utility tokens: ${report.summary.tokens.join(", ")}`);
   }
   for (const card of report.cards) {
-    console.log(`\n${card.cardId}@${card.version}`);
+    console.log(
+      `\n${card.cardId}@${card.version}\t${card.reference}\t${card.kind}\t${card.mutable ? "mutable" : "immutable"}`
+    );
     for (const sample of card.samples) {
       const tokens =
         sample.utilities.tokens.length > 0
@@ -267,14 +269,35 @@ try {
     }
   } else if (command === "list") {
     const cards = await listCards();
-    console.log(
-      cards
-        .map(
-          ({ manifest }) =>
-            `${manifest.id}\t${manifest.version}\tcontract ${manifest.contractVersion}\t${manifest.name}`
+    if (flag("--format") === "json") {
+      console.log(
+        JSON.stringify(
+          {
+            cards: cards.map(({ reference, kind, mutable, manifest }) => ({
+              reference,
+              kind,
+              mutable,
+              id: manifest.id,
+              name: manifest.name,
+              version: manifest.version,
+              contractVersion: manifest.contractVersion,
+              renderProfile: manifest.renderProfile,
+            })),
+          },
+          null,
+          2
         )
-        .join("\n")
-    );
+      );
+    } else {
+      console.log(
+        cards
+          .map(
+            ({ reference, kind, mutable, manifest }) =>
+              `${manifest.id}\t${manifest.version}\tcontract ${manifest.contractVersion}\t${manifest.name}\t${reference}\t${kind}\t${mutable ? "mutable" : "immutable"}`
+          )
+          .join("\n")
+      );
+    }
   } else if (command === "discover") {
     const query = positional(0);
     const profileSource = await loadExplicitProfileSource();
@@ -553,7 +576,9 @@ try {
       console.log(JSON.stringify(report, null, 2));
     } else {
       for (const card of report.cards) {
-        console.log(`${card.cardId}@${card.version}`);
+        console.log(
+          `${card.cardId}@${card.version}\t${card.reference}\t${card.kind}\t${card.mutable ? "mutable" : "immutable"}`
+        );
         for (const sample of card.samples) {
           console.log(
             `  ${sample.valid ? "✓" : "✗"} ${sample.name} (${sample.view}, ${sample.wireProfile})`

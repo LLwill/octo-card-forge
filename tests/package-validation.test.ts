@@ -30,4 +30,37 @@ describe("Card Package asset boundaries", () => {
       await rm(root, { recursive: true, force: true });
     }
   });
+
+  it("rejects sample names that collide across views", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "octo-card-samples-"));
+    try {
+      const cardRoot = path.join(root, "docs-forward");
+      await initCard({
+        cardId: "docs.forward",
+        name: "文档转发",
+        preset: "docs-forward",
+        outputRoot: cardRoot,
+      });
+      const manifestPath = path.join(cardRoot, "manifest.json");
+      const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as {
+        views: Record<string, {
+          wireProfile: "octo/v1" | "octo/v2";
+          template: string;
+          samples: string[];
+        }>;
+      };
+      const existing = Object.values(manifest.views)[0];
+      manifest.views.secondary = {
+        ...existing,
+        samples: ["samples/default.json"],
+      };
+      await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+
+      await expect(loadCardPackage(cardRoot)).rejects.toThrow(
+        "sample name default must be unique across views"
+      );
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
 });

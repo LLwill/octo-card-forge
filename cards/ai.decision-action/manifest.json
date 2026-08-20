@@ -5,7 +5,7 @@
   "version": "0.1.0",
   "contractVersion": "1.0.0",
   "adaptiveCardVersion": "1.5",
-  "renderProfile": "octo-chat@1.1.0",
+  "renderProfile": "octo-chat@latest",
   "defaultLocale": "zh-CN",
   "dataSchema": "contract/data.schema.json",
   "views": {

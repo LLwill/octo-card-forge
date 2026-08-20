@@ -298,6 +298,13 @@ export function validateCompiledCard(
     if (type) {
       nodes++;
       validateElementStructure(value, type, path, error);
+      if (type === "TextBlock" && typeof value.text !== "string") {
+        error(
+          "schema.required_property",
+          `${path}.text`,
+          "TextBlock requires a string text property"
+        );
+      }
       if (type.startsWith(ACTION_PREFIX)) {
         if (!capabilities.allowedActions.includes(type)) {
           error("host.action_unsupported", `${path}.type`, `${type} is not allowed`);

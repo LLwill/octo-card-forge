@@ -471,9 +471,8 @@ async function start() {
   renderCatalog();
   const reference = new URLSearchParams(location.search).get("card");
   if (reference) {
-    const canonicalCard = reference.includes("@")
-      ? cards.find((card) => card.reference === reference)
-      : cardGroups.get(reference)?.latest;
+    const canonicalCard = cards.find((card) => card.reference === reference)
+      ?? (!reference.includes("@") ? cardGroups.get(reference)?.latest : undefined);
     if (canonicalCard) await openCard(canonicalCard.reference, true);
   }
 }

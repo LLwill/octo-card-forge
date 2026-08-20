@@ -1,4 +1,9 @@
-import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import {
+  createServer,
+  type IncomingMessage,
+  type Server,
+  type ServerResponse,
+} from "node:http";
 import path from "node:path";
 import {
   compileCard,
@@ -26,6 +31,14 @@ import type { CardPackage, JsonObject, RenderProfileSource } from "./types.js";
 interface ServerContext {
   card?: CardPackage;
   profile?: RenderProfileSource;
+}
+
+export interface ForgeServerOptions {
+  port?: number;
+  host?: string;
+  cardRoot?: string;
+  profile?: RenderProfileSource;
+  basePath?: string;
 }
 
 export function normalizeBasePath(value = "/"): string {
@@ -396,14 +409,11 @@ async function handleApi(
   return false;
 }
 
-export async function startServer(options: {
-  port?: number;
-  host?: string;
-  cardRoot?: string;
-  profile?: RenderProfileSource;
-  basePath?: string;
-} = {}): Promise<void> {
-  const port = options.port ?? 4318;
+async function prepareForgeServer(options: ForgeServerOptions = {}): Promise<{
+  server: Server;
+  card?: CardPackage;
+  basePath: string;
+}> {
   const host = options.host ?? "127.0.0.1";
   const basePath = normalizeBasePath(options.basePath);
   const card = options.cardRoot ? await loadCardPackage(options.cardRoot) : undefined;
@@ -453,6 +463,19 @@ export async function startServer(options: {
       });
     }
   });
+  return { server, card, basePath };
+}
+
+export async function createForgeServer(
+  options: ForgeServerOptions = {}
+): Promise<Server> {
+  return (await prepareForgeServer(options)).server;
+}
+
+export async function startServer(options: ForgeServerOptions = {}): Promise<void> {
+  const port = options.port ?? 4318;
+  const host = options.host ?? "127.0.0.1";
+  const { server, card, basePath } = await prepareForgeServer(options);
   await new Promise<void>((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, host, () => resolve());

@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
-import { mkdtemp, readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -42,4 +43,48 @@ describe("CLI package contents", () => {
     const dockerfile = await readFile("Dockerfile.ci", "utf8");
     expect(dockerfile).toContain("COPY --chown=octo:octo skills ./skills");
   });
+
+  it("builds the characterized deploy bundle", async () => {
+    const output = await mkdtemp(path.join(os.tmpdir(), "octo-card-deploy-"));
+    try {
+      const { stdout } = await execFileAsync("pnpm", ["package:deploy", output]);
+      const result = JSON.parse(stdout.slice(stdout.indexOf("{"))) as {
+        artifact: string;
+        manifest: string;
+        sha256: string;
+      };
+      const { stdout: listing } = await execFileAsync("tar", [
+        "-tzf",
+        result.artifact,
+      ]);
+      const files = listing.trim().split(/\r?\n/).sort();
+      const manifest = JSON.parse(await readFile(result.manifest, "utf8")) as {
+        entrypoint: string;
+        renderProfile: string;
+        sha256: string;
+      };
+      const actualSha256 = createHash("sha256")
+        .update(await readFile(result.artifact))
+        .digest("hex");
+
+      expect(files).toEqual(
+        expect.arrayContaining([
+          "./deployment-manifest.json",
+          "./dist/server.js",
+          "./scripts/start-service.mjs",
+          "./web/index.html",
+          "./cards/docs.access-request/goldens/pending.card.json",
+          "./skills/octo-design-cards/skill-manifest.json",
+        ])
+      );
+      expect(manifest).toMatchObject({
+        entrypoint: "pnpm start",
+        renderProfile: "octo-chat@1.2.0-rc.3",
+        sha256: actualSha256,
+      });
+      expect(result.sha256).toBe(actualSha256);
+    } finally {
+      await rm(output, { recursive: true, force: true });
+    }
+  }, 20_000);
 });

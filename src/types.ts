@@ -155,8 +155,11 @@ export interface CompileResult {
 export interface CheckReport {
   valid: boolean;
   cards: Array<{
+    reference: string;
     cardId: string;
     version: string;
+    kind: CardPackage["kind"];
+    mutable: boolean;
     samples: Array<{
       name: string;
       view: string;

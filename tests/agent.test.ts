@@ -64,8 +64,24 @@ describe("agent lint", () => {
     expect(report.summary.samples).toBeGreaterThan(0);
     expect(report.summary.errors).toBe(0);
     expect(report.cards[0]).toMatchObject({
+      reference: "docs.access-request",
       cardId: "docs.access-request",
+      kind: "draft",
+      mutable: true,
     });
     expect(report.cards[0].samples[0]).toHaveProperty("utilities");
+  });
+
+  it("keeps draft and release identities distinct when linting the catalog", async () => {
+    const report = await lintCardsForAgent();
+    const references = report.cards.map((card) => card.reference);
+
+    expect(new Set(references).size).toBe(references.length);
+    expect(references).toEqual(
+      expect.arrayContaining([
+        "ai.reasoning-process",
+        "ai.reasoning-process@0.3.1",
+      ])
+    );
   });
 });
