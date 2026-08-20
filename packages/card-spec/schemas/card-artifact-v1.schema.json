@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:octo-card:schema:card-artifact:1",
+  "title": "Octo Card Artifact v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["formatVersion", "mediaType", "card", "profile", "dataContract", "views", "validation"],
+  "properties": {
+    "formatVersion": { "const": 1 },
+    "mediaType": { "const": "application/vnd.octo.card-artifact+json;version=1" },
+    "card": { "type": "object" },
+    "profile": { "type": "object" },
+    "dataContract": { "type": "object" },
+    "views": { "type": "object", "minProperties": 1 },
+    "validation": { "type": "object", "required": ["valid", "issues"], "properties": { "valid": { "const": true }, "issues": { "type": "array" } } }
+  }
+}

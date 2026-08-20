@@ -4,6 +4,10 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   decodeCardSourceManifest,
+  decodeCardArtifactV1,
+  decodeCatalogSnapshotV1,
+  CARD_ARTIFACT_MEDIA_TYPE,
+  CATALOG_SNAPSHOT_MEDIA_TYPE,
   decodeRenderCapabilities,
   decodeRenderProfileManifest,
   isPinnedRenderProfileReference,
@@ -158,5 +162,101 @@ describe("decoder robustness", () => {
       expect(() => decodeCardSourceManifest(input)).not.toThrow();
       expect(decodeCardSourceManifest(input).ok).toBe(false);
     }
+  });
+});
+
+describe("artifact and snapshot contracts", () => {
+  const profileManifest = {
+    schemaVersion: 1,
+    id: "octo-chat",
+    version: "1.2.0",
+    adaptiveCardsSdkVersion: "3.0.6",
+    hostConfig: "host-config.json",
+    stylesheet: "styles.css",
+    capabilities: "capabilities.json",
+  };
+  const profileCapabilities = {
+    schemaVersion: 1,
+    maxAdaptiveCardVersion: "1.5",
+    allowedElements: ["TextBlock"],
+    allowedActions: [],
+    maxNodes: 20,
+    maxDepth: 10,
+    maxPayloadBytes: 10000,
+    imageUrlSchemes: ["https"],
+    openUrlSchemes: ["https"],
+  };
+
+  it("accepts a deterministic artifact and rejects legacy handoff format", () => {
+    const artifact = decodeCardArtifactV1({
+      formatVersion: 1,
+      mediaType: CARD_ARTIFACT_MEDIA_TYPE,
+      card: {
+        id: "docs.access-request",
+        name: "Access",
+        version: "0.3.0",
+        contractVersion: "1.0.0",
+        adaptiveCardVersion: "1.5",
+        defaultLocale: "en-US",
+      },
+      profile: { reference: "octo-chat@1.2.0", manifest: profileManifest, capabilities: profileCapabilities },
+      dataContract: { type: "object" },
+      views: {
+        result: {
+          wireProfile: "octo/v1",
+          template: { type: "AdaptiveCard", version: "1.5" },
+          samples: [{ name: "approved", data: {}, card: { type: "AdaptiveCard", version: "1.5" }, inspection: { actions: [], inputs: [], toggles: [] } }],
+        },
+      },
+      validation: { valid: true, issues: [] },
+    });
+    expect(artifact.ok).toBe(true);
+    expect(decodeCardArtifactV1({ formatVersion: 1, mediaType: "application/vnd.octo.handoff+zip;version=1" }).ok).toBe(false);
+  });
+
+  it("validates snapshot references, digests and release fields", () => {
+    const snapshot = decodeCatalogSnapshotV1({
+      formatVersion: 1,
+      mediaType: CATALOG_SNAPSHOT_MEDIA_TYPE,
+      channel: "release",
+      revision: "abc123",
+      cards: [{
+        id: "docs.access-request",
+        name: "Access",
+        defaultLocale: "en-US",
+        latest: "0.3.0",
+        versions: [{
+          reference: "docs.access-request@0.3.0",
+          version: "0.3.0",
+          contractVersion: "1.0.0",
+          renderProfile: "octo-chat@1.2.0",
+          artifact: { url: "https://example.test/artifact.json", sha256: "a".repeat(64), mediaType: CARD_ARTIFACT_MEDIA_TYPE },
+          source: { repository: "octo-card-catalog", commit: "abc123", path: "cards/docs.access-request" },
+          release: { tag: "docs.access-request-v0.3.0", url: "https://example.test/release" },
+        }],
+      }],
+    });
+    expect(snapshot.ok).toBe(true);
+    const invalid = decodeCatalogSnapshotV1({
+      formatVersion: 1,
+      mediaType: CATALOG_SNAPSHOT_MEDIA_TYPE,
+      channel: "release",
+      revision: "abc123",
+      cards: [{
+        id: "docs.access-request",
+        name: "Access",
+        defaultLocale: "en-US",
+        latest: "0.4.0",
+        versions: [{
+          reference: "other.card@0.3.0",
+          version: "0.3.0",
+          contractVersion: "1.0.0",
+          renderProfile: "octo-chat@latest",
+          artifact: { url: "x", sha256: "bad", mediaType: CARD_ARTIFACT_MEDIA_TYPE },
+          source: { repository: "repo", commit: "abc", path: "cards/x" },
+        }],
+      }],
+    });
+    expect(invalid.ok).toBe(false);
   });
 });
