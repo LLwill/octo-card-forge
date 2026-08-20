@@ -1,6 +1,6 @@
 # Preview System v1 设计
 
-> 状态：Phase 2C 已实现，后续会抽取为共享 Preview Kit
+> 状态：Preview API v1 和 Preview Kit client 已实现，Web 渲染适配待接入
 >
 > 生效日期：2026-08-20
 
@@ -195,9 +195,14 @@ loading session
 建议把 `session`、`render`、`host-config` 和 `styles` 封装在一个小的 Preview Client 中。Client
 只处理 HTTP、revision 和状态，不放入 Card 业务规则。
 
-未来抽出的 `packages/preview-kit` 负责：
+当前 `packages/preview-kit` 负责：
 
 - Preview API client；
+- Preview session/render/profile 的共享 TypeScript 契约；
+- HTTP 错误映射、base path 和 revision 透传。
+
+后续在同一个包中增加的浏览器适配负责：
+
 - Profile/HostConfig 注入；
 - Adaptive Cards SDK 初始化；
 - 统一错误、loading 和 stale 状态；
@@ -215,8 +220,8 @@ loading session
 
 下一阶段：
 
-1. 把 Preview Client/渲染适配抽为私有 `packages/preview-kit`；
-2. 在 `apps/forge-web` 中先接 Fixture，再接 `catalog-snapshot.v1`；
+1. 在 `apps/forge-web` 中接入 Preview Kit，先接 Fixture，再接 `catalog-snapshot.v1`；
+2. 增加共享 Adaptive Cards 浏览器适配，避免 Web 自己复制请求状态机；
 3. `apps/local-preview` 复用同一 Preview Kit，但保留本地目录加载和热刷新；
 4. PR Preview 使用 Snapshot/Artifact，而不是在生产 Web 中扫描目录；
 5. 最终移除 Web 对目录型 API 的依赖，保留 Preview API 作为本地开发和 CI 适配层。

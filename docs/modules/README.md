@@ -10,7 +10,7 @@
 | ---: | --- | --- | --- |
 | 1 | Card Contract | [`card-contract.md`](./card-contract.md) | Phase 2A 第一版已完成 |
 | 2 | Card Engine | [`card-engine.md`](./card-engine.md) | Phase 2B facade 已完成 |
-| 3 | Developer Toolkit | [`developer-toolkit.md`](./developer-toolkit.md) | Workspace facade 已完成 |
+| 3 | Developer Toolkit | [`developer-toolkit.md`](./developer-toolkit.md) | Workspace facade、Preview Kit client 已完成 |
 | 4 | Render Profile | [`render-profile.md`](./render-profile.md) | 现有能力较多，待收敛 |
 | 5 | Artifact | [`artifact.md`](./artifact.md) | 待设计 v1 |
 | 6 | GitHub Delivery | [`github-delivery.md`](./github-delivery.md) | 待设计 |

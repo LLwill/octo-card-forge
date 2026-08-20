@@ -1,37 +1,13 @@
+import type {
+  PreviewRenderResponse,
+  PreviewSession,
+} from "@mlt-org/octo-card-preview-kit";
 import type { CompileResult } from "./types.js";
 import type { LoadedCardRuntime } from "./core-adapter.js";
 
+export type { PreviewRenderResponse, PreviewSession } from "@mlt-org/octo-card-preview-kit";
+
 export const PREVIEW_SCHEMA_VERSION = 1;
-
-export interface PreviewSession {
-  schemaVersion: typeof PREVIEW_SCHEMA_VERSION;
-  revision: string;
-  card: {
-    reference: string;
-    id: string;
-    name: string;
-    version: string;
-    mutable: boolean;
-  };
-  renderProfile: {
-    reference: string;
-    source: string;
-    manifest: LoadedCardRuntime["profile"]["manifest"];
-  };
-  views: Array<{
-    name: string;
-    wireProfile: string;
-    states?: string[];
-    submitActions?: string[];
-    samples: string[];
-  }>;
-}
-
-export interface PreviewRenderResponse extends CompileResult {
-  schemaVersion: typeof PREVIEW_SCHEMA_VERSION;
-  revision: string;
-  valid: boolean;
-}
 
 export function buildPreviewSession(runtime: LoadedCardRuntime): PreviewSession {
   return {

@@ -1,6 +1,6 @@
 # Developer Toolkit 模块
 
-> 状态：Workspace facade 已完成，CLI package 迁移待实施
+> 状态：Workspace facade 和 Preview Kit client 已完成，CLI package 迁移待实施
 >
 > 目标代码：`packages/workspace`、`packages/cli`
 
@@ -34,5 +34,6 @@
 
 - `packages/workspace` 已负责目录、Manifest、Template、Sample 和路径安全；
 - 根 `src/core-adapter.ts` 将 Workspace Source、Profile 和 revision 交给 `packages/core`；
+- `packages/preview-kit` 已提供 Preview API client 和共享 session/render 契约；
 - 根 CLI/Server 的发布入口会 bundle 私有 workspace 包，独立 npm 安装不需要这些私有包；
 - `packages/cli` 仍是后续迁移目标，当前根 CLI 继续保持兼容。

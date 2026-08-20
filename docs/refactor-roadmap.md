@@ -153,7 +153,7 @@ card-spec
 
 当前剩余：
 
-- 将 Preview Client/渲染适配抽为私有 `packages/preview-kit`；
+- 将 Preview Kit 的浏览器渲染适配补齐，并接入现有 Web；
 - 删除 legacy `src/validate.ts` / `src/inspect.ts` 前，先确认没有第二套业务规则；
 - 将根 CLI 逐步迁入 `packages/cli`，保留 npm 包名和 bin 兼容。
 
@@ -161,7 +161,7 @@ card-spec
 
 目标：让本地 Card Workspace 和 Profile 成为稳定的可分发能力。
 
-状态：**Phase 3A Preview API 已完成，3B Toolkit/Profile 收敛待实施。**
+状态：**Phase 3A Preview API 和 3B Preview Kit client 已完成，Web 接入待实施。**
 
 工作：
 
@@ -170,7 +170,7 @@ card-spec
 - 将 `octo-chat` Profile 迁入独立 package；
 - CLI 优先消费发布 Profile，Forge 源码只作开发回退；
 - 保留 repo-free 本地开发和 Agent Skill。
-- 抽取 `packages/preview-kit`，供本地 Preview 和 Forge Web 共用；
+- 使用 `packages/preview-kit`，供本地 Preview 和 Forge Web 共用；
 - 在 Preview Kit 稳定前，不引入 SSE、热刷新或新的服务端状态。
 
 退出 Gate：

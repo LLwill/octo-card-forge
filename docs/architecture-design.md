@@ -128,7 +128,7 @@ octo-server → Card JSON       → octo-web
 | --- | --- | --- |
 | Card Contract | `packages/card-spec` | Source、Manifest、Artifact、Snapshot Schema |
 | Card Engine | `packages/core` | 编译、校验、Inspect、能力分析 |
-| Developer Toolkit | `packages/workspace`、`packages/cli` | 本地目录、导入导出、CLI |
+| Developer Toolkit | `packages/workspace`、`packages/preview-kit`、`packages/cli` | 本地目录、Preview client、导入导出、CLI |
 | Render Profile | `packages/profile-octo-chat` | CSS、HostConfig、Capabilities、Tokens |
 | Artifact | `packages/artifact` | 确定性构建、摘要、验证、Handoff |
 | Forge Web | `apps/forge-web`、`packages/catalog-snapshot` | Catalog、Preview、报告和版本展示 |
@@ -324,7 +324,7 @@ PR 可以部署独立 Preview Snapshot，但不需要引入 Forge 用户系统�
 
 ### 11.1 本地 Preview 运行面
 
-当前本地 Server 已提供 Preview API v1，作为现有 Web 页面和未来 `preview-kit` 的适配层：
+当前本地 Server 已提供 Preview API v1，作为现有 Web 页面和 `preview-kit` client 的适配层：
 
 ```text
 Web → /api/preview/v1/session

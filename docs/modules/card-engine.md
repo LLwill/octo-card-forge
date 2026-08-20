@@ -45,6 +45,6 @@ Card Engine 是唯一的纯编译、校验、Inspection 和能力分析实现。
 
 ## 下一步
 
-1. 把 Preview Client/渲染适配抽为私有 `packages/preview-kit`；
+1. 补齐 Preview Kit 的浏览器渲染适配并接入 Web；
 2. 将旧 Validator/Inspection 调用逐个迁移并删除重复实现；
 3. 将根 CLI 逐步迁入 `packages/cli`，保持发布入口兼容。

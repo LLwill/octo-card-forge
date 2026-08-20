@@ -60,6 +60,7 @@
   },
   "devDependencies": {
     "@mlt-org/octo-card-core": "workspace:*",
+    "@mlt-org/octo-card-preview-kit": "workspace:*",
     "@mlt-org/octo-card-spec": "workspace:*",
     "@mlt-org/octo-card-workspace": "workspace:*",
     "@types/node": "24.0.13",

@@ -27,6 +27,9 @@ importers:
       '@mlt-org/octo-card-core':
         specifier: workspace:*
         version: link:packages/core
+      '@mlt-org/octo-card-preview-kit':
+        specifier: workspace:*
+        version: link:packages/preview-kit
       '@mlt-org/octo-card-spec':
         specifier: workspace:*
         version: link:packages/card-spec
@@ -72,6 +75,8 @@ importers:
       '@mlt-org/octo-card-spec':
         specifier: workspace:*
         version: link:../card-spec
+
+  packages/preview-kit: {}
 
   packages/profile-octo-chat: {}
 

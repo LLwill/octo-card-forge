@@ -23,6 +23,13 @@
       "peerDependencies": []
     },
     {
+      "id": "preview-kit",
+      "path": "packages/preview-kit",
+      "name": "@mlt-org/octo-card-preview-kit",
+      "runtimeDependencies": [],
+      "peerDependencies": []
+    },
+    {
       "id": "profile-octo-chat",
       "path": "packages/profile-octo-chat",
       "name": "@mlt-org/octo-card-profile-octo-chat",
@@ -63,7 +70,7 @@
       "name": "@mlt-org/octo-card-cli",
       "legacyRoot": true,
       "migrationTarget": "packages/cli",
-      "runtimeDependencies": ["card-spec", "core", "workspace", "artifact"],
+      "runtimeDependencies": ["card-spec", "core", "workspace", "artifact", "preview-kit"],
       "peerDependencies": ["profile-octo-chat"],
       "optionalPeerDependencies": ["profile-octo-chat"]
     }
