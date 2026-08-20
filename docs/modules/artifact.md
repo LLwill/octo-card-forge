@@ -1,6 +1,6 @@
 # Artifact 模块
 
-> 状态：Artifact v1 Contract、Builder、canonical bytes、digest 和 verify 已实现；Handoff 迁移待完成
+> 状态：Artifact v1 Contract、Builder、canonical bytes、digest、verify 和 Handoff 派生已实现
 >
 > 目标代码：`packages/artifact`
 
@@ -15,7 +15,7 @@
 - Builder 使用 Core 编译每个 view/sample，拒绝任何 error，并在 Artifact 中保留带 view/sample 来源的 warning；
 - Profile 必须使用与 manifest 一致的精确版本引用；
 - verify 可直接验证对象、JSON 字符串或 UTF-8 bytes，不依赖 Workspace、Git 或 Profile 文件；
-- 现有 Handoff 是 legacy 实现，尚未由 Artifact 派生。
+- legacy Handoff JSON/ZIP 已改为从 canonical Artifact 派生，外层适配器只额外负责文件解析和 Profile 资源打包。
 
 ## Canonical bytes
 

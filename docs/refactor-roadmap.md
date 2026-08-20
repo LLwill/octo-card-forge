@@ -265,7 +265,7 @@ Phase 3C Gate 只约束 Component Preview 和最终 package 收敛，不是 Arti
 
 目标：建立与 Git 目录无关的正式发布内容。
 
-状态：**进行中。Artifact Contract、Builder、canonical bytes、digest 和 verify 已完成；Handoff 派生与消费者验证待完成。**
+状态：**进行中。Artifact Contract、Builder、canonical bytes、digest、verify 和 Handoff 派生已完成；业务后端消费者 fixture 待完成。**
 
 工作：
 

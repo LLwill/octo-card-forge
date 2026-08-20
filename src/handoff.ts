@@ -2,10 +2,8 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import JSZip from "jszip";
-import { compileCardPackage } from "./compiler.js";
-import { readJson } from "./fs.js";
-import { getCard, resolveCardAssetPath } from "./registry.js";
-import { loadRenderProfileForReference } from "./profile-source.js";
+import { resolveCardArtifactForCard, type ResolvedCardArtifact } from "./artifact.js";
+import { getCard } from "./registry.js";
 import type { CardInspection, CardPackage, JsonObject, RenderProfileSource } from "./types.js";
 
 /** Keep the persisted interaction report aligned with the strict server decoder. */
@@ -16,58 +14,35 @@ function toServerInteractionReport(inspection: CardInspection): JsonObject {
   };
 }
 
-/** Build a deterministic, self-contained package for manual backend handoff. */
-export async function buildHandoffPackageForCard(
+function handoffFromArtifact(
   card: CardPackage,
-  profileSource?: RenderProfileSource
-): Promise<JsonObject> {
-  const requestedRenderProfile =
-    typeof card.manifest.renderProfile === "string" && card.manifest.renderProfile
-      ? card.manifest.renderProfile
-      : "octo-chat@latest";
-  const profile = await loadRenderProfileForReference(
-    requestedRenderProfile,
-    profileSource
-  );
-  const resolvedRenderProfile = profile.reference;
+  context: ResolvedCardArtifact
+): JsonObject {
   const views: JsonObject = {};
-
-  for (const [viewName, definition] of Object.entries(card.manifest.views)) {
-    const samples = [];
-    let interactionReport: JsonObject | undefined;
-    for (const samplePath of definition.samples) {
-      const name = path.basename(samplePath, path.extname(samplePath));
-      const data = await readJson<JsonObject>(
-        resolveCardAssetPath(card.root, samplePath, `views.${viewName}.samples`)
-      );
-      const result = await compileCardPackage({
-        card,
-        view: viewName,
-        data,
-        profile: profileSource ?? profile,
-      });
-      const errors = result.issues.filter((issue) => issue.severity === "error");
-      if (errors.length > 0) {
-        throw new Error(`Cannot export invalid sample ${name}: ${errors[0].message}`);
-      }
-      samples.push({
-        name,
-        data,
-        card: result.payload,
-        inspection: result.inspection,
-      });
-      interactionReport ??= toServerInteractionReport(result.inspection);
+  for (const [viewName, sourceView] of Object.entries(card.manifest.views)) {
+    const artifactView = context.artifact.views[viewName];
+    if (!artifactView) {
+      throw new Error(`Artifact is missing view ${viewName}`);
     }
-
+    const samplesByName = new Map(
+      artifactView.samples.map((sample) => [sample.name, sample])
+    );
+    const samples = sourceView.samples.map((samplePath) => {
+      const sampleName = path.basename(samplePath, path.extname(samplePath));
+      const sample = samplesByName.get(sampleName);
+      if (!sample) throw new Error(`Artifact is missing sample ${viewName}/${sampleName}`);
+      return sample;
+    });
+    const reportSample = samples[0];
     views[viewName] = {
-      wireProfile: definition.wireProfile,
-      states: definition.states,
-      submit_actions: definition.submit_actions,
-      template: await readJson<JsonObject>(
-        resolveCardAssetPath(card.root, definition.template, `views.${viewName}.template`)
-      ),
+      wireProfile: artifactView.wireProfile,
+      states: artifactView.states,
+      submit_actions: artifactView.submit_actions,
+      template: artifactView.template,
       samples,
-      interactionReport,
+      interactionReport: reportSample
+        ? toServerInteractionReport(reportSample.inspection)
+        : { actions: [], inputs: [] },
     };
   }
 
@@ -76,10 +51,10 @@ export async function buildHandoffPackageForCard(
     generatedBy: "octo-card-forge",
     card: card.manifest,
     renderProfile: {
-      requested: requestedRenderProfile,
-      resolved: resolvedRenderProfile,
-      manifest: profile.manifest,
-      capabilities: profile.capabilities,
+      requested: context.requestedRenderProfile,
+      resolved: context.artifact.profile.reference,
+      manifest: context.artifact.profile.manifest,
+      capabilities: context.artifact.profile.capabilities,
       server: {
         required: true,
         use: "Validate compiled Card JSON against these capabilities before sending or updating messages.",
@@ -89,11 +64,18 @@ export async function buildHandoffPackageForCard(
         use: "Install the Render Profile package and load its hostConfig, theme, stylesheet, tokens and capabilities together.",
       },
     },
-    dataContract: await readJson<JsonObject>(
-      resolveCardAssetPath(card.root, card.manifest.dataSchema, "dataSchema")
-    ),
+    dataContract: context.artifact.dataContract,
     views,
   };
+}
+
+/** Build a deterministic, self-contained package for manual backend handoff. */
+export async function buildHandoffPackageForCard(
+  card: CardPackage,
+  profileSource?: RenderProfileSource
+): Promise<JsonObject> {
+  const context = await resolveCardArtifactForCard(card, profileSource);
+  return handoffFromArtifact(card, context);
 }
 
 export async function buildHandoffPackage(cardId: string): Promise<JsonObject> {
@@ -108,7 +90,8 @@ export async function buildHandoffArchiveForCard(
   card: CardPackage,
   profileSource?: RenderProfileSource
 ): Promise<{ buffer: Buffer; fileName: string }> {
-  const handoff = await buildHandoffPackageForCard(card, profileSource);
+  const context = await resolveCardArtifactForCard(card, profileSource);
+  const handoff = handoffFromArtifact(card, context);
   const manifest = handoff.card as JsonObject;
   const packageName = `${String(manifest.id)}@${String(manifest.version)}`;
   const zip = new JSZip();
@@ -121,8 +104,7 @@ export async function buildHandoffArchiveForCard(
   const resolvedRenderProfile = String(
     (handoff.renderProfile as JsonObject).resolved
   );
-  const renderProfile =
-    profileSource ?? await loadRenderProfileForReference(resolvedRenderProfile);
+  const renderProfile = context.profile;
   const profileManifestContent = json(
     (handoff.renderProfile as JsonObject).manifest
   );
