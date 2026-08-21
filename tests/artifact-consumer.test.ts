@@ -1,10 +1,9 @@
 import { execFile } from "node:child_process";
-import { existsSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
-import { beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   artifactSha256,
   verifyCardArtifact,
@@ -12,29 +11,22 @@ import {
 } from "@mlt-org/octo-card-artifact";
 
 const execFileAsync = promisify(execFile);
-const cliPath = path.resolve("dist/cli.js");
+const cliEntry = path.resolve("src/cli.ts");
+
+function node(args: string[], opts?: { cwd?: string }) {
+  return execFileAsync(
+    "npx",
+    ["--yes", "tsx", cliEntry, ...args],
+    { cwd: opts?.cwd ?? process.cwd(), timeout: 30000 }
+  );
+}
 
 describe("Artifact consumer fixture (repo-free consumption)", () => {
-  beforeAll(async () => {
-    if (!existsSync(cliPath)) {
-      throw new Error(
-        `dist/cli.js not found at ${cliPath}. Run "pnpm build" before tests.`
-      );
-    }
-  });
-
-  it("built artifact JSON is self-contained: can be parsed, verified, and inspected without Forge source", async () => {
+  it("built artifact JSON is self-contained: parsed, verified, and inspected without Forge source", async () => {
     const tmpDir = await mkdtemp(path.join(os.tmpdir(), "octo-artifact-consumer-"));
     const artifactPath = path.join(tmpDir, "artifact.json");
     try {
-      await execFileAsync("node", [
-        cliPath,
-        "artifact",
-        "build",
-        "ai.decision-action",
-        "--out",
-        artifactPath,
-      ]);
+      await node(["artifact", "build", "ai.decision-action", "--out", artifactPath]);
 
       const raw = await readFile(artifactPath, "utf8");
       const artifact: CardArtifactV1 = JSON.parse(raw);
@@ -72,19 +64,11 @@ describe("Artifact consumer fixture (repo-free consumption)", () => {
     }
   });
 
-  it("verify CLI exits non-zero on tampered artifact with digest mismatch (JSON mode)", async () => {
+  it("verify CLI exits non-zero on tampered artifact (JSON mode)", async () => {
     const tmpDir = await mkdtemp(path.join(os.tmpdir(), "octo-artifact-verify-"));
     const artifactPath = path.join(tmpDir, "artifact.json");
     try {
-      await execFileAsync("node", [
-        cliPath,
-        "artifact",
-        "build",
-        "ai.decision-action",
-        "--out",
-        artifactPath,
-      ]);
-
+      await node(["artifact", "build", "ai.decision-action", "--out", artifactPath]);
       const original: CardArtifactV1 = JSON.parse(await readFile(artifactPath, "utf8"));
       const correctDigest = artifactSha256(original);
 
@@ -95,17 +79,10 @@ describe("Artifact consumer fixture (repo-free consumption)", () => {
       let exitCode = 0;
       let stdout = "";
       try {
-        const result = await execFileAsync("node", [
-          cliPath,
-          "artifact",
-          "verify",
-          tamperedPath,
-          "--sha256",
-          correctDigest,
-          "--format",
-          "json",
+        const r = await node([
+          "artifact", "verify", tamperedPath, "--sha256", correctDigest, "--format", "json",
         ]);
-        stdout = result.stdout;
+        stdout = r.stdout;
       } catch (err: any) {
         exitCode = err.status ?? 1;
         stdout = err.stdout ?? "";
@@ -124,25 +101,12 @@ describe("Artifact consumer fixture (repo-free consumption)", () => {
     const tmpDir = await mkdtemp(path.join(os.tmpdir(), "octo-artifact-verify-ok-"));
     const artifactPath = path.join(tmpDir, "artifact.json");
     try {
-      const { stdout: buildOut } = await execFileAsync("node", [
-        cliPath,
-        "artifact",
-        "build",
-        "ai.decision-action",
-        "--out",
-        artifactPath,
-        "--format",
-        "json",
+      const { stdout: buildOut } = await node([
+        "artifact", "build", "ai.decision-action", "--out", artifactPath, "--format", "json",
       ]);
       const { sha256 } = JSON.parse(buildOut);
-
-      const { stdout } = await execFileAsync("node", [
-        cliPath,
-        "artifact",
-        "verify",
-        artifactPath,
-        "--sha256",
-        sha256,
+      const { stdout } = await node([
+        "artifact", "verify", artifactPath, "--sha256", sha256,
       ]);
       expect(stdout).toContain("✓ Valid artifact");
     } finally {

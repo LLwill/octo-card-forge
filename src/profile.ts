@@ -295,7 +295,7 @@ export async function bundleRenderProfile(
       "./capabilities.json": `./dist/${capabilities}`,
       "./bundle-manifest.json": "./dist/bundle-manifest.json",
     },
-    main: "./dist/bundle-manifest.json",
+    main: "./dist/manifest.json",
   };
   await writeFile(
     path.join(packageRoot, "package.json"),
