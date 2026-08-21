@@ -1,4 +1,4 @@
-import { cp, mkdir, writeFile } from "node:fs/promises";
+import { cp, mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFile } from "node:fs/promises";
@@ -16,6 +16,7 @@ const assets = [
   "styles.css",
 ];
 
+await rm(distRoot, { recursive: true, force: true });
 await mkdir(distRoot, { recursive: true });
 
 for (const asset of assets) {
