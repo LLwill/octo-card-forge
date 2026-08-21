@@ -41,7 +41,7 @@ Phase 8  逐 Card 迁移与 Legacy 删除
 | Phase 1 | 已完成 | Monorepo 外壳、依赖检查和兼容构建已建立 |
 | Phase 2 | 已完成 | Contract、Core、Workspace 编译链路和单一 Validator/Inspection/utility parser Gate 已完成 |
 | Phase 3 | 进行中 | Preview API、Preview Kit client、现有 Card 页面接入和 Profile package foundation 已完成；共享浏览器渲染、组件预览和 CLI 分包待完成 |
-| Phase 4 | 进行中 | Artifact Contract/Builder/digest/verify 已实现，CLI 已暴露 artifact build/verify 命令；业务后端消费 fixture 待完成 |
+| Phase 4 | 已完成 | Artifact Contract/Builder/digest/verify/CLI/Handoff/消费者 fixture/tarball 验证均已完成 |
 | Phase 5 | 未开始 | Catalog 仓库和 GitHub Delivery 尚未建立 |
 | Phase 6 | 未开始实现 | Snapshot Contract 已定义；`apps/forge-web` 仍为空壳，当前改动只发生在 legacy `web/` |
 | Phase 7 | 未开始 | 尚未进行真实业务后端交付验证 |
