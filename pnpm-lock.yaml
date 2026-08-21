@@ -24,9 +24,27 @@ importers:
         specifier: 3.10.1
         version: 3.10.1
     devDependencies:
+      '@mlt-org/octo-card-artifact':
+        specifier: workspace:*
+        version: link:packages/artifact
+      '@mlt-org/octo-card-core':
+        specifier: workspace:*
+        version: link:packages/core
+      '@mlt-org/octo-card-preview-kit':
+        specifier: workspace:*
+        version: link:packages/preview-kit
+      '@mlt-org/octo-card-spec':
+        specifier: workspace:*
+        version: link:packages/card-spec
+      '@mlt-org/octo-card-workspace':
+        specifier: workspace:*
+        version: link:packages/workspace
       '@types/node':
         specifier: 24.0.13
         version: 24.0.13
+      esbuild:
+        specifier: 0.25.12
+        version: 0.25.12
       tsx:
         specifier: 4.20.3
         version: 4.20.3
@@ -36,6 +54,71 @@ importers:
       vitest:
         specifier: 3.2.4
         version: 3.2.4(@types/node@24.0.13)(tsx@4.20.3)
+
+  apps/forge-web: {}
+
+  packages/artifact:
+    dependencies:
+      '@mlt-org/octo-card-core':
+        specifier: workspace:*
+        version: link:../core
+      '@mlt-org/octo-card-spec':
+        specifier: workspace:*
+        version: link:../card-spec
+
+  packages/card-spec: {}
+
+  packages/catalog-snapshot: {}
+
+  packages/cli:
+    dependencies:
+      '@mlt-org/octo-card-artifact':
+        specifier: workspace:*
+        version: link:../artifact
+      '@mlt-org/octo-card-core':
+        specifier: workspace:*
+        version: link:../core
+      '@mlt-org/octo-card-profile-octo-chat':
+        specifier: workspace:*
+        version: link:../profile-octo-chat
+      '@mlt-org/octo-card-spec':
+        specifier: workspace:*
+        version: link:../card-spec
+      '@mlt-org/octo-card-workspace':
+        specifier: workspace:*
+        version: link:../workspace
+
+  packages/core:
+    dependencies:
+      adaptivecards-templating:
+        specifier: 2.3.1
+        version: 2.3.1(adaptive-expressions@4.23.3)
+      ajv:
+        specifier: 8.17.1
+        version: 8.17.1
+      ajv-formats:
+        specifier: 3.0.1
+        version: 3.0.1(ajv@8.17.1)
+    devDependencies:
+      '@mlt-org/octo-card-spec':
+        specifier: workspace:*
+        version: link:../card-spec
+
+  packages/preview-kit: {}
+
+  packages/profile-octo-chat:
+    dependencies:
+      '@mlt-org/octo-card-spec':
+        specifier: workspace:*
+        version: link:../card-spec
+
+  packages/testkit: {}
+
+  packages/workspace:
+    dependencies:
+      '@mlt-org/octo-card-spec':
+        specifier: workspace:*
+        version: link:../card-spec
 
 packages:
 

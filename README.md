@@ -3,8 +3,9 @@
 面向外部 AI Agent 和开发者的 Adaptive Cards 设计、校验、预览和制品发布工具。
 
 当前实现使用 TypeScript `adaptivecards-templating` 驱动本地 Preview、CLI、check 和
-handoff。目标生产架构是同源 Go/WASM Template Renderer：Server 使用原生 Go，Forge
-Preview 使用同源 WASM；该目标仍处于 Proposal 阶段。
+handoff。目标架构是 GitHub-native 的无状态 Card 工具链：平台代码保留在 Forge Monorepo，
+正式 Card Source 迁入独立 Catalog 仓库，GitHub 负责评审和发布编排，Forge 不建设
+数据库、内部账号、API 或 Worker。
 
 当前 MVP 打通：
 
@@ -38,13 +39,29 @@ pnpm dev
 HostConfig，分别展示文字、容器、布局、图片、FactSet、Table、Inputs 和 Actions，
 并提供 320 / 480 / 640 三档宽度，作为 Render Profile 升级前后的视觉回归入口。
 
-已发布 Card Package 保留在 `cards/<card-id>/`；新版本放在
-`cards/<card-id>/versions/<version>/`，不得覆盖原目录。CLI/API 使用
-`<card-id>@<version>` 显式选择新版本，例如：
+当前实现将 Card Package 保留在 `cards/<card-id>/`；新版本放在
+`cards/<card-id>/versions/<version>/`，不得覆盖原目录。根目录是始终可发现的可变 Draft，
+使用 `<card-id>` 选择；版本目录是不可变 Release，使用 `<card-id>@<version>` 选择。例如：
 
 ```bash
 pnpm cli check ai.decision-action@0.2.0
 pnpm cli render docs.access-request@0.3.0 --sample pending
+```
+
+这是迁移前的文件 Registry。目标状态是将正式 Card Source 迁入独立
+`octo-card-catalog` 内容仓库，Forge 只保留平台代码、工具和测试 Fixture。
+
+仓库已经完成 Phase 2 Card Contract / Card Engine，当前并行推进 Phase 3 Developer Toolkit /
+Render Profile 和 Phase 4 Artifact。根 package 暂时继续发布 `@mlt-org/octo-card-cli`；Contract、
+Core、Workspace 和 Preview Kit 已有实际实现，CLI、Profile、Artifact、Snapshot 和目标 Forge Web
+仍按路线渐进迁移。
+`workspace-packages.json` 定义允许的内部依赖方向，执行：
+
+```bash
+pnpm workspace:check
+pnpm typecheck
+pnpm test
+pnpm build
 ```
 
 当前候选 Render Profile 可生成 Web 直接安装的不可变制品：
@@ -70,18 +87,22 @@ pnpm skill:pack .release
 ## 系统边界
 
 - 业务后端负责：领域模型 → Card ViewModel。
-- Card Forge 负责：Template、ViewModel Schema、Samples、Preview、校验和制品发布。
-- 目标 Shared Go Template Renderer 负责：Template + ViewModel + Runtime Binding → 标准 Adaptive Card JSON。
-- Octo Server 负责：真实 Action/Input Runtime Binding、metadata、最终安全校验和发送/更新。
-- Octo Web 负责：标准 JSON + 固定 Render Profile → 最终 UI。
-- 外部 Agent 通过 Skill/CLI 修改 Card Package；平台自身不运行 Agent。
+- Card Forge 负责：Contract、Core、Workspace、CLI、Profile、Artifact 和 Forge Web。
+- Card Catalog 负责：正式 Card Source、PR Review、Release 和 Catalog Snapshot。
+- GitHub 负责：身份、仓库权限、CODEOWNERS、Actions 和 Release。
+- Octo Server 负责：真实 Action/Input Runtime Binding、metadata、最终安全校验和运行实例。
+- Octo Web 负责：标准 JSON + 精确 Render Profile → 最终 UI。
+- 外部 Agent 和开发者通过 Skill/CLI 修改 Card；平台自身不运行 Agent。
 
-当前生产后端仍使用现有 Go Builder；目标 Renderer 不应被理解为已经实现。
+当前生产后端仍使用现有 Go Builder。本轮重构不建设新的生产 Template Renderer。
 
 ## 文档导航
 
-- [`docs/architecture-design.md`](docs/architecture-design.md)：总体架构入口，区分当前实现与目标架构。
-- [`docs/shared-go-renderer-design.md`](docs/shared-go-renderer-design.md)：同源 Go/WASM Template Renderer Proposal。
+- [`docs/architecture-design.md`](docs/architecture-design.md)：当前唯一总体架构入口，定义四仓库、七模块和 GitHub-native 边界。
+- [`docs/refactor-roadmap.md`](docs/refactor-roadmap.md)：Phase 0-8 的重构顺序、Gate 和迁移范围。
+- [`docs/modules/README.md`](docs/modules/README.md)：七个核心模块的职责和细化入口。
+- [`docs/adr/README.md`](docs/adr/README.md)：GitHub 治理、仓库拓扑和不建设数据库/账号体系的架构决策。
+- [`docs/shared-go-renderer-design.md`](docs/shared-go-renderer-design.md)：历史 Go/WASM Renderer Proposal，不是当前路线。
 - [`docs/render-profile-integration-rollout.md`](docs/render-profile-integration-rollout.md)：Web Render Profile、CSS 隔离与跨仓上线顺序。
 - [`docs/cli-skill-and-component-system.md`](docs/cli-skill-and-component-system.md)：CLI/Skill 边界、平台组件词汇表、晋升制与发布节奏。
 - [`docs/octo-card-utility-system-development-plan.md`](docs/octo-card-utility-system-development-plan.md)：Tailwind-like `id` utility、Profile 超集、校验、CSS 对账和发布边界的开发落地计划。
@@ -95,7 +116,7 @@ Profile 生成 DOM。两者不是同一个组件。
 ## 当前命令
 
 ```text
-octo-card list
+octo-card list [--format json]
 octo-card discover [skeleton] [--profile octo-chat@latest] [--format json]
 octo-card explain utility line-skeleton [--profile octo-chat@latest] [--format json]
 octo-card lint [docs.access-request] [--card ./docs.access-request] [--format json]
@@ -262,12 +283,12 @@ pnpm prepare:agent-validation -- --scenario docs-forward
 
 开发规范：不要在 `render-profiles/` 下新增版本目录来保存制品。修改
 `render-profiles/octo-chat/` 当前源码，通过 `pnpm cli profile bundle/pack` 生成不可变制品；
-已发布版本由 npm / 制品库保存。Forge Catalog 和默认 `cli check` 只覆盖当前 workspace
-profile 可渲染的 Card Package；历史 Card Package 由制品库负责重渲染。
+已发布版本由 npm / 制品库保存。Draft 应跟随 `@latest` 并始终进入 Catalog；本地 Release
+只暴露当前 workspace profile 可渲染的版本，历史 Release 由制品库负责重渲染。
 
 ## 发布
 
-### 部署构建产物
+### 当前部署构建产物（迁移前）
 
 CI 的 `deploy-artifact` job 会生成一个可交给部署服务的应用包，并上传为 GitHub Actions artifact：
 

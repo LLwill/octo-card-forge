@@ -10,7 +10,8 @@
     "octo-card": "./dist/cli.js"
   },
   "files": [
-    "dist",
+    "dist/cli.js",
+    "dist/cli.js.map",
     "web",
     "skills",
     "README.md"
@@ -29,7 +30,10 @@
   },
   "scripts": {
     "prebuild": "node scripts/clean-build-output.mjs",
-    "build": "tsc -p tsconfig.build.json",
+    "build": "pnpm run workspace:check && pnpm run build:packages && pnpm run build:legacy && pnpm run build:entries",
+    "build:legacy": "tsc -p tsconfig.build.json",
+    "build:packages": "pnpm --recursive --filter './packages/**' --filter './apps/**' --if-present run build",
+    "build:entries": "node scripts/bundle-entrypoints.mjs",
     "package:deploy": "pnpm build && node scripts/package-deploy.mjs",
     "skill:pack": "node scripts/package-skill.mjs",
     "start": "node scripts/start-service.mjs",
@@ -40,8 +44,13 @@
     "prepare:agent-validation": "node scripts/create-agent-validation-workspace.mjs",
     "smoke:repo-free-agent": "node scripts/smoke-repo-free-agent.mjs",
     "smoke:published-consumer": "node scripts/smoke-published-consumer.mjs",
-    "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "test": "pnpm run workspace:check && pnpm run test:legacy && pnpm run test:packages",
+    "test:legacy": "vitest run --config vitest.legacy.config.ts",
+    "test:packages": "pnpm --recursive --filter './packages/**' --filter './apps/**' --if-present run test",
+    "typecheck": "pnpm run workspace:check && pnpm run typecheck:legacy && pnpm run typecheck:packages",
+    "typecheck:legacy": "tsc --noEmit",
+    "typecheck:packages": "pnpm --recursive --filter './packages/**' --filter './apps/**' --if-present run typecheck",
+    "workspace:check": "node scripts/check-workspace-dependencies.mjs"
   },
   "dependencies": {
     "adaptive-expressions": "4.23.3",
@@ -51,7 +60,13 @@
     "jszip": "3.10.1"
   },
   "devDependencies": {
+    "@mlt-org/octo-card-artifact": "workspace:*",
+    "@mlt-org/octo-card-core": "workspace:*",
+    "@mlt-org/octo-card-preview-kit": "workspace:*",
+    "@mlt-org/octo-card-spec": "workspace:*",
+    "@mlt-org/octo-card-workspace": "workspace:*",
     "@types/node": "24.0.13",
+    "esbuild": "0.25.12",
     "tsx": "4.20.3",
     "typescript": "5.8.3",
     "vitest": "3.2.4"

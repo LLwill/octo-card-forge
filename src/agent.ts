@@ -59,8 +59,11 @@ export interface AgentLintReport {
     tokens: string[];
   };
   cards: Array<{
+    reference: string;
     cardId: string;
     version: string;
+    kind: CardPackage["kind"];
+    mutable: boolean;
     samples: Array<{
       name: string;
       view: string;
@@ -301,8 +304,11 @@ async function lintCardPackages(
 
   for (const card of cards) {
     const cardReport: AgentLintReport["cards"][number] = {
+      reference: card.reference,
       cardId: card.manifest.id,
       version: card.manifest.version,
+      kind: card.kind,
+      mutable: card.mutable,
       samples: [],
     };
 
@@ -373,13 +379,11 @@ async function lintCardPackages(
 export async function lintCardsForAgent(cardId?: string): Promise<AgentLintReport> {
   const availableCards = await listCards();
   const cards = cardId
-    ? availableCards.filter(
-        (card) => card.reference === cardId || card.manifest.id === cardId
-      )
+    ? availableCards.filter((card) => card.reference === cardId)
     : availableCards;
   if (cardId && cards.length === 0) {
     throw new Error(
-      `Unknown current card: ${cardId} (expected one of ${availableCards
+      `Unknown card reference: ${cardId} (expected one of ${availableCards
         .map((card) => card.reference)
         .join(", ")})`
     );

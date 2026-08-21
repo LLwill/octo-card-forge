@@ -1,10 +1,15 @@
 # Octo Card 同源 Go/WASM Template Renderer 设计
 
-> 状态：Proposal  
-> 日期：2026-07-23  
+> 状态：Historical Proposal，已被当前 GitHub-native 架构取代
+>
+> 日期：2026-07-23
+>
 > 适用范围：`octo-card-forge`、`octo-server` 以及 Card Package 发布链路
 > 实现状态：尚未落地；当前 Forge 仍使用 TypeScript `adaptivecards-templating`，Server
 > 仍使用现有 Go Builder。本文件描述目标方案，不描述当前已上线能力。
+
+> 2026-08-20 决策：本轮重构不建设新的生产 Template Renderer 或 Runtime Registry。
+> 当前有效边界见 [`architecture-design.md`](./architecture-design.md)。本文只保留为历史研究材料。
 
 本文中的 **Template Renderer** 指“Template + Data → Adaptive Card JSON”。它不同于
 [`render-profile-integration-rollout.md`](./render-profile-integration-rollout.md) 中把

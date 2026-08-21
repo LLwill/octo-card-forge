@@ -1,3 +1,5 @@
+import { createPreviewClient, PreviewApiError } from "./preview-kit.js";
+
 const catalogView = document.querySelector("#catalogView");
 const detailView = document.querySelector("#detailView");
 const cardGrid = document.querySelector("#cardGrid");
@@ -25,11 +27,13 @@ const editorMessage = document.querySelector("#editorMessage");
 const exportButton = document.querySelector("#exportButton");
 const homeThemeToggle = document.querySelector("#homeThemeToggle");
 const basePath = window.__OCTO_BASE_PATH__ || "";
+const previewClient = createPreviewClient({ baseUrl: basePath });
 let cards = [];
 let catalogItems = [];
 let cardGroups = new Map();
 let currentCard;
-let currentContext;
+let currentSession;
+let currentHostConfig;
 let currentView;
 let hostStyle;
 let detailWidth = 640;
@@ -261,11 +265,11 @@ function renderCatalog() {
   }
 }
 
-function setHostStyle(url) {
+function setHostStyle(css) {
   if (hostStyle) hostStyle.remove();
-  hostStyle = document.createElement("link");
-  hostStyle.rel = "stylesheet";
-  hostStyle.href = url;
+  hostStyle = document.createElement("style");
+  hostStyle.dataset.previewProfile = "true";
+  hostStyle.textContent = css;
   document.head.append(hostStyle);
 }
 
@@ -276,7 +280,7 @@ function setDetailStatus(message, state = "") {
 
 function updateDetailPreview(result) {
   detailPreview.style.width = `${detailWidth}px`;
-  detailPreview.replaceChildren(createCardElement(result.payload, currentContext.hostConfig, (action) => {
+  detailPreview.replaceChildren(createCardElement(result.payload, currentHostConfig, (action) => {
     setDetailStatus(`${action.getJsonTypeName()} · ${action.id || action.title || "local"}`);
   }));
 }
@@ -286,8 +290,8 @@ function populateDetailMeta(card) {
   const values = [
     [t("meta.version"), `${packageKindLabel(card)} · ${card.version}`],
     [t("meta.contract"), card.contractVersion],
-    [t("meta.adaptive"), card.adaptiveCardVersion || currentContext.renderProfile.adaptiveCardsSdkVersion],
-    [t("meta.profile"), currentContext.renderProfile.version],
+    [t("meta.adaptive"), card.adaptiveCardVersion || currentSession.renderProfile.manifest.adaptiveCardsSdkVersion],
+    [t("meta.profile"), currentSession.renderProfile.manifest.version],
   ];
   for (const [label, value] of values) {
     const item = document.createElement("div");
@@ -348,16 +352,27 @@ async function renderCard(view) {
     const data = JSON.parse(dataEditor.value);
     const resolvedView = view || currentView;
     if (!resolvedView) throw new Error(t("errors.selectSample"));
-    const result = await json("/api/render", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ cardId: currentCard.reference, view: resolvedView, data }),
+    const result = await previewClient.render({
+      cardId: currentCard.reference,
+      revision: currentSession.revision,
+      view: resolvedView,
+      data,
     });
+    if (!result.valid) {
+      const issue = result.issues.find((item) => item.severity === "error");
+      throw new Error(issue ? `${issue.code} ${issue.path}: ${issue.message}` : t("status.checkJson"));
+    }
     updateDetailPreview(result);
     payload.textContent = JSON.stringify(result.payload, null, 2);
     setDetailStatus(`${t("status.validated")} · ${result.cardVersion}`);
     editorMessage.textContent = t("status.ready");
   } catch (error) {
+    if (error instanceof PreviewApiError && error.code === "preview.stale_revision" && currentCard) {
+      currentSession = await previewClient.getSession(currentCard.reference);
+      setDetailStatus(locale === "zh" ? "内容已更新，请重新组装" : "Content changed; reassemble the card", "error");
+      editorMessage.textContent = t("status.checkJson");
+      return;
+    }
     const message = error instanceof Error ? error.message : String(error);
     setDetailStatus(message, "error");
     editorMessage.textContent = t("status.checkJson");
@@ -383,8 +398,14 @@ async function openCard(reference, replace = false) {
   detailTitle.textContent = card.name;
   detailDescription.textContent = locale === "zh" ? "在当前 Render Profile 下查看样例状态、编辑 ViewModel 并验证最终 Adaptive Card。" : "Inspect sample states, edit ViewModel data, and validate the final Adaptive Card under the current Render Profile.";
   detailReference.textContent = card.id;
-  currentContext = await json(`/api/cards/${encodeURIComponent(card.reference)}/context`);
-  setHostStyle(currentContext.stylesheetUrl);
+  const [session, hostConfig, profileStyles] = await Promise.all([
+    previewClient.getSession(card.reference),
+    previewClient.getHostConfig(card.reference),
+    previewClient.getStyles(card.reference),
+  ]);
+  currentSession = session;
+  currentHostConfig = hostConfig;
+  setHostStyle(profileStyles);
   populateDetailMeta(card);
   contract.textContent = JSON.stringify(
     await json(`/api/cards/${encodeURIComponent(card.reference)}/contract`),
@@ -428,9 +449,10 @@ async function downloadHandoff() {
 }
 
 async function start() {
-  const [cardData, profileData] = await Promise.all([
+  const [cardData, hostConfig, profileStyles] = await Promise.all([
     json("/api/cards"),
-    json("/api/component-baseline"),
+    previewClient.getHostConfig(),
+    previewClient.getStyles(),
   ]);
   cards = cardData;
   cardGroups = new Map();
@@ -448,7 +470,7 @@ async function start() {
   for (const card of latestCards) {
     detailCardSelect.add(new Option(card.name, card.reference));
   }
-  setHostStyle(profileData.stylesheetUrl);
+  setHostStyle(profileStyles);
   catalogCount.textContent = latestCards.length;
   viewCount.textContent = latestCards.reduce((count, card) => count + Object.keys(card.samples).length, 0);
   sampleCount.textContent = latestCards.reduce(
@@ -457,13 +479,24 @@ async function start() {
   );
   catalogItems = await Promise.all(latestCards.map(async (card) => {
     const selected = firstSample(card);
-    const result = await json(
+    const sample = await json(
       `/api/cards/${encodeURIComponent(card.reference)}/samples/${encodeURIComponent(selected.sample)}`
     );
+    const session = await previewClient.getSession(card.reference);
+    const result = await previewClient.render({
+      cardId: card.reference,
+      revision: session.revision,
+      view: selected.view,
+      data: sample.data,
+    });
+    if (!result.valid) {
+      const issue = result.issues.find((item) => item.severity === "error");
+      throw new Error(issue ? `${issue.code} ${issue.path}: ${issue.message}` : t("status.checkJson"));
+    }
     return {
       card,
       result,
-      hostConfig: profileData.hostConfig,
+      hostConfig,
       versions: cardGroups.get(card.id).versions,
       sampleCount: Object.values(card.samples).reduce((total, names) => total + names.length, 0),
     };
@@ -471,9 +504,8 @@ async function start() {
   renderCatalog();
   const reference = new URLSearchParams(location.search).get("card");
   if (reference) {
-    const canonicalCard = reference.includes("@")
-      ? cards.find((card) => card.reference === reference)
-      : cardGroups.get(reference)?.latest;
+    const canonicalCard = cards.find((card) => card.reference === reference)
+      ?? (!reference.includes("@") ? cardGroups.get(reference)?.latest : undefined);
     if (canonicalCard) await openCard(canonicalCard.reference, true);
   }
 }

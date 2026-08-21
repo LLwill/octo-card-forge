@@ -18,6 +18,10 @@ const DEFAULT_RENDER_PROFILE_PACKAGES: Record<string, string> = {
   "octo-chat": "@mlt-org/octo-card-profile-octo-chat",
 };
 
+const WORKSPACE_PROFILE_PACKAGES: Record<string, string> = {
+  "octo-chat": "packages/profile-octo-chat",
+};
+
 async function exists(filePath: string): Promise<boolean> {
   try {
     await access(filePath);
@@ -53,21 +57,26 @@ async function loadFromRoot(
   source: "workspace" | "package" | "directory" = "directory"
 ): Promise<RenderProfileSource> {
   const resolvedRoot = path.resolve(root);
-  const sourceManifestPath = path.join(resolvedRoot, "manifest.json");
-  const packageManifestPath = path.join(resolvedRoot, "dist", "manifest.json");
-  const manifestPath = await exists(sourceManifestPath)
-    ? sourceManifestPath
-    : packageManifestPath;
+  const distManifestPath = path.join(resolvedRoot, "dist", "manifest.json");
+  const rootManifestPath = path.join(resolvedRoot, "manifest.json");
 
-  if (!(await exists(manifestPath))) {
+  let manifestPath: string;
+  let assetRoot: string;
+  if (await exists(distManifestPath)) {
+    manifestPath = distManifestPath;
+    assetRoot = path.join(resolvedRoot, "dist");
+  } else if (await exists(rootManifestPath)) {
+    manifestPath = rootManifestPath;
+    assetRoot = resolvedRoot;
+  } else {
     throw new Error(`${resolvedRoot}: manifest.json or dist/manifest.json is required`);
   }
 
   const manifest = await readJson<RenderProfileManifest>(manifestPath);
   const readProfileJson = <T>(file: string) =>
-    readJson<T>(resolveProfileAssetPath(resolvedRoot, file));
+    readJson<T>(resolveProfileAssetPath(assetRoot, file));
   const readProfileText = (file: string) =>
-    readText(resolveProfileAssetPath(resolvedRoot, file));
+    readText(resolveProfileAssetPath(assetRoot, file));
 
   const [capabilities, hostConfig, theme, stylesheet] = await Promise.all([
     readProfileJson<RenderCapabilities>(manifest.capabilities),
@@ -77,7 +86,7 @@ async function loadFromRoot(
   ]);
 
   return {
-    root: resolvedRoot,
+    root: assetRoot,
     reference: referenceForManifest(manifest),
     source,
     manifest,
@@ -151,9 +160,27 @@ export async function loadRenderProfileForReference(
   const requested = reference
     ? parseRenderProfileReference(reference)
     : parseRenderProfileReference(resolveRenderProfileReference());
+
+  const workspacePackageDir = WORKSPACE_PROFILE_PACKAGES[requested.id];
+  if (workspacePackageDir) {
+    const workspaceDistRoot = resolveInProject(workspacePackageDir);
+    const distManifest = path.join(workspaceDistRoot, "dist", "manifest.json");
+    const srcManifest = path.join(workspaceDistRoot, "manifest.json");
+    const workspaceRoot = (await exists(distManifest))
+      ? path.join(workspaceDistRoot, "dist")
+      : (await exists(srcManifest))
+        ? workspaceDistRoot
+        : null;
+    if (workspaceRoot) {
+      const profile = await loadFromRoot(workspaceRoot, "workspace");
+      assertProfileMatchesRequest(profile, reference);
+      return profile;
+    }
+  }
+
   const localRoot = resolveInProject("render-profiles", requested.id);
   if (await exists(path.join(localRoot, "manifest.json"))) {
-    const profile = await getRenderProfile(reference);
+    const profile = await loadFromRoot(localRoot, "workspace");
     assertProfileMatchesRequest(profile, reference);
     return profile;
   }

@@ -1,4 +1,9 @@
-import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import {
+  createServer,
+  type IncomingMessage,
+  type Server,
+  type ServerResponse,
+} from "node:http";
 import path from "node:path";
 import {
   compileCard,
@@ -21,11 +26,35 @@ import {
   listCards,
   resolveCardAssetPath,
 } from "./registry.js";
+import { compileLoadedCard, loadCardRuntime } from "./core-adapter.js";
+import {
+  buildPreviewRenderResponse,
+  buildPreviewSession,
+} from "./preview.js";
 import type { CardPackage, JsonObject, RenderProfileSource } from "./types.js";
 
 interface ServerContext {
   card?: CardPackage;
   profile?: RenderProfileSource;
+}
+
+class PreviewHttpError extends Error {
+  constructor(
+    readonly status: number,
+    readonly code: string,
+    message: string
+  ) {
+    super(message);
+    this.name = "PreviewHttpError";
+  }
+}
+
+export interface ForgeServerOptions {
+  port?: number;
+  host?: string;
+  cardRoot?: string;
+  profile?: RenderProfileSource;
+  basePath?: string;
 }
 
 export function normalizeBasePath(value = "/"): string {
@@ -128,6 +157,158 @@ async function readBody(req: IncomingMessage): Promise<JsonObject> {
   return JSON.parse(Buffer.concat(chunks).toString("utf8")) as JsonObject;
 }
 
+function isJsonObject(value: unknown): value is JsonObject {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+async function resolvePreviewCard(
+  context: ServerContext,
+  requestedReference: string | undefined
+): Promise<CardPackage> {
+  if (context.card) {
+    if (
+      requestedReference &&
+      requestedReference !== context.card.reference &&
+      requestedReference !== context.card.manifest.id
+    ) {
+      throw new PreviewHttpError(
+        409,
+        "preview.card_mismatch",
+        "The requested card does not match this preview session"
+      );
+    }
+    return context.card;
+  }
+  if (!requestedReference) {
+    throw new PreviewHttpError(
+      400,
+      "preview.card_required",
+      "cardId is required for a catalog preview session"
+    );
+  }
+  try {
+    return await getCard(requestedReference);
+  } catch {
+    throw new PreviewHttpError(404, "preview.card_not_found", "Card was not found");
+  }
+}
+
+async function resolvePreviewProfile(
+  context: ServerContext,
+  requestedReference: string | undefined
+): Promise<RenderProfileSource> {
+  if (requestedReference) {
+    const card = await resolvePreviewCard(context, requestedReference);
+    return (await loadCardRuntime(card, context.profile)).profile;
+  }
+  if (context.profile) return context.profile;
+  return loadRenderProfileForReference();
+}
+
+async function readPreviewBody(req: IncomingMessage): Promise<JsonObject> {
+  try {
+    const body = await readBody(req);
+    if (!isJsonObject(body)) throw new Error("body must be an object");
+    return body;
+  } catch {
+    throw new PreviewHttpError(
+      400,
+      "preview.invalid_request",
+      "A JSON object request body is required"
+    );
+  }
+}
+
+async function handlePreviewApi(
+  req: IncomingMessage,
+  res: ServerResponse,
+  url: URL,
+  context: ServerContext
+): Promise<boolean> {
+  if (!url.pathname.startsWith("/api/preview/v1/")) return false;
+
+  try {
+    if (req.method === "GET" && url.pathname === "/api/preview/v1/session") {
+      const card = await resolvePreviewCard(context, url.searchParams.get("cardId") ?? undefined);
+      const runtime = await loadCardRuntime(card, context.profile);
+      sendJson(res, 200, buildPreviewSession(runtime));
+      return true;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/preview/v1/profile/host-config.json") {
+      const profile = await resolvePreviewProfile(
+        context,
+        url.searchParams.get("cardId") ?? undefined
+      );
+      sendJson(res, 200, profile.hostConfig);
+      return true;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/preview/v1/profile/styles.css") {
+      const profile = await resolvePreviewProfile(
+        context,
+        url.searchParams.get("cardId") ?? undefined
+      );
+      sendText(res, 200, "text/css", (profile.stylesheets ?? []).join("\n"));
+      return true;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/preview/v1/render") {
+      const body = await readPreviewBody(req);
+      if (
+        typeof body.cardId !== "string" ||
+        typeof body.revision !== "string" ||
+        typeof body.view !== "string" ||
+        !isJsonObject(body.data)
+      ) {
+        throw new PreviewHttpError(
+          400,
+          "preview.invalid_request",
+          "cardId, revision, view and object data are required"
+        );
+      }
+      const card = await resolvePreviewCard(context, body.cardId);
+      const runtime = await loadCardRuntime(card, context.profile);
+      if (body.revision !== runtime.revision) {
+        throw new PreviewHttpError(
+          409,
+          "preview.stale_revision",
+          "The preview revision is stale; request a new session"
+        );
+      }
+      let result;
+      try {
+        result = compileLoadedCard(runtime, body.view, body.data);
+      } catch (error) {
+        if (error instanceof Error && error.message.startsWith("Unknown view ")) {
+          throw new PreviewHttpError(404, "preview.view_not_found", "View was not found");
+        }
+        throw new PreviewHttpError(
+          422,
+          "preview.render_failed",
+          "The card could not be rendered"
+        );
+      }
+      const response = buildPreviewRenderResponse(runtime, result);
+      sendJson(res, response.valid ? 200 : 422, response);
+      return true;
+    }
+
+    sendJson(res, 404, { code: "preview.not_found", message: "Preview endpoint was not found" });
+    return true;
+  } catch (error) {
+    if (error instanceof PreviewHttpError) {
+      sendJson(res, error.status, { code: error.code, message: error.message });
+      return true;
+    }
+    sendJson(res, 500, {
+      code: "preview.internal_error",
+      message: "Preview request could not be completed",
+    });
+    return true;
+  }
+}
+
 async function handleApi(
   req: IncomingMessage,
   res: ServerResponse,
@@ -135,6 +316,8 @@ async function handleApi(
   context: ServerContext,
   basePath: string,
 ): Promise<boolean> {
+  if (await handlePreviewApi(req, res, url, context)) return true;
+
   if (req.method === "GET" && url.pathname === "/healthz") {
     sendJson(res, 200, { status: "ok" });
     return true;
@@ -396,14 +579,11 @@ async function handleApi(
   return false;
 }
 
-export async function startServer(options: {
-  port?: number;
-  host?: string;
-  cardRoot?: string;
-  profile?: RenderProfileSource;
-  basePath?: string;
-} = {}): Promise<void> {
-  const port = options.port ?? 4318;
+async function prepareForgeServer(options: ForgeServerOptions = {}): Promise<{
+  server: Server;
+  card?: CardPackage;
+  basePath: string;
+}> {
   const host = options.host ?? "127.0.0.1";
   const basePath = normalizeBasePath(options.basePath);
   const card = options.cardRoot ? await loadCardPackage(options.cardRoot) : undefined;
@@ -435,6 +615,7 @@ export async function startServer(options: {
         "/install": ["install.html", "text/html"],
         "/install/": ["install.html", "text/html"],
         "/app.js": ["app.js", "text/javascript"],
+        "/preview-kit.js": ["preview-kit.js", "text/javascript"],
         "/components.js": ["components.js", "text/javascript"],
         "/install.js": ["install.js", "text/javascript"],
         "/styles.css": ["styles.css", "text/css"],
@@ -453,6 +634,19 @@ export async function startServer(options: {
       });
     }
   });
+  return { server, card, basePath };
+}
+
+export async function createForgeServer(
+  options: ForgeServerOptions = {}
+): Promise<Server> {
+  return (await prepareForgeServer(options)).server;
+}
+
+export async function startServer(options: ForgeServerOptions = {}): Promise<void> {
+  const port = options.port ?? 4318;
+  const host = options.host ?? "127.0.0.1";
+  const { server, card, basePath } = await prepareForgeServer(options);
   await new Promise<void>((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, host, () => resolve());

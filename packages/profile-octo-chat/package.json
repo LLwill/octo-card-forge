@@ -1,0 +1,35 @@
+{
+  "name": "@mlt-org/octo-card-profile-octo-chat",
+  "version": "1.2.0-rc.3",
+  "private": false,
+  "type": "module",
+  "description": "Octo Adaptive Cards Render Profile for Octo Chat",
+  "dependencies": {
+    "@mlt-org/octo-card-spec": "workspace:*"
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "octo-card-profile": "./dist/cli.js"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./manifest.json": "./dist/manifest.json",
+    "./capabilities.json": "./dist/capabilities.json",
+    "./host-config.json": "./dist/host-config.json",
+    "./tokens.json": "./dist/tokens.json",
+    "./theme.css": "./dist/theme.css",
+    "./styles.css": "./dist/styles.css"
+  },
+  "sideEffects": [
+    "*.css"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/build.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "validate": "node dist/cli.js validate"
+  }
+}

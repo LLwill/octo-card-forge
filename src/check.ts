@@ -10,8 +10,11 @@ async function checkCardPackages(
   const report: CheckReport = { valid: true, cards: [] };
   for (const card of cards) {
     const item: CheckReport["cards"][number] = {
+      reference: card.reference,
       cardId: card.manifest.id,
       version: card.manifest.version,
+      kind: card.kind,
+      mutable: card.mutable,
       samples: [],
     };
     for (const [view, definition] of Object.entries(card.manifest.views)) {

@@ -28,6 +28,12 @@ import {
   validateRenderProfile,
 } from "./profile.js";
 import {
+  buildCardArtifact,
+  buildCardArtifactForCard,
+} from "./artifact.js";
+import { verifyCardArtifact, artifactSha256 } from "@mlt-org/octo-card-artifact";
+import { writeFile, mkdir, readFile } from "node:fs/promises";
+import {
   loadRenderProfileFromDirectory,
   loadRenderProfileFromPackage,
   loadRenderProfileForReference,
@@ -74,7 +80,7 @@ function usage(): void {
   console.log(`octo-card commands:
   init <card-id> --name <name> [--out <dir>] [--preset blank|bot-token|docs-forward] [--view default] [--wire-profile octo/v1|octo/v2] [--render-profile octo-chat@latest] [--format json]
   presets [--format json]
-  list
+  list [--format json]
   discover [query] [--profile octo-chat@latest] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
   explain utility <token> [--profile octo-chat@latest] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
   lint [card-id] [--card <dir>] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
@@ -95,6 +101,9 @@ function usage(): void {
   profile validate <profile@version>
   profile bundle <profile@version> [--output .release]
   profile pack <profile@version> [--output .release]
+  artifact build <card-id> [--out <file>] [--format json]
+  artifact build --card <dir> [--out <file>] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
+  artifact verify <file> [--sha256 <hash>] [--format json]
   agent init [--target generic] [--workspace <dir>] [--profile octo-chat@version] [--format json]
   agent doctor [--workspace <dir>] [--format json]
   agent upgrade --check [--workspace <dir>] [--format json]
@@ -175,7 +184,9 @@ function printLintText(report: Awaited<ReturnType<typeof lintCardsForAgent>>): v
     console.log(`Utility tokens: ${report.summary.tokens.join(", ")}`);
   }
   for (const card of report.cards) {
-    console.log(`\n${card.cardId}@${card.version}`);
+    console.log(
+      `\n${card.cardId}@${card.version}\t${card.reference}\t${card.kind}\t${card.mutable ? "mutable" : "immutable"}`
+    );
     for (const sample of card.samples) {
       const tokens =
         sample.utilities.tokens.length > 0
@@ -267,14 +278,35 @@ try {
     }
   } else if (command === "list") {
     const cards = await listCards();
-    console.log(
-      cards
-        .map(
-          ({ manifest }) =>
-            `${manifest.id}\t${manifest.version}\tcontract ${manifest.contractVersion}\t${manifest.name}`
+    if (flag("--format") === "json") {
+      console.log(
+        JSON.stringify(
+          {
+            cards: cards.map(({ reference, kind, mutable, manifest }) => ({
+              reference,
+              kind,
+              mutable,
+              id: manifest.id,
+              name: manifest.name,
+              version: manifest.version,
+              contractVersion: manifest.contractVersion,
+              renderProfile: manifest.renderProfile,
+            })),
+          },
+          null,
+          2
         )
-        .join("\n")
-    );
+      );
+    } else {
+      console.log(
+        cards
+          .map(
+            ({ reference, kind, mutable, manifest }) =>
+              `${manifest.id}\t${manifest.version}\tcontract ${manifest.contractVersion}\t${manifest.name}\t${reference}\t${kind}\t${mutable ? "mutable" : "immutable"}`
+          )
+          .join("\n")
+      );
+    }
   } else if (command === "discover") {
     const query = positional(0);
     const profileSource = await loadExplicitProfileSource();
@@ -553,7 +585,9 @@ try {
       console.log(JSON.stringify(report, null, 2));
     } else {
       for (const card of report.cards) {
-        console.log(`${card.cardId}@${card.version}`);
+        console.log(
+          `${card.cardId}@${card.version}\t${card.reference}\t${card.kind}\t${card.mutable ? "mutable" : "immutable"}`
+        );
         for (const sample of card.samples) {
           console.log(
             `  ${sample.valid ? "✓" : "✗"} ${sample.name} (${sample.view}, ${sample.wireProfile})`
@@ -579,6 +613,54 @@ try {
           ? await bundleRenderProfile(reference, flag("--output") ?? ".release")
           : await packRenderProfile(reference, flag("--output") ?? ".release");
     console.log(JSON.stringify(result, null, 2));
+  } else if (command === "artifact") {
+    const action = args[0];
+    if (action === "build") {
+      const outFile = flag("--out");
+      const cardRoot = flag("--card");
+      const profileSource = cardRoot ? await explicitProfileForCardCommand(cardRoot) : undefined;
+      const cardId = cardRoot ? undefined : args[1];
+      if (!cardRoot && !cardId) throw new Error("card-id or --card is required");
+      const artifact = cardRoot
+        ? await buildCardArtifactForCard(await loadCardPackage(cardRoot), profileSource)
+        : await buildCardArtifact(cardId!);
+      if (outFile) {
+        const outPath = path.resolve(outFile);
+        await mkdir(path.dirname(outPath), { recursive: true });
+        await writeFile(outPath, JSON.stringify(artifact, null, 2) + "\n");
+        if (flag("--format") === "json") {
+          console.log(JSON.stringify({ file: outPath, sha256: artifactSha256(artifact) }, null, 2));
+        } else {
+          console.log(`Built card artifact: ${outPath} (sha256: ${artifactSha256(artifact)})`);
+        }
+      } else {
+        if (flag("--format") === "json") {
+          console.log(JSON.stringify({ artifact, sha256: artifactSha256(artifact) }, null, 2));
+        } else {
+          console.log(JSON.stringify(artifact, null, 2));
+        }
+      }
+    } else if (action === "verify") {
+      const filePath = args[1];
+      if (!filePath) throw new Error("artifact file path is required");
+      const raw = await readFile(path.resolve(filePath), "utf8");
+      const expectedSha = flag("--sha256");
+      const result = verifyCardArtifact(raw, expectedSha);
+      if (flag("--format") === "json") {
+        console.log(JSON.stringify(result, null, 2));
+        if (!result.valid) process.exitCode = 1;
+      } else if (result.valid) {
+        console.log(`✓ Valid artifact (sha256: ${result.sha256})`);
+      } else {
+        console.log(`✗ Invalid artifact:`);
+        for (const issue of result.issues) {
+          console.log(`  ${issue.code}: ${issue.path} ${issue.message}`);
+        }
+        process.exitCode = 1;
+      }
+    } else {
+      throw new Error("artifact action must be build or verify");
+    }
   } else if (command === "dev") {
     const port = Number(flag("--port") ?? "4318");
     const host = flag("--host") ?? "127.0.0.1";

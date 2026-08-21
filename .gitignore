@@ -5,3 +5,5 @@ coverage/
 .release/
 *.log
 .DS_Store
+.loopx/
+.codex/goals/

@@ -8,10 +8,13 @@
 - 范围：`octo-card-forge`、`octo-web`、`octo-server`、首个业务卡片 producer
 - 当前阶段：只支持一份默认主题；明暗主题不在本轮范围
 - 核心目标：Card Forge 成为新卡片视觉标准来源，同时保证线上历史卡片和未迁移模板完全不变
+- 当前架构说明：Profile 独立 npm 发布和 `octo-web` 消费仍然有效；本文涉及 Shared Go/WASM
+  Template Renderer 的内容只作历史背景，不是当前重构前置条件
 
 术语说明：本文的 **Web Renderer** 指“Adaptive Card JSON → DOM/CSS”。它不负责
-Template 展开。Template + Data 的同源 Go/WASM 方案见
-[`shared-go-renderer-design.md`](./shared-go-renderer-design.md)。平台组件词汇表、
+Template 展开。历史 Go/WASM Proposal 见
+[`shared-go-renderer-design.md`](./shared-go-renderer-design.md)；当前总体边界见
+[`architecture-design.md`](./architecture-design.md)。平台组件词汇表、
 ID 文法、晋升制与 Agent/CLI 边界见
 [`cli-skill-and-component-system.md`](./cli-skill-and-component-system.md)。
 
