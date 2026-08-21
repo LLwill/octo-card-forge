@@ -266,7 +266,7 @@ Profile package 是 Component Preview 的前置。该阶段只稳定 Profile 的
 
 目标：建立与 Git 目录无关的正式发布内容。
 
-状态：**进行中。Artifact Contract、Builder、canonical bytes、digest、verify、Handoff 派生和 CLI 命令已完成；业务后端消费者 fixture 待完成。**
+状态：**已完成（2026-08-21）。**
 
 工作：
 
