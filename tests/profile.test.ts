@@ -64,12 +64,12 @@ describe("render profile bundle", () => {
       compatibility: "octo-chat/v1",
     });
     expect(Object.keys(bundleManifest.files).sort()).toEqual([
-      "dist/capabilities.json",
-      "dist/host-config.json",
-      "dist/manifest.json",
-      "dist/styles.css",
-      "dist/theme.css",
-      "dist/tokens.json",
+      "capabilities.json",
+      "host-config.json",
+      "manifest.json",
+      "styles.css",
+      "theme.css",
+      "tokens.json",
     ]);
   });
 

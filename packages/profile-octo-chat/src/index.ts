@@ -48,8 +48,9 @@ function resolveAssetPath(root: string, relativePath: string): string {
 }
 
 async function resolveProfileRoot(explicitRoot?: string): Promise<{ root: string; manifest: RenderProfileManifestV1 }> {
+  const resolved = explicitRoot ? path.resolve(explicitRoot) : PACKAGE_ROOT;
   const candidates = explicitRoot
-    ? [path.resolve(explicitRoot)]
+    ? [resolved, path.join(resolved, "dist")]
     : [PACKAGE_ROOT, path.join(PACKAGE_ROOT, "dist")];
 
   let lastError: unknown;
