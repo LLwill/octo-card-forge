@@ -1,7 +1,6 @@
-import { cp, mkdir, rm, writeFile } from "node:fs/promises";
+import { cp, rm, writeFile, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readFile } from "node:fs/promises";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packageRoot = path.resolve(__dirname, "..");
@@ -14,23 +13,25 @@ const assets = [
   "tokens.json",
   "theme.css",
   "styles.css",
+  "package.json",
 ];
 
-await rm(distRoot, { recursive: true, force: true });
-await mkdir(distRoot, { recursive: true });
-
 for (const asset of assets) {
+  await rm(path.join(distRoot, asset), { force: true });
+}
+
+for (const asset of assets.slice(0, -1)) {
   await cp(path.join(packageRoot, asset), path.join(distRoot, asset));
 }
 
-const packageJson = JSON.parse(
+const pkg = JSON.parse(
   await readFile(path.join(packageRoot, "package.json"), "utf8")
 );
 const publishedPackageJson = {
-  name: packageJson.name,
-  version: packageJson.version,
+  name: pkg.name,
+  version: pkg.version,
   type: "module",
-  description: packageJson.description,
+  description: pkg.description,
   main: "./index.js",
   types: "./index.d.ts",
   exports: {
@@ -49,4 +50,4 @@ await writeFile(
   `${JSON.stringify(publishedPackageJson, null, 2)}\n`
 );
 
-console.log(`Built ${packageJson.name}@${packageJson.version} → dist/`);
+console.log(`Built ${pkg.name}@${pkg.version} → dist/`);
