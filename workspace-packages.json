@@ -12,14 +12,18 @@
       "id": "core",
       "path": "packages/core",
       "name": "@mlt-org/octo-card-core",
-      "runtimeDependencies": ["card-spec"],
+      "runtimeDependencies": [
+        "card-spec"
+      ],
       "peerDependencies": []
     },
     {
       "id": "workspace",
       "path": "packages/workspace",
       "name": "@mlt-org/octo-card-workspace",
-      "runtimeDependencies": ["card-spec"],
+      "runtimeDependencies": [
+        "card-spec"
+      ],
       "peerDependencies": []
     },
     {
@@ -33,35 +37,53 @@
       "id": "profile-octo-chat",
       "path": "packages/profile-octo-chat",
       "name": "@mlt-org/octo-card-profile-octo-chat",
-      "runtimeDependencies": ["card-spec"],
+      "runtimeDependencies": [
+        "card-spec"
+      ],
       "peerDependencies": []
     },
     {
       "id": "artifact",
       "path": "packages/artifact",
       "name": "@mlt-org/octo-card-artifact",
-      "runtimeDependencies": ["card-spec", "core"],
+      "runtimeDependencies": [
+        "card-spec",
+        "core"
+      ],
       "peerDependencies": []
     },
     {
       "id": "catalog-snapshot",
       "path": "packages/catalog-snapshot",
       "name": "@mlt-org/octo-card-catalog-snapshot",
-      "runtimeDependencies": ["card-spec", "artifact"],
+      "runtimeDependencies": [
+        "card-spec",
+        "artifact"
+      ],
       "peerDependencies": []
     },
     {
       "id": "cli-runtime",
       "path": "packages/cli",
       "name": "@mlt-org/octo-card-cli-runtime",
-      "runtimeDependencies": ["card-spec", "core", "workspace", "artifact", "preview-kit", "profile-octo-chat"],
+      "runtimeDependencies": [
+        "card-spec",
+        "core",
+        "workspace",
+        "artifact",
+        "preview-kit",
+        "profile-octo-chat"
+      ],
       "peerDependencies": []
     },
     {
       "id": "forge-web",
       "path": "apps/forge-web",
       "name": "@mlt-org/octo-card-forge-web",
-      "runtimeDependencies": ["catalog-snapshot", "profile-octo-chat"],
+      "runtimeDependencies": [
+        "catalog-snapshot",
+        "profile-octo-chat"
+      ],
       "peerDependencies": []
     },
     {
@@ -77,9 +99,19 @@
       "name": "@mlt-org/octo-card-cli",
       "legacyRoot": true,
       "migrationTarget": "packages/cli",
-      "runtimeDependencies": ["card-spec", "core", "workspace", "artifact", "preview-kit"],
-      "peerDependencies": ["profile-octo-chat", "cli-runtime"],
-      "optionalPeerDependencies": ["profile-octo-chat"]
+      "runtimeDependencies": [
+        "card-spec",
+        "core",
+        "workspace",
+        "artifact",
+        "preview-kit"
+      ],
+      "peerDependencies": [
+        "profile-octo-chat"
+      ],
+      "optionalPeerDependencies": [
+        "profile-octo-chat"
+      ]
     }
   ]
 }

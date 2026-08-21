@@ -17,6 +17,7 @@ import {
   type RenderProfileManifestV1,
   type ResolvedCardSourceV1,
 } from "@mlt-org/octo-card-spec";
+export type { CardArtifactV1 } from "@mlt-org/octo-card-spec";
 import {
   compileCardSource,
   type RenderCapabilities,
