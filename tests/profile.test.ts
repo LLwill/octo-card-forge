@@ -93,7 +93,9 @@ describe("render profile bundle", () => {
     expect(profile.reference).toBe(REFERENCE);
     expect(profile.manifest.id).toBe("octo-chat");
     expect(profile.capabilities.allowedElements).toContain("TextBlock");
-    expect(profile.stylesheets.length).toBeGreaterThan(0);
+    const stylesheets = profile.stylesheets;
+    expect(stylesheets).toBeDefined();
+    expect(stylesheets!.length).toBeGreaterThan(0);
   });
 });
 

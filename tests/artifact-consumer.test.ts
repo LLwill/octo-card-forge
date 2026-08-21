@@ -7,8 +7,8 @@ import { describe, expect, it } from "vitest";
 import {
   artifactSha256,
   verifyCardArtifact,
-  type CardArtifactV1,
 } from "@mlt-org/octo-card-artifact";
+import type { CardArtifactV1 } from "@mlt-org/octo-card-spec";
 
 const execFileAsync = promisify(execFile);
 const cliEntry = path.resolve("src/cli.ts");
@@ -42,7 +42,10 @@ describe("Artifact consumer fixture (repo-free consumption)", () => {
       expect(artifact.dataContract).toBeDefined();
       expect(Object.keys(artifact.views).length).toBeGreaterThan(0);
 
-      for (const [, view] of Object.entries(artifact.views)) {
+      for (const [, view] of Object.entries(artifact.views) as [
+        string,
+        CardArtifactV1["views"][string],
+      ][]) {
         expect(view.template).toBeDefined();
         expect(view.samples.length).toBeGreaterThan(0);
         for (const sample of view.samples) {
