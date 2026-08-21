@@ -1,15 +1,32 @@
 {
   "name": "@mlt-org/octo-card-profile-octo-chat",
-  "version": "0.0.0",
-  "private": true,
+  "version": "1.2.0-rc.3",
+  "private": false,
   "type": "module",
-  "description": "Reserved workspace boundary for the Octo Chat Render Profile source.",
-  "files": ["dist"],
+  "description": "Octo Adaptive Cards Render Profile for Octo Chat",
+  "dependencies": {
+    "@mlt-org/octo-card-spec": "workspace:*"
+  },
+  "files": [
+    "dist"
+  ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./manifest.json": "./dist/manifest.json",
+    "./capabilities.json": "./dist/capabilities.json",
+    "./host-config.json": "./dist/host-config.json",
+    "./tokens.json": "./dist/tokens.json",
+    "./theme.css": "./dist/theme.css",
+    "./styles.css": "./dist/styles.css"
+  },
+  "sideEffects": [
+    "*.css"
+  ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "build": "tsc -p tsconfig.json && node scripts/build.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "validate": "node --import data:text/javascript,import{register}from'node:module';import{pathToFileURL}from'node:url';register('ts-node/esm',pathToFileURL('./')); src/cli.ts validate"
   }
 }

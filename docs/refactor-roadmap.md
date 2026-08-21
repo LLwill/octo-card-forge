@@ -40,7 +40,7 @@ Phase 8  逐 Card 迁移与 Legacy 删除
 | Phase 0 | 已完成 | 架构、ADR、Characterization Tests 和 Golden 已建立 |
 | Phase 1 | 已完成 | Monorepo 外壳、依赖检查和兼容构建已建立 |
 | Phase 2 | 已完成 | Contract、Core、Workspace 编译链路和单一 Validator/Inspection/utility parser Gate 已完成 |
-| Phase 3 | 进行中 | Preview API、Preview Kit client 和现有 Card 页面接入已完成；Profile package、共享浏览器渲染、组件预览和 CLI 分包待完成 |
+| Phase 3 | 进行中 | Preview API、Preview Kit client、现有 Card 页面接入和 Profile package foundation 已完成；共享浏览器渲染、组件预览和 CLI 分包待完成 |
 | Phase 4 | 未开始实现 | Artifact Contract 已定义，Builder、digest 和 verify 尚未实现 |
 | Phase 5 | 未开始 | Catalog 仓库和 GitHub Delivery 尚未建立 |
 | Phase 6 | 未开始实现 | Snapshot Contract 已定义；`apps/forge-web` 仍为空壳，当前改动只发生在 legacy `web/` |
@@ -180,7 +180,7 @@ card-spec
 
 目标：让本地 Card Workspace 和 Profile 成为稳定的可分发能力。
 
-状态：**进行中。Workspace、Preview API、Preview Kit client 和现有 Card 页面接入已完成；组件预览、共享浏览器渲染、CLI/Profile 分包待实施。**
+状态：**进行中。Workspace、Preview API、Preview Kit client、现有 Card 页面接入和 Profile Package Foundation 已完成；组件预览、共享浏览器渲染、CLI 分包待实施。**
 
 子阶段：
 
@@ -188,7 +188,7 @@ card-spec
 | --- | --- | --- |
 | Phase 3A Workspace Runtime | 已完成 | 路径安全、Resolved Source、`Workspace → Core` facade |
 | Phase 3B Preview Transport | 已完成 | Preview API v1、revision、Preview Kit client、legacy Card 页面接入 |
-| Phase 3C Profile Package Foundation | 下一阶段 | `profile-octo-chat`、独立 validate/build/pack、精确版本消费 |
+| Phase 3C Profile Package Foundation | 已完成 | `packages/profile-octo-chat` 独立包，validate/build/pack、workspace package 优先加载、legacy 目录作开发回退 |
 | Phase 3D Component Preview | 待实施，可与 Phase 4 并行 | Component Catalog Contract、Profile specimen、共享浏览器渲染、legacy Components 页面迁移 |
 | Phase 3E CLI Package Convergence | 待实施 | `packages/cli`、Artifact 命令编排、repo-free npm 消费验证 |
 
@@ -204,16 +204,19 @@ card-spec
 
 ### 6.1 Phase 3C：Profile Package Foundation
 
+状态：**已完成（2026-08-21）**。
+
 Profile package 是 Component Preview 的前置。该阶段只稳定 Profile 的发布与消费边界，不要求先
 完成组件展示页面；Artifact Builder 可以继续接收现有 Resolved Profile 对象，因此不被 package 迁移阻塞。
 
-实施顺序：
+已落地：
 
-1. 将当前 `render-profiles/octo-chat` 的加载、校验和构建能力迁入 `packages/profile-octo-chat`；
-2. 保持现有 CLI/Profile bundle 行为兼容；
-3. 提供独立 validate/build/pack 和精确版本 manifest；
-4. 让 Preview runtime 优先消费 package，Forge 源码只作开发回退；
-5. 验证未来 `octo-web` 可以消费同一发布包。
+- `packages/profile-octo-chat` 成为独立 workspace package，版本 `1.2.0-rc.3`；
+- Profile 静态资源（manifest、capabilities、host-config、tokens、theme、styles）已迁入 package 根目录；
+- `src/index.ts` 提供 `loadProfileAssets()`、`validateProfile()`、`validateProfileCss()` 等独立 API；
+- build 脚本（`tsc` + asset copy）将编译产物和 assets 输出到 `dist/`，`dist/package.json` 适合独立 npm pack；
+- `src/profile-source.ts` 加载优先级变为：workspace package dist → workspace package src → 旧 `render-profiles/` 目录 → npm 已发布包；
+- 旧 `render-profiles/octo-chat` 保留作为开发回退和 npm pack 独立验证来源。
 
 退出 Gate：
 
@@ -221,8 +224,6 @@ Profile package 是 Component Preview 的前置。该阶段只稳定 Profile 的
 - Preview 使用精确 Profile reference；
 - package 内容覆盖 HostConfig、CSS、capabilities、tokens 和 manifest；
 - npm pack 不依赖 Forge 私有目录结构。
-
-Phase 3C Gate 只约束 Component Preview 和最终 package 收敛，不是 Artifact Builder 的硬前置。
 
 ### 6.2 Phase 3D：Component Preview
 

@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "maxAdaptiveCardVersion": "1.5",
+  "allowedElements": [
+    "TextBlock",
+    "RichTextBlock",
+    "Image",
+    "ImageSet",
+    "Container",
+    "ColumnSet",
+    "Column",
+    "FactSet",
+    "Table",
+    "ActionSet",
+    "Input.Text",
+    "Input.Toggle",
+    "Input.ChoiceSet",
+    "Input.Number",
+    "Input.Date",
+    "Input.Time"
+  ],
+  "allowedActions": [
+    "Action.OpenUrl",
+    "Action.Submit",
+    "Action.ToggleVisibility"
+  ],
+  "components": {
+    "octo-badge": {
+      "appliesTo": ["TextBlock"],
+      "variants": {
+        "neutral": {
+          "fallback": {
+            "size": "Small",
+            "weight": "Bolder",
+            "isSubtle": true
+          }
+        },
+        "accent": {
+          "fallback": {
+            "size": "Small",
+            "weight": "Bolder",
+            "color": "Accent"
+          }
+        },
+        "good": {
+          "fallback": {
+            "size": "Small",
+            "weight": "Bolder",
+            "color": "Good"
+          }
+        },
+        "warning": {
+          "fallback": {
+            "size": "Small",
+            "weight": "Bolder",
+            "color": "Warning"
+          }
+        },
+        "attention": {
+          "fallback": {
+            "size": "Small",
+            "weight": "Bolder",
+            "color": "Attention"
+          }
+        }
+      }
+    },
+    "octo-surface": {
+      "appliesTo": ["Container", "Column"],
+      "variants": {
+        "accent": {
+          "fallback": {
+            "style": "accent"
+          }
+        },
+        "header-accent": {
+          "fallback": {
+            "style": "accent"
+          }
+        },
+        "footer-default": {
+          "fallback": {
+            "style": "emphasis"
+          }
+        }
+      }
+    }
+  },
+  "utilityRules": {
+    "maxTokensPerElement": 3
+  },
+  "utilities": {
+    "surface-subtle": {
+      "group": "surface",
+      "appliesTo": ["Container", "Column"],
+      "fallback": {
+        "style": "emphasis"
+      },
+      "description": "弱背景内容区域，适合辅助信息、预览区域和次级内容容器。"
+    },
+    "surface-warning": {
+      "group": "surface",
+      "appliesTo": ["Container", "Column"],
+      "fallback": {
+        "style": "warning"
+      },
+      "description": "警告背景区域，适合需要用户注意但不一定阻断的状态。"
+    },
+    "badge-warning": {
+      "group": "badge",
+      "appliesTo": ["TextBlock"],
+      "fallback": {
+        "size": "Small",
+        "weight": "Bolder",
+        "color": "Warning"
+      },
+      "description": "警告状态胶囊，适合待处理、风险提示和需要注意的短状态文本。"
+    },
+    "inset-md": {
+      "group": "inset",
+      "appliesTo": ["Container", "Column"],
+      "description": "中等内边距，用于显式选择需要内部留白的内容区域。"
+    },
+    "line-skeleton": {
+      "group": "line",
+      "appliesTo": ["Container", "TextBlock"],
+      "description": "骨架占位线，用于 loading 或文档预览中的窄条占位。"
+    },
+    "motion-fade-in": {
+      "group": "motion",
+      "appliesTo": ["Container", "Column", "TextBlock"],
+      "description": "短时淡入动效，用于新内容出现的轻量增强。"
+    },
+    "motion-shimmer": {
+      "group": "motion",
+      "appliesTo": ["Container", "TextBlock"],
+      "description": "骨架占位 shimmer 动效，仅用于 loading/skeleton 场景。"
+    }
+  },
+  "maxNodes": 200,
+  "maxDepth": 24,
+  "maxPayloadBytes": 65536,
+  "imageUrlSchemes": ["https", "data"],
+  "openUrlSchemes": ["https"]
+}

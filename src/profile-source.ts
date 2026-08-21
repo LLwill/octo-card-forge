@@ -18,6 +18,10 @@ const DEFAULT_RENDER_PROFILE_PACKAGES: Record<string, string> = {
   "octo-chat": "@mlt-org/octo-card-profile-octo-chat",
 };
 
+const WORKSPACE_PROFILE_PACKAGES: Record<string, string> = {
+  "octo-chat": "packages/profile-octo-chat",
+};
+
 async function exists(filePath: string): Promise<boolean> {
   try {
     await access(filePath);
@@ -151,6 +155,24 @@ export async function loadRenderProfileForReference(
   const requested = reference
     ? parseRenderProfileReference(reference)
     : parseRenderProfileReference(resolveRenderProfileReference());
+
+  const workspacePackageDir = WORKSPACE_PROFILE_PACKAGES[requested.id];
+  if (workspacePackageDir) {
+    const workspaceDistRoot = resolveInProject(workspacePackageDir);
+    const distManifest = path.join(workspaceDistRoot, "dist", "manifest.json");
+    const srcManifest = path.join(workspaceDistRoot, "manifest.json");
+    const workspaceRoot = (await exists(distManifest))
+      ? path.join(workspaceDistRoot, "dist")
+      : (await exists(srcManifest))
+        ? workspaceDistRoot
+        : null;
+    if (workspaceRoot) {
+      const profile = await loadFromRoot(workspaceRoot, "workspace");
+      assertProfileMatchesRequest(profile, reference);
+      return profile;
+    }
+  }
+
   const localRoot = resolveInProject("render-profiles", requested.id);
   if (await exists(path.join(localRoot, "manifest.json"))) {
     const profile = await loadFromRoot(localRoot, "workspace");
