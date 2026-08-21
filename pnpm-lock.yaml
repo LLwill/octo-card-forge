@@ -70,6 +70,24 @@ importers:
 
   packages/catalog-snapshot: {}
 
+  packages/cli:
+    dependencies:
+      '@mlt-org/octo-card-artifact':
+        specifier: workspace:*
+        version: link:../artifact
+      '@mlt-org/octo-card-core':
+        specifier: workspace:*
+        version: link:../core
+      '@mlt-org/octo-card-profile-octo-chat':
+        specifier: workspace:*
+        version: link:../profile-octo-chat
+      '@mlt-org/octo-card-spec':
+        specifier: workspace:*
+        version: link:../card-spec
+      '@mlt-org/octo-card-workspace':
+        specifier: workspace:*
+        version: link:../workspace
+
   packages/core:
     dependencies:
       adaptivecards-templating:
@@ -88,7 +106,11 @@ importers:
 
   packages/preview-kit: {}
 
-  packages/profile-octo-chat: {}
+  packages/profile-octo-chat:
+    dependencies:
+      '@mlt-org/octo-card-spec':
+        specifier: workspace:*
+        version: link:../card-spec
 
   packages/testkit: {}
 

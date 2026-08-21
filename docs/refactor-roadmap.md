@@ -41,7 +41,7 @@ Phase 8  逐 Card 迁移与 Legacy 删除
 | Phase 1 | 已完成 | Monorepo 外壳、依赖检查和兼容构建已建立 |
 | Phase 2 | 已完成 | Contract、Core、Workspace 编译链路和单一 Validator/Inspection/utility parser Gate 已完成 |
 | Phase 3 | 进行中 | Preview API、Preview Kit client、现有 Card 页面接入和 Profile package foundation 已完成；共享浏览器渲染、组件预览和 CLI 分包待完成 |
-| Phase 4 | 未开始实现 | Artifact Contract 已定义，Builder、digest 和 verify 尚未实现 |
+| Phase 4 | 进行中 | Artifact Contract/Builder/digest/verify 已实现，CLI 已暴露 artifact build/verify 命令；业务后端消费 fixture 待完成 |
 | Phase 5 | 未开始 | Catalog 仓库和 GitHub Delivery 尚未建立 |
 | Phase 6 | 未开始实现 | Snapshot Contract 已定义；`apps/forge-web` 仍为空壳，当前改动只发生在 legacy `web/` |
 | Phase 7 | 未开始 | 尚未进行真实业务后端交付验证 |
@@ -190,7 +190,7 @@ card-spec
 | Phase 3B Preview Transport | 已完成 | Preview API v1、revision、Preview Kit client、legacy Card 页面接入 |
 | Phase 3C Profile Package Foundation | 已完成 | `packages/profile-octo-chat` 独立包，validate/build/pack、workspace package 优先加载、legacy 目录作开发回退 |
 | Phase 3D Component Preview | 待实施，可与 Phase 4 并行 | Component Catalog Contract、Profile specimen、共享浏览器渲染、legacy Components 页面迁移 |
-| Phase 3E CLI Package Convergence | 待实施 | `packages/cli`、Artifact 命令编排、repo-free npm 消费验证 |
+| Phase 3E CLI Package Convergence | 进行中（占位） | `packages/cli` 占位包已建立，CLI 已暴露 artifact 命令；CLI 逻辑迁入 packages/cli、repo-free npm 消费验证待完成 |
 
 工作：
 
@@ -266,7 +266,7 @@ Profile package 是 Component Preview 的前置。该阶段只稳定 Profile 的
 
 目标：建立与 Git 目录无关的正式发布内容。
 
-状态：**进行中。Artifact Contract、Builder、canonical bytes、digest、verify 和 Handoff 派生已完成；业务后端消费者 fixture 待完成。**
+状态：**进行中。Artifact Contract、Builder、canonical bytes、digest、verify、Handoff 派生和 CLI 命令已完成；业务后端消费者 fixture 待完成。**
 
 工作：
 

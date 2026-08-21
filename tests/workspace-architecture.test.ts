@@ -63,7 +63,7 @@ async function checkerError(root: string): Promise<string> {
 describe("workspace architecture", () => {
   it("matches the declared package dependency allowlist", async () => {
     const { stdout } = await execFileAsync("node", [checker], { encoding: "utf8" });
-    expect(stdout).toContain("Workspace dependency graph valid: 10 packages");
+    expect(stdout).toContain("Workspace dependency graph valid: 11 packages");
   });
 
   it("rejects an undeclared pnpm workspace package", async () => {

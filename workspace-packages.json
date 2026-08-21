@@ -51,6 +51,13 @@
       "peerDependencies": []
     },
     {
+      "id": "cli-runtime",
+      "path": "packages/cli",
+      "name": "@mlt-org/octo-card-cli-runtime",
+      "runtimeDependencies": ["card-spec", "core", "workspace", "artifact", "preview-kit", "profile-octo-chat"],
+      "peerDependencies": []
+    },
+    {
       "id": "forge-web",
       "path": "apps/forge-web",
       "name": "@mlt-org/octo-card-forge-web",
@@ -71,7 +78,7 @@
       "legacyRoot": true,
       "migrationTarget": "packages/cli",
       "runtimeDependencies": ["card-spec", "core", "workspace", "artifact", "preview-kit"],
-      "peerDependencies": ["profile-octo-chat"],
+      "peerDependencies": ["profile-octo-chat", "cli-runtime"],
       "optionalPeerDependencies": ["profile-octo-chat"]
     }
   ]
