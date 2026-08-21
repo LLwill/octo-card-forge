@@ -648,6 +648,7 @@ try {
       const result = verifyCardArtifact(raw, expectedSha);
       if (flag("--format") === "json") {
         console.log(JSON.stringify(result, null, 2));
+        if (!result.valid) process.exitCode = 1;
       } else if (result.valid) {
         console.log(`✓ Valid artifact (sha256: ${result.sha256})`);
       } else {

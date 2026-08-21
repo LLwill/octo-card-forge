@@ -1,4 +1,4 @@
-import { cp, rm, writeFile, readFile } from "node:fs/promises";
+import { cp, writeFile, readFile, chmod } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -13,41 +13,18 @@ const assets = [
   "tokens.json",
   "theme.css",
   "styles.css",
-  "package.json",
 ];
 
 for (const asset of assets) {
-  await rm(path.join(distRoot, asset), { force: true });
-}
-
-for (const asset of assets.slice(0, -1)) {
   await cp(path.join(packageRoot, asset), path.join(distRoot, asset));
 }
 
-const pkg = JSON.parse(
-  await readFile(path.join(packageRoot, "package.json"), "utf8")
-);
-const publishedPackageJson = {
-  name: pkg.name,
-  version: pkg.version,
-  type: "module",
-  description: pkg.description,
-  main: "./index.js",
-  types: "./index.d.ts",
-  exports: {
-    ".": "./index.js",
-    "./manifest.json": "./manifest.json",
-    "./capabilities.json": "./capabilities.json",
-    "./host-config.json": "./host-config.json",
-    "./tokens.json": "./tokens.json",
-    "./theme.css": "./theme.css",
-    "./styles.css": "./styles.css",
-  },
-  sideEffects: ["*.css"],
-};
-await writeFile(
-  path.join(distRoot, "package.json"),
-  `${JSON.stringify(publishedPackageJson, null, 2)}\n`
-);
+const cliPath = path.join(distRoot, "cli.js");
+const shebang = "#!/usr/bin/env node\n";
+const cliContent = await readFile(cliPath, "utf8");
+if (!cliContent.startsWith("#!")) {
+  await writeFile(cliPath, shebang + cliContent);
+}
+await chmod(cliPath, 0o755);
 
-console.log(`Built ${pkg.name}@${pkg.version} → dist/`);
+console.log(`Copied ${assets.length} assets and made cli.js executable`);

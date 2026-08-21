@@ -12,6 +12,9 @@
   ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "octo-card-profile": "./dist/cli.js"
+  },
   "exports": {
     ".": "./dist/index.js",
     "./manifest.json": "./dist/manifest.json",
@@ -27,6 +30,6 @@
   "scripts": {
     "build": "tsc -p tsconfig.json && node scripts/build.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "validate": "node --import data:text/javascript,import{register}from'node:module';import{pathToFileURL}from'node:url';register('ts-node/esm',pathToFileURL('./')); src/cli.ts validate"
+    "validate": "node dist/cli.js validate"
   }
 }

@@ -57,21 +57,26 @@ async function loadFromRoot(
   source: "workspace" | "package" | "directory" = "directory"
 ): Promise<RenderProfileSource> {
   const resolvedRoot = path.resolve(root);
-  const sourceManifestPath = path.join(resolvedRoot, "manifest.json");
-  const packageManifestPath = path.join(resolvedRoot, "dist", "manifest.json");
-  const manifestPath = await exists(sourceManifestPath)
-    ? sourceManifestPath
-    : packageManifestPath;
+  const distManifestPath = path.join(resolvedRoot, "dist", "manifest.json");
+  const rootManifestPath = path.join(resolvedRoot, "manifest.json");
 
-  if (!(await exists(manifestPath))) {
+  let manifestPath: string;
+  let assetRoot: string;
+  if (await exists(distManifestPath)) {
+    manifestPath = distManifestPath;
+    assetRoot = path.join(resolvedRoot, "dist");
+  } else if (await exists(rootManifestPath)) {
+    manifestPath = rootManifestPath;
+    assetRoot = resolvedRoot;
+  } else {
     throw new Error(`${resolvedRoot}: manifest.json or dist/manifest.json is required`);
   }
 
   const manifest = await readJson<RenderProfileManifest>(manifestPath);
   const readProfileJson = <T>(file: string) =>
-    readJson<T>(resolveProfileAssetPath(resolvedRoot, file));
+    readJson<T>(resolveProfileAssetPath(assetRoot, file));
   const readProfileText = (file: string) =>
-    readText(resolveProfileAssetPath(resolvedRoot, file));
+    readText(resolveProfileAssetPath(assetRoot, file));
 
   const [capabilities, hostConfig, theme, stylesheet] = await Promise.all([
     readProfileJson<RenderCapabilities>(manifest.capabilities),
@@ -81,7 +86,7 @@ async function loadFromRoot(
   ]);
 
   return {
-    root: resolvedRoot,
+    root: assetRoot,
     reference: referenceForManifest(manifest),
     source,
     manifest,

@@ -13,35 +13,6 @@ const PACKAGE_ROOT = path.resolve(
   ".."
 );
 
-const SOURCE_DIR = path.join(PACKAGE_ROOT, "src");
-
-const ASSET_FILES = [
-  "manifest.json",
-  "capabilities.json",
-  "host-config.json",
-  "tokens.json",
-  "theme.css",
-  "styles.css",
-] as const;
-
-export interface ProfileAssetBundle {
-  root: string;
-  manifest: RenderProfileManifestV1;
-  capabilities: RenderCapabilitiesV1;
-  hostConfig: Record<string, unknown>;
-  tokens: Record<string, unknown>;
-  themeCss: string;
-  stylesCss: string;
-}
-
-export interface ProfileValidationResult {
-  reference: string;
-  packageName: string;
-  version: string;
-  compatibility: string;
-  errors: string[];
-}
-
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -74,6 +45,30 @@ function resolveAssetPath(root: string, relativePath: string): string {
     );
   }
   return resolvedPath;
+}
+
+async function resolveProfileRoot(explicitRoot?: string): Promise<{ root: string; manifest: RenderProfileManifestV1 }> {
+  const candidates = explicitRoot
+    ? [path.resolve(explicitRoot)]
+    : [PACKAGE_ROOT, path.join(PACKAGE_ROOT, "dist")];
+
+  let lastError: unknown;
+  for (const root of candidates) {
+    try {
+      const manifestPath = path.join(root, "manifest.json");
+      const rawManifest = await readJsonFile<unknown>(manifestPath);
+      const result = decodeRenderProfileManifest(rawManifest);
+      if (result.ok) {
+        return { root, manifest: result.value };
+      }
+      lastError = new Error(result.issues.map((i) => `${i.path}: ${i.message}`).join("; "));
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw new Error(
+    `Could not locate profile manifest (tried: ${candidates.join(", ")}): ${lastError instanceof Error ? lastError.message : String(lastError)}`
+  );
 }
 
 export function assertScopedCss(css: string, filePath: string): string[] {
@@ -265,21 +260,31 @@ export function validateProfileCss(
   ];
 }
 
-export async function loadProfileAssets(
-  root: string = SOURCE_DIR
-): Promise<ProfileAssetBundle> {
-  const manifestPath = resolveAssetPath(root, "manifest.json");
-  const rawManifest = await readJsonFile<unknown>(manifestPath);
-  const manifestResult = decodeRenderProfileManifest(rawManifest);
-  if (!manifestResult.ok) {
-    const details = manifestResult.issues
-      .map((i) => `${i.path}: ${i.message}`)
-      .join("; ");
-    throw new Error(`${manifestPath}: ${details}`);
-  }
-  const manifest = manifestResult.value;
+export interface ProfileAssetBundle {
+  root: string;
+  manifest: RenderProfileManifestV1;
+  capabilities: RenderCapabilitiesV1;
+  hostConfig: Record<string, unknown>;
+  tokens: Record<string, unknown>;
+  themeCss: string;
+  stylesCss: string;
+}
 
-  const capabilitiesPath = resolveAssetPath(root, manifest.capabilities);
+export interface ProfileValidationResult {
+  reference: string;
+  packageName: string;
+  version: string;
+  compatibility: string;
+  errors: string[];
+}
+
+export async function loadProfileAssets(
+  root?: string
+): Promise<ProfileAssetBundle> {
+  const resolved = await resolveProfileRoot(root);
+  const { root: assetRoot, manifest } = resolved;
+
+  const capabilitiesPath = resolveAssetPath(assetRoot, manifest.capabilities);
   const rawCapabilities = await readJsonFile<unknown>(capabilitiesPath);
   const capsResult = decodeRenderCapabilities(rawCapabilities);
   if (!capsResult.ok) {
@@ -289,24 +294,24 @@ export async function loadProfileAssets(
     throw new Error(`${capabilitiesPath}: ${details}`);
   }
 
-  const hostConfigPath = resolveAssetPath(root, manifest.hostConfig);
-  const hostConfig = await readJsonFile<Record<string, unknown>>(hostConfigPath);
-
-  const tokensPath = manifest.tokens
-    ? resolveAssetPath(root, manifest.tokens)
-    : null;
-  const tokens = tokensPath
-    ? await readJsonFile<Record<string, unknown>>(tokensPath)
+  const hostConfig = await readJsonFile<Record<string, unknown>>(
+    resolveAssetPath(assetRoot, manifest.hostConfig)
+  );
+  const tokens = manifest.tokens
+    ? await readJsonFile<Record<string, unknown>>(
+        resolveAssetPath(assetRoot, manifest.tokens)
+      )
     : {};
-
-  const stylesPath = resolveAssetPath(root, manifest.stylesheet);
-  const stylesCss = await readFile(stylesPath, "utf8");
-
-  const themePath = manifest.theme ? resolveAssetPath(root, manifest.theme) : null;
-  const themeCss = themePath ? await readFile(themePath, "utf8") : "";
+  const stylesCss = await readFile(
+    resolveAssetPath(assetRoot, manifest.stylesheet),
+    "utf8"
+  );
+  const themeCss = manifest.theme
+    ? await readFile(resolveAssetPath(assetRoot, manifest.theme), "utf8")
+    : "";
 
   return {
-    root,
+    root: assetRoot,
     manifest,
     capabilities: capsResult.value,
     hostConfig,
@@ -317,7 +322,7 @@ export async function loadProfileAssets(
 }
 
 export async function validateProfile(
-  root: string = SOURCE_DIR
+  root?: string
 ): Promise<ProfileValidationResult> {
   const assets = await loadProfileAssets(root);
   const errors: string[] = [];
@@ -336,7 +341,7 @@ export async function validateProfile(
   }
 
   const combinedCss = [assets.themeCss, assets.stylesCss].filter(Boolean).join("\n");
-  const cssPath = path.join(root, assets.manifest.stylesheet);
+  const cssPath = path.join(assets.root, assets.manifest.stylesheet);
   errors.push(...validateProfileCss(assets.capabilities, combinedCss, cssPath));
 
   return {
@@ -357,5 +362,3 @@ export function getProfileReference(
 ): string {
   return `${manifest.id}@${manifest.version}`;
 }
-
-export { ASSET_FILES };
