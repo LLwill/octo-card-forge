@@ -11,7 +11,7 @@ import {
 import type { CardArtifactV1 } from "@mlt-org/octo-card-spec";
 
 const execFileAsync = promisify(execFile);
-const cliEntry = path.resolve("src/cli.ts");
+const cliEntry = path.resolve("packages/cli/src/bin.ts");
 
 function node(args: string[], opts?: { cwd?: string }) {
   return execFileAsync(

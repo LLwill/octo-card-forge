@@ -8,26 +8,29 @@ import path from "node:path";
 import {
   buildHandoffArchive,
   buildHandoffArchiveForCard,
+} from "./handoff.js";
+import {
   compileCard,
   compileCardPackage,
-  compileLoadedCard,
   compileSample,
   compileSampleFromPackage,
+} from "./compiler.js";
+import { compileLoadedCard, loadCardRuntime } from "./core-adapter.js";
+import {
   getCard,
   getCurrentRenderProfile,
   getRenderProfile,
   listCards,
   loadCardPackage,
-  loadCardRuntime,
-  loadRenderProfileForReference,
-  readJson,
-  readText,
   resolveCardAssetPath,
-  resolveInProject,
-  type CardPackage,
-  type JsonObject,
-  type RenderProfileSource,
-} from "@mlt-org/octo-card-cli-runtime";
+} from "./registry.js";
+import { loadRenderProfileForReference } from "./profile-source.js";
+import { readJson, readText, resolveInProject } from "./fs.js";
+import type {
+  CardPackage,
+  JsonObject,
+  RenderProfileSource,
+} from "./types.js";
 import {
   buildComponentBaseline,
   buildComponentBaselineGroups,

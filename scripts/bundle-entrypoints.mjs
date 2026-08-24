@@ -25,8 +25,8 @@ const external = [
 await build({
   absWorkingDir: root,
   entryPoints: {
-    cli: "src/cli.ts",
-    server: "src/server.ts",
+    cli: "packages/cli/src/bin.ts",
+    server: "packages/cli/src/server.ts",
   },
   outdir: "dist",
   bundle: true,

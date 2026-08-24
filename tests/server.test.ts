@@ -2,7 +2,7 @@ import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { CURRENT_RENDER_PROFILE } from "../packages/cli/src/registry.js";
-import { createForgeServer, normalizeBasePath } from "../src/server.js";
+import { createForgeServer, normalizeBasePath } from "../packages/cli/src/server.js";
 
 describe("server base path", () => {
   it("normalizes valid public URL prefixes", () => {
