@@ -113,7 +113,11 @@ importers:
         specifier: workspace:*
         version: link:../card-spec
 
-  packages/preview-kit: {}
+  packages/preview-kit:
+    dependencies:
+      '@mlt-org/octo-card-spec':
+        specifier: workspace:*
+        version: link:../card-spec
 
   packages/profile-octo-chat:
     dependencies:
