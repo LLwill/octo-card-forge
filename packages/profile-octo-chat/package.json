@@ -28,8 +28,9 @@
     "*.css"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json && node scripts/build.mjs",
+    "build": "node scripts/sync-version.mjs && tsc -p tsconfig.json && node scripts/build.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "validate": "node dist/cli.js validate"
+    "validate": "node dist/cli.js validate",
+    "sync-version": "node scripts/sync-version.mjs"
   }
 }
