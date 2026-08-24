@@ -10,6 +10,7 @@ describe("GitHub Delivery Actions", () => {
       expect(action).toContain('default: "0.2.2"');
       expect(action).toContain('default: "1.2.0-rc.4"');
       expect(action).toContain("../_shared/install-tools.sh");
+      expect(action).toContain("package-manager-cache: false");
       expect(action).not.toContain("packages/cli");
       expect(action).not.toContain("pnpm cli");
     }
