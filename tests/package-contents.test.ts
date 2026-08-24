@@ -6,6 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { describe, expect, it } from "vitest";
+import { CURRENT_RENDER_PROFILE } from "../src/registry.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -153,7 +154,7 @@ describe("CLI package contents", () => {
       );
       expect(manifest).toMatchObject({
         entrypoint: "pnpm start",
-        renderProfile: "octo-chat@1.2.0-rc.3",
+        renderProfile: CURRENT_RENDER_PROFILE,
         sha256: actualSha256,
       });
       expect(result.sha256).toBe(actualSha256);

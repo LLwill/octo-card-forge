@@ -2,6 +2,7 @@ import { cp, mkdtemp } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { CURRENT_RENDER_PROFILE } from "../src/registry.js";
 import { lintCardPackageForAgent } from "../src/agent.js";
 import { checkCardPackage } from "../src/check.js";
 import { compileSampleFromDirectory } from "../src/compiler.js";
@@ -49,7 +50,7 @@ describe("repo-free card package authoring", () => {
       profile,
     });
     expect(result.cardId).toBe("ai.reasoning-process");
-    expect(result.renderProfile).toBe("octo-chat@1.2.0-rc.3");
+    expect(result.renderProfile).toBe(CURRENT_RENDER_PROFILE);
     expect(result.payload.type).toBe("AdaptiveCard");
     expect(result.issues).toEqual([]);
   });

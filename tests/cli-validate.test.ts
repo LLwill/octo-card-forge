@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { describe, expect, it } from "vitest";
+import { CURRENT_RENDER_PROFILE } from "../src/registry.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -38,7 +39,7 @@ describe("standalone Adaptive Card validation", () => {
 
     expect(report).toMatchObject({
       valid: true,
-      profile: "octo-chat@1.2.0-rc.3",
+      profile: CURRENT_RENDER_PROFILE,
       wireProfile: "octo/v1",
       issues: [],
     });

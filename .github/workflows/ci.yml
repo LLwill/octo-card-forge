@@ -16,7 +16,7 @@ concurrency:
 env:
   NODE_VERSION: "22"
   PNPM_VERSION: "10.32.0"
-  PROFILE_REF: octo-chat@1.2.0-rc.3
+  PROFILE_REF: octo-chat@1.2.0-rc.4
 
 jobs:
   verify:
@@ -117,11 +117,11 @@ jobs:
       - name: Inspect package contents
         run: |
           set -euo pipefail
-          package_dir=.release/octo-chat-1.2.0-rc.3/package
-          tarball=.release/mlt-org-octo-card-profile-octo-chat-1.2.0-rc.3.tgz
+          package_dir=.release/octo-chat-1.2.0-rc.4/package
+          tarball=.release/mlt-org-octo-card-profile-octo-chat-1.2.0-rc.4.tgz
           test -f "$tarball"
           test "$(node -p "require('./$package_dir/package.json').name")" = "@mlt-org/octo-card-profile-octo-chat"
-          test "$(node -p "require('./$package_dir/package.json').version")" = "1.2.0-rc.3"
+          test "$(node -p "require('./$package_dir/package.json').version")" = "1.2.0-rc.4"
           tar -tzf "$tarball" | sort
           sha256sum "$tarball"
           (cd "$package_dir" && npm pack --dry-run)
@@ -129,10 +129,10 @@ jobs:
       - name: Upload candidate artifact
         uses: actions/upload-artifact@v4
         with:
-          name: octo-chat-1.2.0-rc.3
+          name: octo-chat-1.2.0-rc.4
           path: |
-            .release/mlt-org-octo-card-profile-octo-chat-1.2.0-rc.3.tgz
-            .release/octo-chat-1.2.0-rc.3/package/dist/bundle-manifest.json
+            .release/mlt-org-octo-card-profile-octo-chat-1.2.0-rc.4.tgz
+            .release/octo-chat-1.2.0-rc.4/package/dist/bundle-manifest.json
           if-no-files-found: error
           retention-days: 30
 

@@ -1,5 +1,6 @@
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { CURRENT_RENDER_PROFILE } from "../src/registry.js";
 import { resolveInProject } from "../src/fs.js";
 import {
   loadRenderProfileForReference,
@@ -8,12 +9,12 @@ import {
 
 describe("render profile source resolution", () => {
   it("prefers the built workspace package when running from the forge workspace", async () => {
-    const profile = await loadRenderProfileForReference("octo-chat@1.2.0-rc.3");
+    const profile = await loadRenderProfileForReference(CURRENT_RENDER_PROFILE);
 
     expect(profile.root).toBe(
       path.resolve(resolveInProject("packages/profile-octo-chat/dist"))
     );
-    expect(profile.reference).toBe("octo-chat@1.2.0-rc.3");
+    expect(profile.reference).toBe(CURRENT_RENDER_PROFILE);
     expect(profile.source).toBe("workspace");
   });
 
@@ -21,6 +22,6 @@ describe("render profile source resolution", () => {
     const profile = await loadRenderProfileFromDirectory(
       path.resolve(resolveInProject("render-profiles", "octo-chat"))
     );
-    expect(profile.reference).toBe("octo-chat@1.2.0-rc.3");
+    expect(profile.reference).toBe(CURRENT_RENDER_PROFILE);
   });
 });

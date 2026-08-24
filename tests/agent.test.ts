@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { CURRENT_RENDER_PROFILE } from "../src/registry.js";
 import {
   discoverUtilities,
   explainUtility,
@@ -14,7 +15,7 @@ describe("agent utility discovery", () => {
   it("groups declared utility tokens for agent lookup", async () => {
     const report = await discoverUtilities({ query: "skeleton" });
 
-    expect(report.profile).toBe("octo-chat@1.2.0-rc.3");
+    expect(report.profile).toBe(CURRENT_RENDER_PROFILE);
     expect(report.idSyntax).toBe("octo--<token>--<token>--uid-<unique-name>");
     expect(report.maxTokensPerElement).toBe(3);
     expect(report.groups.map((group) => group.group)).toEqual(["line", "motion"]);
@@ -28,7 +29,7 @@ describe("agent utility discovery", () => {
     const report = await explainUtility({ token: "surface-warning" });
 
     expect(report).toMatchObject({
-      profile: "octo-chat@1.2.0-rc.3",
+      profile: CURRENT_RENDER_PROFILE,
       token: "surface-warning",
       group: "surface",
       fallback: { style: "warning" },
@@ -48,7 +49,7 @@ describe("agent utility discovery", () => {
     const profileSource = await loadRenderProfileFromPackage(bundle.packageRoot);
     const report = await discoverUtilities({ query: "warning", profileSource });
 
-    expect(report.profile).toBe("octo-chat@1.2.0-rc.3");
+    expect(report.profile).toBe(CURRENT_RENDER_PROFILE);
     expect(report.groups.flatMap((group) => group.tokens.map((token) => token.token))).toContain(
       "surface-warning"
     );

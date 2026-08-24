@@ -1,6 +1,7 @@
 import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { CURRENT_RENDER_PROFILE } from "../src/registry.js";
 import { createForgeServer, normalizeBasePath } from "../src/server.js";
 
 describe("server base path", () => {
@@ -81,7 +82,7 @@ describe("catalog HTTP API", () => {
     expect(result).toMatchObject({
       cardId: "docs.access-request",
       cardVersion: "0.2.0",
-      renderProfile: "octo-chat@1.2.0-rc.3",
+      renderProfile: CURRENT_RENDER_PROFILE,
       payload: { type: "AdaptiveCard", version: "1.5" },
       issues: [],
     });
@@ -157,7 +158,7 @@ describe("Preview API v1", () => {
     expect(session).toMatchObject({
       schemaVersion: 1,
       card: { id: "docs.access-request", reference: "docs.access-request", mutable: true },
-      renderProfile: { reference: "octo-chat@1.2.0-rc.3" },
+      renderProfile: { reference: CURRENT_RENDER_PROFILE },
     });
     expect(session.revision).toMatch(/^sha256:[a-f0-9]{64}$/);
     expect(session.views).toEqual(

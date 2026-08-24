@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { describe, expect, it } from "vitest";
+import { CURRENT_RENDER_PROFILE } from "../src/registry.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -31,7 +32,7 @@ describe("agent lifecycle bootstrap", () => {
     expect(initReport.state).toMatchObject({
       skill: { version: versions.skill },
       cli: { version: versions.cli },
-      renderProfile: { reference: "octo-chat@1.2.0-rc.3" },
+      renderProfile: { reference: CURRENT_RENDER_PROFILE },
     });
     const firstAgents = await readFile(agentsPath, "utf8");
     expect(firstAgents).toContain("Keep this instruction.");

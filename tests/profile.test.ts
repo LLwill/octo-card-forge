@@ -9,15 +9,20 @@ import {
   validateRenderProfile,
 } from "../src/profile.js";
 import type { RenderCapabilities } from "../src/types.js";
+import {
+  CURRENT_RENDER_PROFILE,
+  parseRenderProfileReference,
+} from "../src/registry.js";
 
-const REFERENCE = "octo-chat@1.2.0-rc.3";
+const REFERENCE = CURRENT_RENDER_PROFILE;
+const VERSION = parseRenderProfileReference(REFERENCE).version;
 
 describe("render profile bundle", () => {
   it("validates a profile without creating a bundle", async () => {
     await expect(validateRenderProfile(REFERENCE)).resolves.toMatchObject({
       reference: REFERENCE,
       packageName: "@mlt-org/octo-card-profile-octo-chat",
-      version: "1.2.0-rc.3",
+      version: VERSION,
       compatibility: "octo-chat/v1",
     });
   });
@@ -44,7 +49,7 @@ describe("render profile bundle", () => {
 
     expect(packageJson).toMatchObject({
       name: "@mlt-org/octo-card-profile-octo-chat",
-      version: "1.2.0-rc.3",
+      version: VERSION,
       publishConfig: {
         access: "public",
         registry: "https://registry.npmjs.org/",

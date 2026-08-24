@@ -1,6 +1,6 @@
 {
   "name": "@mlt-org/octo-card-profile-octo-chat",
-  "version": "1.2.0-rc.3",
+  "version": "1.2.0-rc.4",
   "private": false,
   "type": "module",
   "description": "Octo Adaptive Cards Render Profile for Octo Chat",

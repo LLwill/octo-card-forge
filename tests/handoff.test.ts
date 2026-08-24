@@ -12,7 +12,10 @@ import {
   writeHandoffPackage,
 } from "../src/handoff.js";
 import { initCard } from "../src/init.js";
-import { loadCardPackage } from "../src/registry.js";
+import {
+  CURRENT_RENDER_PROFILE,
+  loadCardPackage,
+} from "../src/registry.js";
 import type { JsonObject } from "../src/types.js";
 
 describe("backend handoff package", () => {
@@ -53,8 +56,8 @@ describe("backend handoff package", () => {
         schemaVersion: 2,
       },
       renderProfile: {
-        requested: "octo-chat@1.2.0-rc.3",
-        resolved: "octo-chat@1.2.0-rc.3",
+        requested: CURRENT_RENDER_PROFILE,
+        resolved: CURRENT_RENDER_PROFILE,
         server: { required: true },
         web: { required: true },
       },
@@ -155,7 +158,7 @@ describe("backend handoff package", () => {
           version: "0.1.0",
         },
         renderProfile: {
-          resolved: "octo-chat@1.2.0-rc.3",
+          resolved: CURRENT_RENDER_PROFILE,
         },
       });
 

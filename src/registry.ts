@@ -1,6 +1,7 @@
+import { readFileSync } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
 import path from "node:path";
-import { readJson, resolveInProject } from "./fs.js";
+import { projectRoot, readJson, resolveInProject } from "./fs.js";
 import type {
   CardManifest,
   CardPackage,
@@ -9,9 +10,42 @@ import type {
   RenderProfileSource,
 } from "./types.js";
 
-/** 仓库当前唯一的组件基线。历史 Profile 由制品库负责复现。 */
-export const CURRENT_RENDER_PROFILE = "octo-chat@1.2.0-rc.3";
 const ACTIVE_RENDER_PROFILE_ROOT = "render-profiles";
+
+/**
+ * 基线在发布产物中不携带 `render-profiles/` 源码时的内嵌回退值。
+ * 由 `render-profiles/octo-chat/manifest.json` 派生，并有守卫测试保证两者一致，
+ * 因此升级基线仍只需修改该 manifest 一处。
+ */
+export const BASELINE_RENDER_PROFILE_FALLBACK = "octo-chat@1.2.0-rc.4";
+
+/**
+ * 仓库当前唯一的组件基线。优先从活跃 Profile 的 manifest 派生，避免版本号双写；
+ * 当运行在不携带 `render-profiles/` 源码的发布环境时，回退到内嵌基线值。
+ * 历史 Profile 由制品库负责复现。
+ */
+function resolveActiveProfileReference(): string {
+  const manifestPath = path.join(
+    projectRoot(),
+    ACTIVE_RENDER_PROFILE_ROOT,
+    "octo-chat",
+    "manifest.json"
+  );
+  try {
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as {
+      id?: unknown;
+      version?: unknown;
+    };
+    if (typeof manifest.id === "string" && typeof manifest.version === "string") {
+      return `${manifest.id}@${manifest.version}`;
+    }
+  } catch {
+    // 发布产物不含 Profile 源码，使用内嵌基线值。
+  }
+  return BASELINE_RENDER_PROFILE_FALLBACK;
+}
+
+export const CURRENT_RENDER_PROFILE = resolveActiveProfileReference();
 
 const RENDER_PROFILE_REFERENCE =
   /^([a-z][a-z0-9.-]*)@(latest|\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$/;
