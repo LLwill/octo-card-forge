@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import JSZip from "jszip";
 import { describe, expect, it } from "vitest";
+import { buildCardArtifact } from "../src/artifact.js";
 import {
   buildHandoffArchive,
   buildHandoffArchiveForCard,
@@ -11,10 +12,39 @@ import {
   writeHandoffPackage,
 } from "../src/handoff.js";
 import { initCard } from "../src/init.js";
-import { loadCardPackage } from "../src/registry.js";
+import {
+  CURRENT_RENDER_PROFILE,
+  loadCardPackage,
+} from "../src/registry.js";
 import type { JsonObject } from "../src/types.js";
 
 describe("backend handoff package", () => {
+  it("projects legacy handoff content from the canonical artifact", async () => {
+    const [artifact, handoff] = await Promise.all([
+      buildCardArtifact("docs.access-request@0.3.0"),
+      buildHandoffPackage("docs.access-request@0.3.0"),
+    ]);
+    const handoffViews = handoff.views as JsonObject;
+
+    expect(handoff.dataContract).toEqual(artifact.dataContract);
+    expect((handoff.renderProfile as JsonObject).resolved).toBe(artifact.profile.reference);
+    for (const [viewName, artifactView] of Object.entries(artifact.views)) {
+      const handoffView = handoffViews[viewName] as JsonObject;
+      expect(handoffView.template).toEqual(artifactView.template);
+      for (const artifactSample of artifactView.samples) {
+        const handoffSample = (handoffView.samples as JsonObject[]).find(
+          (sample) => sample.name === artifactSample.name
+        );
+        expect(handoffSample).toMatchObject({
+          name: artifactSample.name,
+          data: artifactSample.data,
+          card: artifactSample.card,
+          inspection: artifactSample.inspection,
+        });
+      }
+    }
+  });
+
   it("contains the contract, templates, samples and compiled cards", async () => {
     const handoff = await buildHandoffPackage("docs.access-request@0.3.0");
     expect(handoff).toMatchObject({
@@ -26,8 +56,8 @@ describe("backend handoff package", () => {
         schemaVersion: 2,
       },
       renderProfile: {
-        requested: "octo-chat@1.2.0-rc.3",
-        resolved: "octo-chat@1.2.0-rc.3",
+        requested: CURRENT_RENDER_PROFILE,
+        resolved: CURRENT_RENDER_PROFILE,
         server: { required: true },
         web: { required: true },
       },
@@ -128,7 +158,7 @@ describe("backend handoff package", () => {
           version: "0.1.0",
         },
         renderProfile: {
-          resolved: "octo-chat@1.2.0-rc.3",
+          resolved: CURRENT_RENDER_PROFILE,
         },
       });
 

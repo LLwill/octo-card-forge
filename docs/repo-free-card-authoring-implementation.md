@@ -1,9 +1,12 @@
 # Repo-free Card Authoring 实施方案
 
-> 状态：实施方案草案  
+> 状态：部分已实现的专项设计；执行阶段编号已废弃，以 [`refactor-roadmap.md`](./refactor-roadmap.md) 为准
 > 日期：2026-07-31  
 > 适用范围：`octo-card-forge`、未来可分发 `octo-card` CLI、`octo-design-cards` Skill、Render Profile 制品、卡片开发 Agent  
 > 核心目标：新的 Agent 生成标准 Adaptive Card JSON 时，不需要 clone 整个 forge 仓库，只需要安装/调用 CLI、读取 Profile 能力、编辑轻量 Card Package。
+>
+> 边界更正：Card 目录和 Profile package 的文件加载属于 `packages/workspace`；`packages/core`
+> 只接收已经解析的对象，不读取路径、环境变量或仓库目录。
 
 ## 1. 背景与问题
 
@@ -207,8 +210,7 @@ Agent 使用的是发布产物，不是源码目录。
 - parse utility id；
 - inspect Action/Input/Toggle；
 - lint utility usage；
-- load Card Package from explicit directory；
-- load Render Profile from resolver 传入的对象。
+- 接收 Workspace 已解析的 Card Source 和 Render Profile 对象。
 
 不负责：
 
@@ -221,9 +223,13 @@ Agent 使用的是发布产物，不是源码目录。
 建议 API：
 
 ```ts
-export interface CardPackageSource {
-  root: string;
+export interface CardSource {
   manifest: CardManifest;
+  dataSchema: JsonObject;
+  views: Record<string, {
+    template: JsonObject;
+    samples: Record<string, JsonObject>;
+  }>;
 }
 
 export interface RenderProfileSource {
@@ -234,16 +240,20 @@ export interface RenderProfileSource {
   stylesheets?: string[];
 }
 
-export async function loadCardPackage(root: string): Promise<CardPackageSource>;
 export async function compileCardPackage(options: {
-  card: CardPackageSource;
+  card: CardSource;
   profile: RenderProfileSource;
   view: string;
   data: JsonObject;
 }): Promise<CompileResult>;
 ```
 
-### 5.2 `@mlt-org/octo-card-cli`
+### 5.2 Workspace Loader
+
+目标代码位于 `packages/workspace`，负责 `loadCardPackage(root)`、路径越界防护和 Profile
+package 解析；输出上面的 `CardSource`/`RenderProfileSource` 对象，再交给 Core。
+
+### 5.3 `@mlt-org/octo-card-cli`
 
 可执行 CLI，Agent 和 CI 的主要入口。
 
@@ -560,7 +570,10 @@ octo-card inspect --card ./<card-id> --format json
 octo-card render --card ./<card-id> --sample <sample> > card.json
 ```
 
-## 10. 实施分阶段
+## 10. 历史实施分阶段
+
+本节记录 repo-free 能力的原始落地过程，不再定义项目当前 Phase。当前阶段和 Gate 统一见
+[`refactor-roadmap.md`](./refactor-roadmap.md)。下列“Phase 0/1”均为历史编号。
 
 ### Phase 0：文档与决策
 
@@ -946,14 +959,8 @@ pnpm exec octo-card lint --workspace ./cards --format json
 - 临时模式不支持 handoff；
 - 正式交付必须有 manifest/schema/samples。
 
-## 15. 推荐下一步
+## 15. 当前后续
 
-建议下一步不要继续扩 utility token，而是先做 Phase 1：
-
-1. 新增 `loadCardPackage(root)`；
-2. 改造 compiler/check/lint 支持 `--card <dir>`；
-3. 保留现有 repo-bound 命令作为 wrapper；
-4. 增加一个测试：把 `cards/docs.access-request` 复制到临时目录，使用 `--card <tmp>` 校验和渲染；
-5. 更新 Skill，明确新 Agent 不 clone forge。
-
-完成 Phase 1 后，再做 Profile package resolver。这样每一步都有独立验收，不会一次性把 CLI、Profile、Skill、Web 全部搅在一起。
+本文定义的显式 `--card`、Profile package resolver、Repo-free smoke 和 Skill 工作流已经进入
+当前实现。后续不再沿用本文的历史 Phase，统一执行
+[`refactor-roadmap.md`](./refactor-roadmap.md) 中的 Monorepo、Contract/Core、Artifact 和 Catalog 迁移顺序。

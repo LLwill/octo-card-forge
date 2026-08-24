@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { CURRENT_RENDER_PROFILE } from "../src/registry.js";
 import { compileCard, compileSample } from "../src/compiler.js";
 import type { JsonObject } from "../src/types.js";
 
@@ -33,7 +34,7 @@ describe("docs.access-request 0.3 compiler", () => {
       expect(result.issues).toEqual([]);
       expect(result.payload).toMatchObject({ type: "AdaptiveCard", version: "1.5" });
       expect(JSON.stringify(result.payload)).not.toContain("${");
-      expect(result.renderProfile).toBe("octo-chat@1.2.0-rc.3");
+      expect(result.renderProfile).toBe(CURRENT_RENDER_PROFILE);
       expect(result.wireProfile).toBe(sample === "pending" ? "octo/v2" : "octo/v1");
     }
   );
@@ -125,7 +126,7 @@ describe("new Card Package versions", () => {
     expect(result.issues).toEqual([]);
     expect(result.cardVersion).toBe("0.2.0");
     expect(result.contractVersion).toBe("1.0.0");
-    expect(result.renderProfile).toBe("octo-chat@1.2.0-rc.3");
+    expect(result.renderProfile).toBe(CURRENT_RENDER_PROFILE);
     expect(result.view).toBe(view);
     expect(result.wireProfile).toBe(wireProfile);
     expect(findById(result.payload, "reasoning_stop")).toBeUndefined();
@@ -163,7 +164,7 @@ describe("new Card Package versions", () => {
     });
 
     expect(next.cardVersion).toBe("0.2.0");
-    expect(next.renderProfile).toBe("octo-chat@1.2.0-rc.3");
+    expect(next.renderProfile).toBe(CURRENT_RENDER_PROFILE);
     expect(next.issues).toEqual([]);
     expect(findById(next.payload, "decision_choice")).toMatchObject({
       type: "Input.ChoiceSet",
@@ -192,7 +193,7 @@ describe("new Card Package versions", () => {
     });
 
     expect(next.cardVersion).toBe("0.3.0");
-    expect(next.renderProfile).toBe("octo-chat@1.2.0-rc.3");
+    expect(next.renderProfile).toBe(CURRENT_RENDER_PROFILE);
     expect(next.issues).toEqual([]);
     expect(next.payload.body).toEqual(
       expect.arrayContaining([
@@ -231,7 +232,7 @@ describe("ai.reasoning-process compiler", () => {
     expect(result.view).toBe(view);
     expect(result.cardVersion).toBe("0.3.1");
     expect(result.contractVersion).toBe("1.2.0");
-    expect(result.renderProfile).toBe("octo-chat@1.2.0-rc.3");
+    expect(result.renderProfile).toBe(CURRENT_RENDER_PROFILE);
     expect(result.wireProfile).toBe(wireProfile);
     expect(JSON.stringify(result.payload)).not.toContain("${");
     expect((result.payload.body as JsonObject[])[0]).toMatchObject({

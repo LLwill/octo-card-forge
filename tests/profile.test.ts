@@ -9,15 +9,20 @@ import {
   validateRenderProfile,
 } from "../src/profile.js";
 import type { RenderCapabilities } from "../src/types.js";
+import {
+  CURRENT_RENDER_PROFILE,
+  parseRenderProfileReference,
+} from "../src/registry.js";
 
-const REFERENCE = "octo-chat@1.2.0-rc.3";
+const REFERENCE = CURRENT_RENDER_PROFILE;
+const VERSION = parseRenderProfileReference(REFERENCE).version;
 
 describe("render profile bundle", () => {
   it("validates a profile without creating a bundle", async () => {
     await expect(validateRenderProfile(REFERENCE)).resolves.toMatchObject({
       reference: REFERENCE,
       packageName: "@mlt-org/octo-card-profile-octo-chat",
-      version: "1.2.0-rc.3",
+      version: VERSION,
       compatibility: "octo-chat/v1",
     });
   });
@@ -44,7 +49,7 @@ describe("render profile bundle", () => {
 
     expect(packageJson).toMatchObject({
       name: "@mlt-org/octo-card-profile-octo-chat",
-      version: "1.2.0-rc.3",
+      version: VERSION,
       publishConfig: {
         access: "public",
         registry: "https://registry.npmjs.org/",
@@ -64,20 +69,38 @@ describe("render profile bundle", () => {
       compatibility: "octo-chat/v1",
     });
     expect(Object.keys(bundleManifest.files).sort()).toEqual([
-      "dist/capabilities.json",
-      "dist/host-config.json",
-      "dist/manifest.json",
-      "dist/styles.css",
-      "dist/theme.css",
-      "dist/tokens.json",
+      "capabilities.json",
+      "host-config.json",
+      "manifest.json",
+      "styles.css",
+      "theme.css",
+      "tokens.json",
     ]);
   });
 
-  it("packs an installable tgz", async () => {
+  it("packs an installable tgz that can be extracted and loaded as a package", async () => {
     const output = await mkdtemp(path.join(os.tmpdir(), "octo-profile-pack-"));
     const result = await packRenderProfile(REFERENCE, output);
     expect(result.tarball).toMatch(/\.tgz$/);
     expect(await readFile(result.tarball)).not.toHaveLength(0);
+
+    const { execFile } = await import("node:child_process");
+    const { promisify } = await import("node:util");
+    const execFileAsync = promisify(execFile);
+    const extractDir = path.join(output, "extracted");
+    const { mkdir } = await import("node:fs/promises");
+    await mkdir(extractDir, { recursive: true });
+    await execFileAsync("tar", ["-xzf", result.tarball, "-C", extractDir]);
+
+    const { loadRenderProfileFromPackage } = await import("../src/profile-source.js");
+    const pkgDir = path.join(extractDir, "package");
+    const profile = await loadRenderProfileFromPackage(pkgDir);
+    expect(profile.reference).toBe(REFERENCE);
+    expect(profile.manifest.id).toBe("octo-chat");
+    expect(profile.capabilities.allowedElements).toContain("TextBlock");
+    const stylesheets = profile.stylesheets;
+    expect(stylesheets).toBeDefined();
+    expect(stylesheets!.length).toBeGreaterThan(0);
   });
 });
 

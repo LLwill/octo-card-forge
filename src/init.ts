@@ -62,7 +62,7 @@ export async function initCard(options: InitCardOptions): Promise<InitCardResult
   }
   if (!RENDER_PROFILE.test(renderProfile)) {
     throw new Error(
-      "render profile must look like octo-chat@1.2.0-rc.3 or octo-chat@latest"
+      "render profile must look like octo-chat@1.2.0-rc.4 or octo-chat@latest"
     );
   }
   if (wireProfile !== "octo/v1" && wireProfile !== "octo/v2") {

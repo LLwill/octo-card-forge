@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:octo-card:schema:render-profile-manifest:1",
+  "title": "Octo Render Profile Manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "version", "adaptiveCardsSdkVersion", "hostConfig", "stylesheet", "capabilities"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9.-]*$" },
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$" },
+    "compatibility": { "type": "string", "minLength": 1 },
+    "packageName": { "type": "string", "minLength": 1 },
+    "adaptiveCardsSdkVersion": { "type": "string", "minLength": 1 },
+    "hostConfig": { "type": "string", "pattern": "^(?![\\\\/])(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)[^\\\\]+$" },
+    "theme": { "type": "string", "pattern": "^(?![\\\\/])(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)[^\\\\]+$" },
+    "stylesheet": { "type": "string", "pattern": "^(?![\\\\/])(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)[^\\\\]+$" },
+    "tokens": { "type": "string", "pattern": "^(?![\\\\/])(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)[^\\\\]+$" },
+    "capabilities": { "type": "string", "pattern": "^(?![\\\\/])(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)[^\\\\]+$" }
+  }
+}

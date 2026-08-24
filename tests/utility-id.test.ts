@@ -1,7 +1,16 @@
 import { describe, expect, it } from "vitest";
+import {
+  isUtilityId as isUtilityIdCore,
+  parseUtilityId as parseUtilityIdCore,
+} from "../packages/core/src/index.js";
 import { isUtilityId, parseUtilityId } from "../src/utility-id.js";
 
 describe("utility id parser", () => {
+  it("keeps the legacy entrypoint as an exact Core alias", () => {
+    expect(isUtilityId).toBe(isUtilityIdCore);
+    expect(parseUtilityId).toBe(parseUtilityIdCore);
+  });
+
   it("ignores non-utility ids", () => {
     expect(isUtilityId("normal-id")).toBe(false);
     expect(isUtilityId("octo-badge-warning-status")).toBe(false);

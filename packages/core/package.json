@@ -1,0 +1,23 @@
+{
+  "name": "@mlt-org/octo-card-core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Reserved workspace boundary for pure Card compilation and validation.",
+  "dependencies": {
+    "adaptivecards-templating": "2.3.1",
+    "ajv": "8.17.1",
+    "ajv-formats": "3.0.1"
+  },
+  "devDependencies": {
+    "@mlt-org/octo-card-spec": "workspace:*"
+  },
+  "files": ["dist"],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": "./dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  }
+}

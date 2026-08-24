@@ -243,11 +243,11 @@ export async function bundleRenderProfile(
 
   const publishedManifest = {
     ...manifest,
-    hostConfig: `dist/${hostConfig}`,
-    theme: `dist/${theme}`,
-    stylesheet: `dist/${stylesheet}`,
-    tokens: `dist/${tokens}`,
-    capabilities: `dist/${capabilities}`,
+    hostConfig,
+    theme,
+    stylesheet,
+    tokens,
+    capabilities,
   };
   await writeFile(
     path.join(distRoot, "manifest.json"),
@@ -257,7 +257,7 @@ export async function bundleRenderProfile(
   const hashedFiles = [...sourceFiles, "manifest.json"].sort();
   const hashes: Record<string, string> = {};
   for (const file of hashedFiles) {
-    hashes[`dist/${file}`] = sha256(await readFile(path.join(distRoot, file)));
+    hashes[file] = sha256(await readFile(path.join(distRoot, file)));
   }
   const bundleManifest = {
     profile: reference,

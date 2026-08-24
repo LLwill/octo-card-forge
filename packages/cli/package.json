@@ -1,0 +1,22 @@
+{
+  "name": "@mlt-org/octo-card-cli-runtime",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Reserved workspace boundary for the Octo Card CLI implementation.",
+  "dependencies": {
+    "@mlt-org/octo-card-artifact": "workspace:*",
+    "@mlt-org/octo-card-core": "workspace:*",
+    "@mlt-org/octo-card-spec": "workspace:*",
+    "@mlt-org/octo-card-workspace": "workspace:*",
+    "@mlt-org/octo-card-profile-octo-chat": "workspace:*"
+  },
+  "files": ["dist"],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": "./dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  }
+}
