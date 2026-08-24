@@ -1,9 +1,9 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { compileSampleFromPackage } from "../src/compiler.js";
-import { listCards } from "../src/registry.js";
-import type { JsonObject } from "../src/types.js";
+import { compileSampleFromPackage } from "../packages/cli/src/compiler.js";
+import { listCards } from "../packages/cli/src/registry.js";
+import type { JsonObject } from "../packages/cli/src/types.js";
 
 describe("draft Card goldens", () => {
   it("matches every draft sample to a committed compiled Card", async () => {

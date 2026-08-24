@@ -2,12 +2,12 @@ import { cp, mkdtemp } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { CURRENT_RENDER_PROFILE } from "../src/registry.js";
-import { lintCardPackageForAgent } from "../src/agent.js";
-import { checkCardPackage } from "../src/check.js";
-import { compileSampleFromDirectory } from "../src/compiler.js";
-import { bundleRenderProfile } from "../src/profile.js";
-import { loadRenderProfileFromPackage } from "../src/profile-source.js";
+import { CURRENT_RENDER_PROFILE } from "../packages/cli/src/registry.js";
+import { lintCardPackageForAgent } from "../packages/cli/src/agent.js";
+import { checkCardPackage } from "../packages/cli/src/check.js";
+import { compileSampleFromDirectory } from "../packages/cli/src/compiler.js";
+import { bundleRenderProfile } from "../packages/cli/src/profile.js";
+import { loadRenderProfileFromPackage } from "../packages/cli/src/profile-source.js";
 
 async function copyCardFixture(cardId: string): Promise<string> {
   const root = await mkdtemp(path.join(os.tmpdir(), "octo-card-package-"));

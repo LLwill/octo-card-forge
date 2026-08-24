@@ -1,11 +1,11 @@
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { CURRENT_RENDER_PROFILE } from "../src/registry.js";
-import { resolveInProject } from "../src/fs.js";
+import { CURRENT_RENDER_PROFILE } from "../packages/cli/src/registry.js";
+import { resolveInProject } from "../packages/cli/src/fs.js";
 import {
   loadRenderProfileForReference,
   loadRenderProfileFromDirectory,
-} from "../src/profile-source.js";
+} from "../packages/cli/src/profile-source.js";
 
 describe("render profile source resolution", () => {
   it("prefers the built workspace package when running from the forge workspace", async () => {

@@ -3,7 +3,7 @@ import {
   isUtilityId as isUtilityIdCore,
   parseUtilityId as parseUtilityIdCore,
 } from "../packages/core/src/index.js";
-import { isUtilityId, parseUtilityId } from "../src/utility-id.js";
+import { isUtilityId, parseUtilityId } from "../packages/cli/src/utility-id.js";
 
 describe("utility id parser", () => {
   it("keeps the legacy entrypoint as an exact Core alias", () => {

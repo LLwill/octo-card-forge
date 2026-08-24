@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import pathModule from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { assertCardManifest as assertLegacyCardManifest } from "../src/registry.js";
+import { assertCardManifest as assertLegacyCardManifest } from "../packages/cli/src/registry.js";
 import {
   decodeCardSourceManifest,
   decodeResolvedCardSourceV1,

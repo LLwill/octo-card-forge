@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { describe, expect, it } from "vitest";
-import { CURRENT_RENDER_PROFILE } from "../src/registry.js";
+import { CURRENT_RENDER_PROFILE } from "../packages/cli/src/registry.js";
 
 const execFileAsync = promisify(execFile);
 

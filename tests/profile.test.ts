@@ -7,12 +7,12 @@ import {
   packRenderProfile,
   validateRenderProfileCss,
   validateRenderProfile,
-} from "../src/profile.js";
-import type { RenderCapabilities } from "../src/types.js";
+} from "../packages/cli/src/profile.js";
+import type { RenderCapabilities } from "../packages/cli/src/types.js";
 import {
   CURRENT_RENDER_PROFILE,
   parseRenderProfileReference,
-} from "../src/registry.js";
+} from "../packages/cli/src/registry.js";
 
 const REFERENCE = CURRENT_RENDER_PROFILE;
 const VERSION = parseRenderProfileReference(REFERENCE).version;
@@ -92,7 +92,7 @@ describe("render profile bundle", () => {
     await mkdir(extractDir, { recursive: true });
     await execFileAsync("tar", ["-xzf", result.tarball, "-C", extractDir]);
 
-    const { loadRenderProfileFromPackage } = await import("../src/profile-source.js");
+    const { loadRenderProfileFromPackage } = await import("../packages/cli/src/profile-source.js");
     const pkgDir = path.join(extractDir, "package");
     const profile = await loadRenderProfileFromPackage(pkgDir);
     expect(profile.reference).toBe(REFERENCE);

@@ -1,7 +1,7 @@
 import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { CURRENT_RENDER_PROFILE } from "../src/registry.js";
+import { CURRENT_RENDER_PROFILE } from "../packages/cli/src/registry.js";
 import { createForgeServer, normalizeBasePath } from "../src/server.js";
 
 describe("server base path", () => {

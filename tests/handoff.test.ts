@@ -3,20 +3,20 @@ import os from "node:os";
 import path from "node:path";
 import JSZip from "jszip";
 import { describe, expect, it } from "vitest";
-import { buildCardArtifact } from "../src/artifact.js";
+import { buildCardArtifact } from "../packages/cli/src/artifact.js";
 import {
   buildHandoffArchive,
   buildHandoffArchiveForCard,
   buildHandoffPackage,
   buildHandoffPackageForCard,
   writeHandoffPackage,
-} from "../src/handoff.js";
-import { initCard } from "../src/init.js";
+} from "../packages/cli/src/handoff.js";
+import { initCard } from "../packages/cli/src/init.js";
 import {
   CURRENT_RENDER_PROFILE,
   loadCardPackage,
-} from "../src/registry.js";
-import type { JsonObject } from "../src/types.js";
+} from "../packages/cli/src/registry.js";
+import type { JsonObject } from "../packages/cli/src/types.js";
 
 describe("backend handoff package", () => {
   it("projects legacy handoff content from the canonical artifact", async () => {
