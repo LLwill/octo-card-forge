@@ -85,24 +85,7 @@ jobs:
         if: github.event_name == 'pull_request'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: |
-          set -euo pipefail
-          manifest=render-profiles/octo-chat/manifest.json
-          changed_files="$(git diff --name-only "$BASE_SHA"...HEAD -- render-profiles)"
-          if [ -z "$changed_files" ]; then
-            exit 0
-          fi
-          if ! printf '%s\n' "$changed_files" | grep -Fqx "$manifest"; then
-            echo "Render Profile changes must include a versioned manifest update" >&2
-            exit 1
-          fi
-          base_version="$(git show "$BASE_SHA:$manifest" | node -e 'let input=""; process.stdin.on("data", chunk => input += chunk); process.stdin.on("end", () => process.stdout.write(JSON.parse(input).version));')"
-          head_version="$(node -p "require('./$manifest').version")"
-          if [ "$base_version" = "$head_version" ]; then
-            echo "Existing Render Profile version is immutable: $base_version" >&2
-            exit 1
-          fi
-          echo "Render Profile version changed: $base_version -> $head_version"
+        run: node scripts/check-profile-immutability.mjs
 
   package:
     name: package

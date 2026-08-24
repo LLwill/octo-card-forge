@@ -1,0 +1,1308 @@
+{
+  "formatVersion": 1,
+  "mediaType": "application/vnd.octo.component-catalog+json;version=1",
+  "profileReference": "octo-chat@1.2.0-rc.4",
+  "groups": [
+    {
+      "id": "foundation",
+      "title": "Foundation",
+      "description": "先看基础尺度：字号、语义色、间距和圆角。这些是所有 Adaptive Card 默认美化和 utility 的共同底座。",
+      "sections": [
+        {
+          "id": "foundation-typography",
+          "title": "Typography scale",
+          "description": "基础字号和字重，用于判断正文、辅助信息和标题的默认层级。",
+          "rows": [
+            {
+              "name": "Small",
+              "value": "TextBlock.size",
+              "description": "辅助信息、时间、来源",
+              "preview": "text"
+            },
+            {
+              "name": "Default",
+              "value": "TextBlock.size",
+              "description": "正文和普通说明",
+              "preview": "text"
+            },
+            {
+              "name": "Medium",
+              "value": "TextBlock.size",
+              "description": "小标题和关键字段",
+              "preview": "text"
+            },
+            {
+              "name": "Large",
+              "value": "TextBlock.size",
+              "description": "卡片标题",
+              "preview": "text"
+            },
+            {
+              "name": "Bolder",
+              "value": "TextBlock.weight",
+              "description": "标题、状态、关键值",
+              "preview": "text"
+            }
+          ]
+        },
+        {
+          "id": "foundation-colors",
+          "title": "Semantic colors",
+          "description": "语义色只表达状态，不表达业务；业务状态应映射到这些固定语义。",
+          "rows": [
+            {
+              "name": "Default",
+              "value": "text/default",
+              "description": "主体文字",
+              "preview": "color"
+            },
+            {
+              "name": "Accent",
+              "value": "text/accent",
+              "description": "品牌强调、链接入口",
+              "preview": "color"
+            },
+            {
+              "name": "Good",
+              "value": "text/good",
+              "description": "成功、通过、完成",
+              "preview": "color"
+            },
+            {
+              "name": "Warning",
+              "value": "text/warning",
+              "description": "待处理、警告、需注意",
+              "preview": "color"
+            },
+            {
+              "name": "Attention",
+              "value": "text/attention",
+              "description": "危险、失败、阻断",
+              "preview": "color"
+            }
+          ]
+        },
+        {
+          "id": "foundation-layout",
+          "title": "Spacing and radius",
+          "description": "默认间距和圆角提供舒适度；具体卡片优先用标准 spacing 和显式 utility。",
+          "rows": [
+            {
+              "name": "Small",
+              "value": "spacing",
+              "description": "紧密关联的信息",
+              "preview": "spacing"
+            },
+            {
+              "name": "Medium",
+              "value": "spacing",
+              "description": "普通段落分隔",
+              "preview": "spacing"
+            },
+            {
+              "name": "Large",
+              "value": "spacing",
+              "description": "主要内容区分隔",
+              "preview": "spacing"
+            },
+            {
+              "name": "card radius",
+              "value": "8px",
+              "description": "卡片外壳圆角",
+              "preview": "radius"
+            },
+            {
+              "name": "container radius",
+              "value": "6px",
+              "description": "内容容器圆角",
+              "preview": "radius"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "adaptive-card-components",
+      "title": "Adaptive Card Defaults",
+      "description": "展示标准 Adaptive Cards 元素经过 octo-chat HostConfig 和默认 Profile CSS 后的基础效果。",
+      "sections": [
+        {
+          "id": "typography",
+          "title": "文字与语义色",
+          "description": "TextBlock、RichTextBlock、字号、字重以及标准前景语义。",
+          "card": {
+            "type": "AdaptiveCard",
+            "version": "1.5",
+            "body": [
+              {
+                "type": "TextBlock",
+                "text": "Small · Octo Card 组件基线",
+                "size": "Small",
+                "wrap": true,
+                "spacing": "None"
+              },
+              {
+                "type": "TextBlock",
+                "text": "Default · Octo Card 组件基线",
+                "size": "Default",
+                "wrap": true,
+                "spacing": "Small"
+              },
+              {
+                "type": "TextBlock",
+                "text": "Medium · Octo Card 组件基线",
+                "size": "Medium",
+                "wrap": true,
+                "spacing": "Small"
+              },
+              {
+                "type": "TextBlock",
+                "text": "Large · Octo Card 组件基线",
+                "size": "Large",
+                "wrap": true,
+                "spacing": "Small"
+              },
+              {
+                "type": "TextBlock",
+                "text": "ExtraLarge · Octo Card 组件基线",
+                "size": "ExtraLarge",
+                "wrap": true,
+                "spacing": "Small"
+              },
+              {
+                "type": "TextBlock",
+                "text": "Bolder · 用于标题和关键数据",
+                "weight": "Bolder",
+                "wrap": true
+              },
+              {
+                "type": "RichTextBlock",
+                "inlines": [
+                  {
+                    "type": "TextRun",
+                    "text": "Default  "
+                  },
+                  {
+                    "type": "TextRun",
+                    "text": "Accent  ",
+                    "color": "Accent"
+                  },
+                  {
+                    "type": "TextRun",
+                    "text": "Good  ",
+                    "color": "Good"
+                  },
+                  {
+                    "type": "TextRun",
+                    "text": "Warning  ",
+                    "color": "Warning"
+                  },
+                  {
+                    "type": "TextRun",
+                    "text": "Attention",
+                    "color": "Attention"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "containers",
+          "title": "容器语义",
+          "description": "六种标准 Container.style。颜色由 HostConfig 统一提供。",
+          "card": {
+            "type": "AdaptiveCard",
+            "version": "1.5",
+            "body": [
+              {
+                "type": "Container",
+                "style": "default",
+                "spacing": "None",
+                "items": [
+                  {
+                    "type": "TextBlock",
+                    "text": "default",
+                    "weight": "Bolder",
+                    "wrap": true
+                  },
+                  {
+                    "type": "TextBlock",
+                    "text": "默认文字 / subtle 辅助文字",
+                    "isSubtle": true,
+                    "spacing": "Small",
+                    "wrap": true
+                  }
+                ]
+              },
+              {
+                "type": "Container",
+                "style": "emphasis",
+                "spacing": "Medium",
+                "items": [
+                  {
+                    "type": "TextBlock",
+                    "text": "emphasis",
+                    "weight": "Bolder",
+                    "wrap": true
+                  },
+                  {
+                    "type": "TextBlock",
+                    "text": "默认文字 / subtle 辅助文字",
+                    "isSubtle": true,
+                    "spacing": "Small",
+                    "wrap": true
+                  }
+                ]
+              },
+              {
+                "type": "Container",
+                "style": "accent",
+                "spacing": "Medium",
+                "items": [
+                  {
+                    "type": "TextBlock",
+                    "text": "accent",
+                    "weight": "Bolder",
+                    "wrap": true
+                  },
+                  {
+                    "type": "TextBlock",
+                    "text": "默认文字 / subtle 辅助文字",
+                    "isSubtle": true,
+                    "spacing": "Small",
+                    "wrap": true
+                  }
+                ]
+              },
+              {
+                "type": "Container",
+                "style": "good",
+                "spacing": "Medium",
+                "items": [
+                  {
+                    "type": "TextBlock",
+                    "text": "good",
+                    "weight": "Bolder",
+                    "wrap": true
+                  },
+                  {
+                    "type": "TextBlock",
+                    "text": "默认文字 / subtle 辅助文字",
+                    "isSubtle": true,
+                    "spacing": "Small",
+                    "wrap": true
+                  }
+                ]
+              },
+              {
+                "type": "Container",
+                "style": "warning",
+                "spacing": "Medium",
+                "items": [
+                  {
+                    "type": "TextBlock",
+                    "text": "warning",
+                    "weight": "Bolder",
+                    "wrap": true
+                  },
+                  {
+                    "type": "TextBlock",
+                    "text": "默认文字 / subtle 辅助文字",
+                    "isSubtle": true,
+                    "spacing": "Small",
+                    "wrap": true
+                  }
+                ]
+              },
+              {
+                "type": "Container",
+                "style": "attention",
+                "spacing": "Medium",
+                "items": [
+                  {
+                    "type": "TextBlock",
+                    "text": "attention",
+                    "weight": "Bolder",
+                    "wrap": true
+                  },
+                  {
+                    "type": "TextBlock",
+                    "text": "默认文字 / subtle 辅助文字",
+                    "isSubtle": true,
+                    "spacing": "Small",
+                    "wrap": true
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "semantic-primitives",
+          "title": "显式视觉语义",
+          "description": "卡片通过公开的 octo-surface / octo-badge ID 前缀显式选择背景和紧凑标签，不依赖元素位置推断。",
+          "card": {
+            "type": "AdaptiveCard",
+            "version": "1.5",
+            "body": [
+              {
+                "type": "Container",
+                "id": "octo-surface-header-accent-baseline",
+                "style": "accent",
+                "items": [
+                  {
+                    "type": "TextBlock",
+                    "text": "Accent surface",
+                    "weight": "Bolder",
+                    "wrap": true
+                  }
+                ]
+              },
+              {
+                "type": "Container",
+                "id": "octo-surface-footer-default-baseline",
+                "style": "emphasis",
+                "bleed": true,
+                "separator": true,
+                "spacing": "Large",
+                "items": [
+                  {
+                    "type": "TextBlock",
+                    "text": "Full-width footer separator",
+                    "isSubtle": true,
+                    "wrap": true
+                  }
+                ]
+              },
+              {
+                "type": "ColumnSet",
+                "spacing": "Large",
+                "columns": [
+                  {
+                    "type": "Column",
+                    "width": "auto",
+                    "items": [
+                      {
+                        "type": "TextBlock",
+                        "id": "octo-badge-warning-baseline",
+                        "text": "Warning badge",
+                        "color": "Warning",
+                        "weight": "Bolder",
+                        "size": "Small"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Column",
+                    "width": "auto",
+                    "spacing": "Small",
+                    "items": [
+                      {
+                        "type": "TextBlock",
+                        "id": "octo-badge-neutral-baseline",
+                        "text": "Neutral badge",
+                        "isSubtle": true,
+                        "weight": "Bolder",
+                        "size": "Small"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "ColumnSet",
+                "spacing": "Small",
+                "columns": [
+                  {
+                    "type": "Column",
+                    "width": "auto",
+                    "items": [
+                      {
+                        "type": "TextBlock",
+                        "id": "octo-badge-accent-baseline",
+                        "text": "Accent badge",
+                        "color": "Accent",
+                        "weight": "Bolder",
+                        "size": "Small"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Column",
+                    "width": "auto",
+                    "spacing": "Small",
+                    "items": [
+                      {
+                        "type": "TextBlock",
+                        "id": "octo-badge-good-baseline",
+                        "text": "Good badge",
+                        "color": "Good",
+                        "weight": "Bolder",
+                        "size": "Small"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Column",
+                    "width": "auto",
+                    "spacing": "Small",
+                    "items": [
+                      {
+                        "type": "TextBlock",
+                        "id": "octo-badge-attention-baseline",
+                        "text": "Attention badge",
+                        "color": "Attention",
+                        "weight": "Bolder",
+                        "size": "Small"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "layout",
+          "title": "布局、间距与分隔",
+          "description": "ColumnSet、固定/自适应列、Spacing 与 Separator 的组合基线。",
+          "card": {
+            "type": "AdaptiveCard",
+            "version": "1.5",
+            "body": [
+              {
+                "type": "ColumnSet",
+                "columns": [
+                  {
+                    "type": "Column",
+                    "width": "auto",
+                    "style": "emphasis",
+                    "items": [
+                      {
+                        "type": "TextBlock",
+                        "text": "auto",
+                        "wrap": true
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Column",
+                    "width": "stretch",
+                    "style": "accent",
+                    "spacing": "Medium",
+                    "items": [
+                      {
+                        "type": "TextBlock",
+                        "text": "stretch",
+                        "wrap": true
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Column",
+                    "width": 1,
+                    "style": "good",
+                    "spacing": "Medium",
+                    "items": [
+                      {
+                        "type": "TextBlock",
+                        "text": "weight 1",
+                        "wrap": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "TextBlock",
+                "text": "Separator + Large spacing",
+                "separator": true,
+                "spacing": "Large",
+                "wrap": true
+              },
+              {
+                "type": "Container",
+                "style": "emphasis",
+                "bleed": true,
+                "spacing": "Large",
+                "items": [
+                  {
+                    "type": "TextBlock",
+                    "text": "Bleed container",
+                    "horizontalAlignment": "Center",
+                    "wrap": true
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "media-facts",
+          "title": "图片与事实列表",
+          "description": "Image、ImageSet、Person 样式和 FactSet。",
+          "card": {
+            "type": "AdaptiveCard",
+            "version": "1.5",
+            "body": [
+              {
+                "type": "ImageSet",
+                "imageSize": "Medium",
+                "images": [
+                  {
+                    "type": "Image",
+                    "url": "https://api.iconify.design/lucide/image.svg?color=%236b7075",
+                    "altText": "默认图片"
+                  },
+                  {
+                    "type": "Image",
+                    "url": "https://api.iconify.design/lucide/user-round.svg?color=%237f3bf5",
+                    "altText": "圆形人物图片",
+                    "style": "Person"
+                  }
+                ]
+              },
+              {
+                "type": "FactSet",
+                "spacing": "Large",
+                "facts": [
+                  {
+                    "title": "HostConfig",
+                    "value": "当前仓库基线"
+                  },
+                  {
+                    "title": "SDK",
+                    "value": "3.0.6"
+                  },
+                  {
+                    "title": "宽度",
+                    "value": "320 / 480 / 640"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "table",
+          "title": "表格",
+          "description": "表头、网格线、列宽和长文本换行。",
+          "card": {
+            "type": "AdaptiveCard",
+            "version": "1.5",
+            "body": [
+              {
+                "type": "Table",
+                "firstRowAsHeaders": true,
+                "showGridLines": true,
+                "columns": [
+                  {
+                    "width": 1
+                  },
+                  {
+                    "width": 2
+                  },
+                  {
+                    "width": 1
+                  }
+                ],
+                "rows": [
+                  {
+                    "type": "TableRow",
+                    "cells": [
+                      {
+                        "type": "TableCell",
+                        "items": [
+                          {
+                            "type": "TextBlock",
+                            "text": "组件",
+                            "size": "Small",
+                            "wrap": true
+                          }
+                        ]
+                      },
+                      {
+                        "type": "TableCell",
+                        "items": [
+                          {
+                            "type": "TextBlock",
+                            "text": "用途",
+                            "size": "Small",
+                            "wrap": true
+                          }
+                        ]
+                      },
+                      {
+                        "type": "TableCell",
+                        "items": [
+                          {
+                            "type": "TextBlock",
+                            "text": "状态",
+                            "size": "Small",
+                            "wrap": true
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "TableRow",
+                    "cells": [
+                      {
+                        "type": "TableCell",
+                        "items": [
+                          {
+                            "type": "TextBlock",
+                            "text": "Input.Text",
+                            "size": "Small",
+                            "wrap": true
+                          }
+                        ]
+                      },
+                      {
+                        "type": "TableCell",
+                        "items": [
+                          {
+                            "type": "TextBlock",
+                            "text": "接收单行或多行文本",
+                            "size": "Small",
+                            "wrap": true
+                          }
+                        ]
+                      },
+                      {
+                        "type": "TableCell",
+                        "items": [
+                          {
+                            "type": "TextBlock",
+                            "text": "支持",
+                            "size": "Small",
+                            "wrap": true
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "TableRow",
+                    "cells": [
+                      {
+                        "type": "TableCell",
+                        "items": [
+                          {
+                            "type": "TextBlock",
+                            "text": "Action.Submit",
+                            "size": "Small",
+                            "wrap": true
+                          }
+                        ]
+                      },
+                      {
+                        "type": "TableCell",
+                        "items": [
+                          {
+                            "type": "TextBlock",
+                            "text": "提交标准卡片动作",
+                            "size": "Small",
+                            "wrap": true
+                          }
+                        ]
+                      },
+                      {
+                        "type": "TableCell",
+                        "items": [
+                          {
+                            "type": "TextBlock",
+                            "text": "支持",
+                            "size": "Small",
+                            "wrap": true
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "inputs-basic",
+          "title": "基础输入控件",
+          "description": "Text、Number、Date、Time 与 Toggle 的默认状态。",
+          "card": {
+            "type": "AdaptiveCard",
+            "version": "1.5",
+            "body": [
+              {
+                "type": "Input.Text",
+                "id": "baseline_text",
+                "label": "单行文本",
+                "placeholder": "请输入内容"
+              },
+              {
+                "type": "Input.Text",
+                "id": "baseline_multiline",
+                "label": "多行文本",
+                "placeholder": "请输入补充说明",
+                "isMultiline": true
+              },
+              {
+                "type": "Input.Number",
+                "id": "baseline_number",
+                "label": "数字",
+                "value": 8
+              },
+              {
+                "type": "Input.Date",
+                "id": "baseline_date",
+                "label": "日期"
+              },
+              {
+                "type": "Input.Time",
+                "id": "baseline_time",
+                "label": "时间"
+              },
+              {
+                "type": "Input.Toggle",
+                "id": "baseline_toggle",
+                "title": "我已阅读并确认",
+                "valueOn": "yes",
+                "valueOff": "no"
+              }
+            ]
+          }
+        },
+        {
+          "id": "inputs-choice",
+          "title": "选择控件",
+          "description": "Compact、Expanded 单选和 Expanded 多选。",
+          "card": {
+            "type": "AdaptiveCard",
+            "version": "1.5",
+            "body": [
+              {
+                "type": "Input.ChoiceSet",
+                "id": "baseline_choice_compact",
+                "label": "Compact",
+                "style": "compact",
+                "value": "one",
+                "choices": [
+                  {
+                    "title": "选项一",
+                    "value": "one"
+                  },
+                  {
+                    "title": "选项二",
+                    "value": "two"
+                  }
+                ]
+              },
+              {
+                "type": "Input.ChoiceSet",
+                "id": "baseline_choice_expanded",
+                "label": "Expanded 单选",
+                "style": "expanded",
+                "value": "one",
+                "choices": [
+                  {
+                    "title": "首选方案",
+                    "value": "one"
+                  },
+                  {
+                    "title": "备选方案",
+                    "value": "two"
+                  }
+                ]
+              },
+              {
+                "type": "Input.ChoiceSet",
+                "id": "baseline_choice_multi",
+                "label": "Expanded 多选",
+                "style": "expanded",
+                "isMultiSelect": true,
+                "value": "one,two",
+                "choices": [
+                  {
+                    "title": "能力一",
+                    "value": "one"
+                  },
+                  {
+                    "title": "能力二",
+                    "value": "two"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "actions",
+          "title": "操作按钮",
+          "description": "Submit 的默认/正向/危险样式，以及 OpenUrl、ToggleVisibility。",
+          "card": {
+            "type": "AdaptiveCard",
+            "version": "1.5",
+            "body": [
+              {
+                "type": "TextBlock",
+                "text": "Submit styles",
+                "size": "Small",
+                "isSubtle": true,
+                "wrap": true
+              },
+              {
+                "type": "ActionSet",
+                "actions": [
+                  {
+                    "type": "Action.Submit",
+                    "id": "baseline_submit_default",
+                    "title": "默认操作",
+                    "associatedInputs": "none"
+                  },
+                  {
+                    "type": "Action.Submit",
+                    "id": "baseline_submit_positive",
+                    "title": "确认",
+                    "style": "positive",
+                    "associatedInputs": "none"
+                  },
+                  {
+                    "type": "Action.Submit",
+                    "id": "baseline_submit_destructive",
+                    "title": "删除",
+                    "style": "destructive",
+                    "associatedInputs": "none"
+                  }
+                ]
+              },
+              {
+                "type": "TextBlock",
+                "text": "Navigation / visibility",
+                "size": "Small",
+                "isSubtle": true,
+                "spacing": "Large",
+                "wrap": true
+              },
+              {
+                "type": "ActionSet",
+                "actions": [
+                  {
+                    "type": "Action.OpenUrl",
+                    "title": "打开链接",
+                    "url": "https://adaptivecards.io"
+                  },
+                  {
+                    "type": "Action.ToggleVisibility",
+                    "title": "展开内容",
+                    "targetElements": [
+                      "baseline_toggle_target"
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Container",
+                "id": "baseline_toggle_target",
+                "style": "emphasis",
+                "isVisible": false,
+                "items": [
+                  {
+                    "type": "TextBlock",
+                    "text": "ToggleVisibility 展开的标准内容",
+                    "wrap": true
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "octo-utility-tokens",
+      "title": "Octo Utility Tokens",
+      "description": "展示类似 Tailwind CSS 的受控样式 token，以及不同 utility 名称对应的呈现效果。",
+      "sections": [
+        {
+          "id": "utility-surface",
+          "title": "surface utilities",
+          "description": "已发布 surface 组 utility token。token 可以组合，但同组不能在同一元素上重复使用。",
+          "utilityTokens": [
+            {
+              "token": "surface-subtle",
+              "group": "surface",
+              "description": "弱背景内容区域，适合辅助信息、预览区域和次级内容容器。",
+              "appliesTo": [
+                "Container",
+                "Column"
+              ],
+              "fallback": {
+                "style": "emphasis"
+              },
+              "card": {
+                "type": "AdaptiveCard",
+                "version": "1.5",
+                "body": [
+                  {
+                    "type": "Container",
+                    "id": "octo--surface-subtle--inset-md--uid-sample-surface-subtle",
+                    "style": "emphasis",
+                    "items": [
+                      {
+                        "type": "TextBlock",
+                        "text": "surface-subtle",
+                        "weight": "Bolder",
+                        "wrap": true
+                      },
+                      {
+                        "type": "TextBlock",
+                        "text": "通用内容表面。",
+                        "isSubtle": true,
+                        "spacing": "Small",
+                        "wrap": true
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "token": "surface-warning",
+              "group": "surface",
+              "description": "警告背景区域，适合需要用户注意但不一定阻断的状态。",
+              "appliesTo": [
+                "Container",
+                "Column"
+              ],
+              "fallback": {
+                "style": "warning"
+              },
+              "card": {
+                "type": "AdaptiveCard",
+                "version": "1.5",
+                "body": [
+                  {
+                    "type": "Container",
+                    "id": "octo--surface-warning--inset-md--uid-sample-surface-warning",
+                    "style": "warning",
+                    "items": [
+                      {
+                        "type": "TextBlock",
+                        "text": "surface-warning",
+                        "weight": "Bolder",
+                        "wrap": true
+                      },
+                      {
+                        "type": "TextBlock",
+                        "text": "通用内容表面。",
+                        "isSubtle": true,
+                        "spacing": "Small",
+                        "wrap": true
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "utility-badge",
+          "title": "badge utilities",
+          "description": "已发布 badge 组 utility token。token 可以组合，但同组不能在同一元素上重复使用。",
+          "utilityTokens": [
+            {
+              "token": "badge-warning",
+              "group": "badge",
+              "description": "警告状态胶囊，适合待处理、风险提示和需要注意的短状态文本。",
+              "appliesTo": [
+                "TextBlock"
+              ],
+              "fallback": {
+                "size": "Small",
+                "weight": "Bolder",
+                "color": "Warning"
+              },
+              "card": {
+                "type": "AdaptiveCard",
+                "version": "1.5",
+                "body": [
+                  {
+                    "type": "TextBlock",
+                    "id": "octo--badge-warning--uid-sample-badge-warning",
+                    "text": "Warning badge",
+                    "size": "Small",
+                    "weight": "Bolder",
+                    "color": "Warning"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "utility-inset",
+          "title": "inset utilities",
+          "description": "已发布 inset 组 utility token。token 可以组合，但同组不能在同一元素上重复使用。",
+          "utilityTokens": [
+            {
+              "token": "inset-md",
+              "group": "inset",
+              "description": "中等内边距，用于显式选择需要内部留白的内容区域。",
+              "appliesTo": [
+                "Container",
+                "Column"
+              ],
+              "card": {
+                "type": "AdaptiveCard",
+                "version": "1.5",
+                "body": [
+                  {
+                    "type": "Container",
+                    "id": "octo--surface-subtle--inset-md--uid-sample-inset-md",
+                    "style": "emphasis",
+                    "items": [
+                      {
+                        "type": "TextBlock",
+                        "text": "inset-md",
+                        "weight": "Bolder",
+                        "wrap": true
+                      },
+                      {
+                        "type": "TextBlock",
+                        "text": "显式选择中等内部留白。",
+                        "isSubtle": true,
+                        "spacing": "Small",
+                        "wrap": true
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "utility-line",
+          "title": "line utilities",
+          "description": "已发布 line 组 utility token。token 可以组合，但同组不能在同一元素上重复使用。",
+          "utilityTokens": [
+            {
+              "token": "line-skeleton",
+              "group": "line",
+              "description": "骨架占位线，用于 loading 或文档预览中的窄条占位。",
+              "appliesTo": [
+                "Container",
+                "TextBlock"
+              ],
+              "card": {
+                "type": "AdaptiveCard",
+                "version": "1.5",
+                "body": [
+                  {
+                    "type": "ColumnSet",
+                    "columns": [
+                      {
+                        "type": "Column",
+                        "width": "stretch",
+                        "items": [
+                          {
+                            "type": "Container",
+                            "id": "octo--line-skeleton--uid-sample-line-skeleton-main",
+                            "items": []
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Column",
+                        "width": "96px",
+                        "items": [
+                          {
+                            "type": "Container",
+                            "id": "octo--line-skeleton--uid-sample-line-skeleton-short",
+                            "items": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "utility-motion",
+          "title": "motion utilities",
+          "description": "已发布 motion 组 utility token。token 可以组合，但同组不能在同一元素上重复使用。",
+          "utilityTokens": [
+            {
+              "token": "motion-fade-in",
+              "group": "motion",
+              "description": "短时淡入动效，用于新内容出现的轻量增强。",
+              "appliesTo": [
+                "Container",
+                "Column",
+                "TextBlock"
+              ],
+              "card": {
+                "type": "AdaptiveCard",
+                "version": "1.5",
+                "body": [
+                  {
+                    "type": "Container",
+                    "id": "octo--surface-subtle--inset-md--motion-fade-in--uid-sample-motion-fade-in",
+                    "style": "emphasis",
+                    "items": [
+                      {
+                        "type": "TextBlock",
+                        "text": "motion-fade-in",
+                        "weight": "Bolder",
+                        "wrap": true
+                      },
+                      {
+                        "type": "TextBlock",
+                        "text": "新内容出现时的轻量动效。",
+                        "isSubtle": true,
+                        "spacing": "Small",
+                        "wrap": true
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "token": "motion-shimmer",
+              "group": "motion",
+              "description": "骨架占位 shimmer 动效，仅用于 loading/skeleton 场景。",
+              "appliesTo": [
+                "Container",
+                "TextBlock"
+              ],
+              "card": {
+                "type": "AdaptiveCard",
+                "version": "1.5",
+                "body": [
+                  {
+                    "type": "ColumnSet",
+                    "columns": [
+                      {
+                        "type": "Column",
+                        "width": "stretch",
+                        "items": [
+                          {
+                            "type": "Container",
+                            "id": "octo--line-skeleton--motion-shimmer--uid-sample-motion-shimmer-main",
+                            "items": []
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Column",
+                        "width": "80px",
+                        "items": [
+                          {
+                            "type": "Container",
+                            "id": "octo--line-skeleton--motion-shimmer--uid-sample-motion-shimmer-short",
+                            "items": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "composition-patterns",
+      "title": "Composition Patterns",
+      "description": "展示多个 utility 与标准 Adaptive Card 结构如何组合成可复用的卡片片段。",
+      "sections": [
+        {
+          "id": "pattern-skeleton-preview",
+          "title": "Skeleton preview",
+          "description": "占位骨架通过 line-skeleton + motion-shimmer 表达，宽度由 ColumnSet 控制。",
+          "card": {
+            "type": "AdaptiveCard",
+            "version": "1.5",
+            "body": [
+              {
+                "type": "Container",
+                "id": "octo--surface-subtle--inset-md--uid-pattern-skeleton-shell",
+                "style": "emphasis",
+                "items": [
+                  {
+                    "type": "ColumnSet",
+                    "columns": [
+                      {
+                        "type": "Column",
+                        "width": "stretch",
+                        "items": [
+                          {
+                            "type": "Container",
+                            "id": "octo--line-skeleton--motion-shimmer--uid-pattern-skeleton-main",
+                            "items": []
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Column",
+                        "width": "88px",
+                        "items": [
+                          {
+                            "type": "Container",
+                            "id": "octo--line-skeleton--motion-shimmer--uid-pattern-skeleton-short",
+                            "items": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "pattern-status-block",
+          "title": "Status block",
+          "description": "状态区由 surface + inset + badge 组合，业务状态映射到通用语义。",
+          "card": {
+            "type": "AdaptiveCard",
+            "version": "1.5",
+            "body": [
+              {
+                "type": "Container",
+                "id": "octo--surface-warning--inset-md--uid-pattern-status",
+                "style": "warning",
+                "items": [
+                  {
+                    "type": "TextBlock",
+                    "id": "octo--badge-warning--uid-pattern-status-badge",
+                    "text": "Pending",
+                    "size": "Small",
+                    "weight": "Bolder",
+                    "color": "Warning"
+                  },
+                  {
+                    "type": "TextBlock",
+                    "text": "需要用户确认后继续。",
+                    "spacing": "Small",
+                    "wrap": true
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -161,6 +161,38 @@ describe("render profile compatibility decoder", () => {
     expect(capabilities.ok).toBe(true);
   });
 
+  it("accepts an optional componentCatalog path and rejects an escaping one", () => {
+    const withCatalog = decodeRenderProfileManifest({
+      schemaVersion: 1,
+      id: "octo-chat",
+      version: "1.2.0",
+      adaptiveCardsSdkVersion: "3.0.6",
+      hostConfig: "host-config.json",
+      stylesheet: "styles.css",
+      capabilities: "capabilities.json",
+      componentCatalog: "component-catalog.json",
+    });
+    expect(withCatalog.ok).toBe(true);
+    if (withCatalog.ok) expect(withCatalog.value.componentCatalog).toBe("component-catalog.json");
+
+    const escaping = decodeRenderProfileManifest({
+      schemaVersion: 1,
+      id: "octo-chat",
+      version: "1.2.0",
+      adaptiveCardsSdkVersion: "3.0.6",
+      hostConfig: "host-config.json",
+      stylesheet: "styles.css",
+      capabilities: "capabilities.json",
+      componentCatalog: "../escape.json",
+    });
+    expect(escaping.ok).toBe(false);
+    if (!escaping.ok) {
+      expect(escaping.issues).toEqual(expect.arrayContaining([
+        expect.objectContaining({ code: "contract.pattern", path: "/componentCatalog" }),
+      ]));
+    }
+  });
+
   it("fails closed on malformed capability subcontracts", () => {
     const result = decodeRenderCapabilities({
       schemaVersion: 1,

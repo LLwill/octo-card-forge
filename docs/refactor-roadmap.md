@@ -315,7 +315,9 @@ Profile package 是 Component Preview 的前置。该阶段只稳定 Profile 的
 - ✅ 已完成（共享渲染切片）：`packages/preview-kit` 新增 `createCardRenderer` / `escapeMarkdownToHtml` 共享 Adaptive Cards 浏览器渲染适配，`web/app.js` 与 `web/components.js` 均改为消费同一适配器，不再各自初始化 SDK 或重复 markdown 转义。对应实施顺序第 4 步与第 5 步的渲染器部分，退出 Gate 第 1、4 条已达成。
 - ✅ 已完成（Contract 切片）：`packages/card-spec` 新增 `ComponentCatalogV1` 契约与 `decodeComponentCatalogV1` fail-closed Decoder，media type `application/vnd.octo.component-catalog+json;version=1`。group id 收敛为固定枚举，section 为「card / rows / utilityTokens 三选一」的可辨识联合，未知属性、枚举越界、重复 id、变体不唯一均产出结构化诊断。Golden 用真实 `getCurrentRenderProfile()` 输出验证契约可覆盖生产数据。对应实施顺序第 2 步，退出 Gate 第 2 条已达成。
 - ✅ 已完成（端点接线切片）：`/api/component-baseline` 服务端在响应中新增符合 `ComponentCatalogV1` 的 `catalog` 信封（`formatVersion`/`mediaType`/`profileReference`/`groups`），顶层 `groups` 冗余已移除；`packages/preview-kit` re-export `decodeComponentCatalogV1`，浏览器 bundle 自包含该 Decoder；`web/components.js` 改为 fail-closed 校验 `catalog` 信封后再渲染。对应实施顺序第 5 步的「消费新 Contract 和共享渲染器」，退出 Gate 第 3 条已达成。
-- ⏳ 待后续切片：将 `component-baseline.ts` specimen 内容迁入 `profile-octo-chat`（需先解决其 `external` 打包约束，保证 `dist/server.js` 仍可离线自包含），使 Profile 成为 specimen 内容的唯一来源。
+- ✅ 已完成（specimen 落盘切片 PR-1）：新增 `scripts/generate-component-catalog.mts` 生成器，用当前 Profile capabilities 跑 `buildComponentBaselineGroups` 冻结出静态 `render-profiles/octo-chat/component-catalog.json`（`ComponentCatalogV1` 结构）；Profile manifest 新增可选 `componentCatalog` 字段，`packages/profile-octo-chat` 的 `loadProfileAssets` 加载并用 `decodeComponentCatalogV1` 校验后经 `ProfileAssetBundle.componentCatalog` 暴露；`build.mjs` 将其纳入 dist 资源；守卫测试保证「静态文件字节 == 现场生成」。此切片为纯新增，运行时行为不变。
+  - 关于 `external` 约束的更正：`dist/server.js` 的离线自包含并非靠把 Profile inline 进 bundle，而是靠部署脚本把 `render-profiles/` 目录一起打包、运行时从磁盘读取。因此把 specimen 落进 Profile 目录不会破坏离线自包含。
+- ⏳ 待后续切片（PR-2）：server `/api/component-baseline` 改为直接消费 Profile 携带的静态 catalog，移除运行时 `buildComponentBaseline*` 生成路径，使 Profile 成为 specimen 内容的唯一运行时来源。
 
 退出 Gate：
 
