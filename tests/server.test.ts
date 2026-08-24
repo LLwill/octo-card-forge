@@ -1,7 +1,10 @@
 import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { CURRENT_RENDER_PROFILE } from "../packages/cli/src/registry.js";
+import {
+  CURRENT_RENDER_PROFILE,
+  getCurrentRenderProfile,
+} from "../packages/cli/src/registry.js";
 import { decodeComponentCatalogV1 } from "../packages/card-spec/src/index.js";
 import { createForgeServer, normalizeBasePath } from "../packages/cli/src/server.js";
 
@@ -124,10 +127,14 @@ describe("catalog HTTP API", () => {
     expect(await response.text()).toContain("createPreviewClient");
   });
 
-  it("serves a component baseline whose catalog envelope satisfies ComponentCatalogV1", async () => {
+  it("serves the Profile's static component catalog as the single runtime source", async () => {
     const response = await fetch(`${baseUrl}/api/component-baseline`);
     expect(response.status).toBe(200);
-    const body = await response.json() as { catalog: unknown };
+    const body = await response.json() as {
+      catalog: unknown;
+      sections?: unknown;
+    };
+
     const decoded = decodeComponentCatalogV1(body.catalog);
     expect(decoded.ok, JSON.stringify(!decoded.ok ? decoded.issues : [])).toBe(true);
     if (decoded.ok) {
@@ -137,6 +144,41 @@ describe("catalog HTTP API", () => {
         "octo-utility-tokens",
         "composition-patterns",
       ]);
+    }
+
+    // The endpoint must pass through the Profile-carried catalog verbatim, not
+    // regenerate it on request, so the Profile stays the single source of truth.
+    const profile = await getCurrentRenderProfile();
+    expect(profile.componentCatalog).toBeDefined();
+    expect(body.catalog).toEqual(profile.componentCatalog);
+
+    // The legacy runtime-generated top-level sections field is gone.
+    expect(body.sections).toBeUndefined();
+  });
+
+  it("fails closed when the active Profile does not carry a component catalog", async () => {
+    const profile = await getCurrentRenderProfile();
+    const { componentCatalog: _componentCatalog, ...legacyProfile } = profile;
+    const unboundServer = await createForgeServer({ profile: legacyProfile });
+    await new Promise<void>((resolve, reject) => {
+      unboundServer.once("error", reject);
+      unboundServer.listen(0, "127.0.0.1", resolve);
+    });
+
+    try {
+      const address = unboundServer.address() as AddressInfo;
+      const response = await fetch(
+        `http://127.0.0.1:${address.port}/api/component-baseline`
+      );
+      expect(response.status).toBe(500);
+      await expect(response.json()).resolves.toEqual({
+        code: "component_catalog_missing",
+        message: `Render profile ${CURRENT_RENDER_PROFILE} does not carry a static component catalog`,
+      });
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        unboundServer.close((error) => error ? reject(error) : resolve());
+      });
     }
   });
 });

@@ -32,11 +32,6 @@ import type {
   RenderProfileSource,
 } from "./types.js";
 import {
-  buildComponentBaseline,
-  buildComponentBaselineGroups,
-} from "./component-baseline.js";
-import { COMPONENT_CATALOG_MEDIA_TYPE } from "@mlt-org/octo-card-spec";
-import {
   buildPreviewRenderResponse,
   buildPreviewSession,
 } from "./preview.js";
@@ -409,20 +404,20 @@ async function handleApi(
 
   if (req.method === "GET" && url.pathname === "/api/component-baseline") {
     const profile = context.profile ?? await getCurrentRenderProfile();
-    const groups = buildComponentBaselineGroups(profile.capabilities);
+    if (!profile.componentCatalog) {
+      sendJson(res, 500, {
+        code: "component_catalog_missing",
+        message: `Render profile ${profile.reference} does not carry a static component catalog`,
+      });
+      return true;
+    }
     sendJson(res, 200, {
       reference: profile.reference,
       renderProfile: profile.manifest,
       hostConfig: profile.hostConfig,
       capabilities: profile.capabilities,
       stylesheetUrl: publicPath(basePath, `/api/render-styles/${encodeURIComponent(profile.reference)}`),
-      sections: buildComponentBaseline(profile.capabilities),
-      catalog: {
-        formatVersion: 1,
-        mediaType: COMPONENT_CATALOG_MEDIA_TYPE,
-        profileReference: profile.reference,
-        groups,
-      },
+      catalog: profile.componentCatalog,
     });
     return true;
   }

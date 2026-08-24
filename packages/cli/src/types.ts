@@ -1,3 +1,5 @@
+import type { ComponentCatalogV1 } from "@mlt-org/octo-card-spec";
+
 export type JsonObject = Record<string, unknown>;
 
 export type WireProfile = "octo/v1" | "octo/v2";
@@ -36,6 +38,7 @@ export interface RenderProfileManifest {
   stylesheet: string;
   tokens?: string;
   capabilities: string;
+  componentCatalog?: string;
 }
 
 export interface RenderComponentVariant {
@@ -86,6 +89,8 @@ export interface RenderProfileSource {
   capabilities: RenderCapabilities;
   hostConfig: Record<string, unknown>;
   stylesheets?: string[];
+  /** Static component catalog carried by the profile, when it declares one. */
+  componentCatalog?: ComponentCatalogV1;
 }
 
 export interface InspectedAction {

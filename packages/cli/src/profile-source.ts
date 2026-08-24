@@ -7,6 +7,7 @@ import {
   parseRenderProfileReference,
   resolveRenderProfileReference,
 } from "./registry.js";
+import { loadProfileComponentCatalog } from "./component-catalog-source.js";
 import type {
   RenderCapabilities,
   RenderProfileManifest,
@@ -78,11 +79,12 @@ async function loadFromRoot(
   const readProfileText = (file: string) =>
     readText(resolveProfileAssetPath(assetRoot, file));
 
-  const [capabilities, hostConfig, theme, stylesheet] = await Promise.all([
+  const [capabilities, hostConfig, theme, stylesheet, componentCatalog] = await Promise.all([
     readProfileJson<RenderCapabilities>(manifest.capabilities),
     readProfileJson<Record<string, unknown>>(manifest.hostConfig),
     manifest.theme ? readProfileText(manifest.theme) : Promise.resolve(""),
     readProfileText(manifest.stylesheet),
+    loadProfileComponentCatalog(assetRoot, manifest),
   ]);
 
   return {
@@ -93,6 +95,7 @@ async function loadFromRoot(
     capabilities,
     hostConfig,
     stylesheets: [theme, stylesheet].filter(Boolean),
+    ...(componentCatalog ? { componentCatalog } : {}),
   };
 }
 
