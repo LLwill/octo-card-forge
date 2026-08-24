@@ -202,3 +202,59 @@ jobs:
           if-no-files-found: error
           include-hidden-files: true
           retention-days: 30
+
+  github-delivery:
+    name: github-delivery
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Smoke card-check Action
+        id: card-check
+        uses: ./actions/card-check
+        with:
+          card-path: cards/docs.access-request
+          upload-artifact: "false"
+          output-dir: .release/action-smoke/check
+
+      - name: Smoke card-release Action without publishing
+        id: card-release
+        uses: ./actions/card-release
+        with:
+          card-path: cards/docs.access-request/versions/0.3.0
+          publish: "false"
+          output-dir: .release/action-smoke/release
+
+      - name: Repeat card-release preparation
+        id: card-release-repeat
+        uses: ./actions/card-release
+        with:
+          card-path: cards/docs.access-request/versions/0.3.0
+          publish: "false"
+          output-dir: .release/action-smoke/release-repeat
+
+      - name: Verify Action outputs
+        env:
+          CHECK_ARTIFACT: ${{ steps.card-check.outputs.artifact-file }}
+          CHECK_SHA256: ${{ steps.card-check.outputs.artifact-sha256 }}
+          RELEASE_ARTIFACT: ${{ steps.card-release.outputs.artifact-file }}
+          RELEASE_SHA256: ${{ steps.card-release.outputs.artifact-sha256 }}
+          HANDOFF_FILE: ${{ steps.card-release.outputs.handoff-file }}
+          HANDOFF_SHA256: ${{ steps.card-release.outputs.handoff-sha256 }}
+          RELEASE_TAG: ${{ steps.card-release.outputs.release-tag }}
+          REPEAT_RELEASE_SHA256: ${{ steps.card-release-repeat.outputs.artifact-sha256 }}
+          REPEAT_HANDOFF_SHA256: ${{ steps.card-release-repeat.outputs.handoff-sha256 }}
+        run: |
+          set -euo pipefail
+          test -f "$CHECK_ARTIFACT"
+          test -f "$RELEASE_ARTIFACT"
+          test -f "$HANDOFF_FILE"
+          test "$(cat "${CHECK_ARTIFACT%.json}.sha256")" = "$CHECK_SHA256"
+          test "$(cat "${RELEASE_ARTIFACT%.json}.sha256")" = "$RELEASE_SHA256"
+          test "$RELEASE_SHA256" = "$REPEAT_RELEASE_SHA256"
+          test "$HANDOFF_SHA256" = "$REPEAT_HANDOFF_SHA256"
+          test "$RELEASE_TAG" = "card/docs.access-request/v0.3.0"
+          actual_handoff_sha="$(sha256sum "$HANDOFF_FILE" | cut -d' ' -f1)"
+          test "$actual_handoff_sha" = "$HANDOFF_SHA256"

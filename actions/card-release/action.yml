@@ -1,0 +1,107 @@
+name: Octo Card Release
+description: Build immutable Card release assets and optionally create a non-overwritable GitHub Release.
+
+inputs:
+  card-path:
+    description: Path to a versioned Card package under versions/<version>.
+    required: true
+  cli-version:
+    description: Exact published @mlt-org/octo-card-cli version.
+    required: false
+    default: "0.2.2"
+  profile-package:
+    description: Published Render Profile npm package.
+    required: false
+    default: "@mlt-org/octo-card-profile-octo-chat"
+  profile-version:
+    description: Exact published Render Profile version.
+    required: false
+    default: "1.2.0-rc.4"
+  output-dir:
+    description: Directory for immutable release assets.
+    required: false
+    default: ".octo-card/release"
+  publish:
+    description: Create the GitHub Release after preparing and verifying assets.
+    required: false
+    default: "true"
+  release-branch:
+    description: Branch from which a GitHub Release may be created.
+    required: false
+    default: "main"
+  github-token:
+    description: GitHub token with contents:write, required when publish is true.
+    required: false
+
+outputs:
+  card-id:
+    description: Released Card ID.
+    value: ${{ steps.prepare.outputs.card-id }}
+  card-version:
+    description: Released Card version.
+    value: ${{ steps.prepare.outputs.card-version }}
+  release-tag:
+    description: Immutable Card Release tag.
+    value: ${{ steps.prepare.outputs.release-tag }}
+  release-url:
+    description: GitHub Release URL, empty when publish is false.
+    value: ${{ steps.publish.outputs.release-url }}
+  artifact-file:
+    description: Absolute path to the Card Artifact JSON.
+    value: ${{ steps.prepare.outputs.artifact-file }}
+  artifact-sha256:
+    description: Canonical Card Artifact SHA-256 digest.
+    value: ${{ steps.prepare.outputs.artifact-sha256 }}
+  handoff-file:
+    description: Absolute path to the deterministic backend Handoff ZIP.
+    value: ${{ steps.prepare.outputs.handoff-file }}
+  handoff-sha256:
+    description: Byte-level SHA-256 checksum of the Handoff ZIP.
+    value: ${{ steps.prepare.outputs.handoff-sha256 }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v5
+      with:
+        node-version: "22"
+        registry-url: https://registry.npmjs.org/
+
+    - name: Install pinned Forge tools
+      id: tools
+      shell: bash
+      env:
+        CLI_VERSION: ${{ inputs.cli-version }}
+        PROFILE_PACKAGE: ${{ inputs.profile-package }}
+        PROFILE_VERSION: ${{ inputs.profile-version }}
+      run: "$GITHUB_ACTION_PATH/../_shared/install-tools.sh"
+
+    - name: Prepare immutable release assets
+      id: prepare
+      shell: bash
+      env:
+        OCTO_CARD_BIN: ${{ steps.tools.outputs.octo-card-bin }}
+        CARD_PATH: ${{ inputs.card-path }}
+        PROFILE_PACKAGE: ${{ inputs.profile-package }}
+        OUTPUT_DIR: ${{ inputs.output-dir }}
+      run: "$GITHUB_ACTION_PATH/prepare.sh"
+
+    - name: Create immutable GitHub Release
+      id: publish
+      if: ${{ inputs.publish == 'true' }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        RELEASE_BRANCH: ${{ inputs.release-branch }}
+        RELEASE_TAG: ${{ steps.prepare.outputs.release-tag }}
+        CARD_ID: ${{ steps.prepare.outputs.card-id }}
+        CARD_VERSION: ${{ steps.prepare.outputs.card-version }}
+        ARTIFACT_FILE: ${{ steps.prepare.outputs.artifact-file }}
+        ARTIFACT_DIGEST_FILE: ${{ steps.prepare.outputs.artifact-digest-file }}
+        HANDOFF_FILE: ${{ steps.prepare.outputs.handoff-file }}
+        HANDOFF_DIGEST_FILE: ${{ steps.prepare.outputs.handoff-digest-file }}
+        VERIFICATION_FILE: ${{ steps.prepare.outputs.verification-file }}
+        ARTIFACT_SHA256: ${{ steps.prepare.outputs.artifact-sha256 }}
+        HANDOFF_SHA256: ${{ steps.prepare.outputs.handoff-sha256 }}
+      run: "$GITHUB_ACTION_PATH/publish.sh"
