@@ -1,5 +1,11 @@
-import { readFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { mkdtemp, readFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { promisify } from "node:util";
 import { describe, expect, it } from "vitest";
+
+const execFileAsync = promisify(execFile);
 
 describe("octo-design-cards skill", () => {
   it("defaults new card authoring to the repo-free octo-card workflow", async () => {
@@ -70,5 +76,42 @@ describe("octo-design-cards skill", () => {
     expect(manifest.skill.version).toBe(packageJson.version);
     expect(manifest.cli.recommendedVersion).toBe(packageJson.version);
     expect(manifest.renderProfiles).toHaveLength(1);
+  });
+
+  it("builds a deterministic portable Skill archive", async () => {
+    const firstOutput = await mkdtemp(path.join(os.tmpdir(), "octo-skill-first-"));
+    const secondOutput = await mkdtemp(path.join(os.tmpdir(), "octo-skill-second-"));
+
+    const build = async (output: string) => {
+      const { stdout } = await execFileAsync(process.execPath, [
+        "scripts/package-skill.mjs",
+        output,
+      ]);
+      return JSON.parse(stdout) as {
+        artifact: string;
+        manifest: string;
+        sha256: string;
+      };
+    };
+
+    const first = await build(firstOutput);
+    const second = await build(secondOutput);
+    expect(first.sha256).toBe(second.sha256);
+
+    const publishedManifest = JSON.parse(
+      await readFile(first.manifest, "utf8")
+    ) as { sha256: string; files: string[] };
+    const installManifest = JSON.parse(
+      await readFile("web/install-manifest.json", "utf8")
+    ) as { skill: { sha256: string } };
+    expect(publishedManifest.sha256).toBe(first.sha256);
+    expect(installManifest.skill.sha256).toBe(first.sha256);
+    expect(publishedManifest.files).toEqual([
+      "SKILL.md",
+      "agents/openai.yaml",
+      "references/card-package-workflow.md",
+      "references/component-system.md",
+      "skill-manifest.json",
+    ]);
   });
 });

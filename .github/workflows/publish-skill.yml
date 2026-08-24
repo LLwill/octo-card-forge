@@ -98,7 +98,15 @@ jobs:
           grep -Fqx './references/card-package-workflow.md' skill-contents.txt
           grep -Fqx './references/component-system.md' skill-contents.txt
           grep -Fqx './skill-manifest.json' skill-contents.txt
-          sha256sum "$artifact"
+          actual_sha="$(node -p "require('./$manifest').sha256")"
+          expected_sha="$(node -p "require('./web/install-manifest.json').skill.sha256")"
+          test "$actual_sha" = "$expected_sha" || {
+            echo "Skill Bundle checksum does not match web/install-manifest.json." >&2
+            echo "Expected: $expected_sha" >&2
+            echo "Actual:   $actual_sha" >&2
+            exit 1
+          }
+          echo "$actual_sha  $artifact"
 
       - name: Create GitHub Release
         env:

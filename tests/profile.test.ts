@@ -38,6 +38,7 @@ describe("render profile bundle", () => {
       exports: Record<string, string>;
       publishConfig: { access: string; registry: string };
       repository: { type: string; url: string; directory: string };
+      files: string[];
     };
     const stylesheet = await readFile(
       path.join(result.packageRoot, "dist/styles.css"),
@@ -64,6 +65,15 @@ describe("render profile bundle", () => {
     expect(packageJson.exports["./component-catalog.json"]).toBe(
       "./dist/component-catalog.json"
     );
+    expect(packageJson.files).toEqual([
+      "dist",
+      "host-config.json",
+      "theme.css",
+      "styles.css",
+      "tokens.json",
+      "capabilities.json",
+      "component-catalog.json",
+    ]);
     expect(stylesheet).toContain(".octo-card-profile .ac-adaptiveCard");
     expect(stylesheet).toContain(".octo-card-profile {");
     expect(stylesheet).not.toContain("#preview");
@@ -103,6 +113,9 @@ describe("render profile bundle", () => {
     expect(profile.manifest.id).toBe("octo-chat");
     expect(profile.capabilities.allowedElements).toContain("TextBlock");
     expect(profile.componentCatalog?.profileReference).toBe(REFERENCE);
+    await expect(
+      readFile(path.join(pkgDir, profile.manifest.capabilities), "utf8")
+    ).resolves.toContain("allowedElements");
     const stylesheets = profile.stylesheets;
     expect(stylesheets).toBeDefined();
     expect(stylesheets!.length).toBeGreaterThan(0);

@@ -113,6 +113,14 @@ jobs:
           pnpm cli profile validate "$PROFILE_REF"
           pnpm cli profile pack "$PROFILE_REF" --output .release
 
+      - name: Smoke candidate with published CLI
+        env:
+          CONSUMER_CLI_VERSION: "0.2.0"
+          CONSUMER_PROFILE_VERSION: ${{ steps.metadata.outputs.version }}
+          CONSUMER_PROFILE_SPEC: ${{ github.workspace }}/.release/${{ steps.metadata.outputs.tarball }}
+          CONSUMER_SKILL_VERSION: "0.2.0"
+        run: pnpm smoke:published-consumer
+
       - name: Ensure version is unpublished
         env:
           PACKAGE_NAME: ${{ steps.metadata.outputs.package_name }}

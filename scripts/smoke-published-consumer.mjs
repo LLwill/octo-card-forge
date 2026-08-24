@@ -11,6 +11,7 @@ const profileVersion = process.env.CONSUMER_PROFILE_VERSION ?? "1.2.0-rc.2";
 const skillVersion = process.env.CONSUMER_SKILL_VERSION ?? "0.2.0";
 const profilePackage = "@mlt-org/octo-card-profile-octo-chat";
 const cliPackage = "@mlt-org/octo-card-cli";
+const profileSpec = process.env.CONSUMER_PROFILE_SPEC ?? `${profilePackage}@${profileVersion}`;
 const repository = "https://github.com/LLwill/octo-card-forge";
 const workspace = mkdtempSync(path.join(os.tmpdir(), "octo-card-published-consumer-"));
 
@@ -41,9 +42,16 @@ async function download(url) {
 }
 
 run(["init", "--yes"], { capture: false });
-run(["install", "--save-dev", `${cliPackage}@${cliVersion}`, `${profilePackage}@${profileVersion}`], { capture: false });
+run(["install", "--save-dev", `${cliPackage}@${cliVersion}`, profileSpec], { capture: false });
 
-const init = jsonCommand(["agent", "init", "--target", "generic"]);
+const init = jsonCommand([
+  "agent",
+  "init",
+  "--target",
+  "generic",
+  "--profile",
+  `octo-chat@${profileVersion}`,
+]);
 const doctor = jsonCommand(["agent", "doctor"]);
 const upgrade = jsonCommand(["agent", "upgrade", "--check"]);
 if (
@@ -57,7 +65,21 @@ if (
   throw new Error(`Agent lifecycle smoke failed: ${JSON.stringify({ init, doctor, upgrade })}`);
 }
 
-run(["exec", "--", "octo-card", "init", "consumer.bot-token", "--name", "Consumer Bot Token", "--out", "./consumer.bot-token", "--preset", "bot-token"], { capture: false });
+run([
+  "exec",
+  "--",
+  "octo-card",
+  "init",
+  "consumer.bot-token",
+  "--name",
+  "Consumer Bot Token",
+  "--out",
+  "./consumer.bot-token",
+  "--preset",
+  "bot-token",
+  "--render-profile",
+  `octo-chat@${profileVersion}`,
+], { capture: false });
 const packageReport = jsonCommand(["verify", "--card", "./consumer.bot-token", "--emit-dir", "compiled", "--handoff", "handoff"]);
 if (!packageReport.valid || !packageReport.handoff?.filePath) {
   throw new Error(`Card Package smoke failed: ${JSON.stringify(packageReport)}`);

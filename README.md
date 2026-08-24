@@ -320,19 +320,19 @@ PORT=4318 BASE_PATH=/card-forge pnpm start
 发布 Agent 侧 CLI：
 
 ```bash
-git tag octo-card-cli/v0.2.1
-git push origin octo-card-cli/v0.2.1
+git tag octo-card-cli/v0.2.2
+git push origin octo-card-cli/v0.2.2
 ```
 
 这会触发 `publish-octo-card-cli`，验证 `package.json` 中的
-`@mlt-org/octo-card-cli@0.2.1`，运行 `typecheck/test/check/smoke:repo-free-agent`，
+`@mlt-org/octo-card-cli@0.2.2`，运行 `typecheck/test/check/smoke:repo-free-agent`，
 打包并发布 `@mlt-org/octo-card-cli`。
 
 发布 Portable Skill Bundle：
 
 ```bash
-git tag octo-design-cards-skill/v0.2.1
-git push origin octo-design-cards-skill/v0.2.1
+git tag octo-design-cards-skill/v0.2.2
+git push origin octo-design-cards-skill/v0.2.2
 ```
 
 这会触发 `publish-octo-design-cards-skill`，生成 Skill Bundle、checksum manifest，
@@ -341,12 +341,12 @@ git push origin octo-design-cards-skill/v0.2.1
 发布 Render Profile：
 
 ```bash
-git tag render-profile/octo-chat/v1.2.0-rc.3
-git push origin render-profile/octo-chat/v1.2.0-rc.3
+git tag render-profile/octo-chat/v1.2.0-rc.4
+git push origin render-profile/octo-chat/v1.2.0-rc.4
 ```
 
 这会触发 `publish-render-profile`，验证 `render-profiles/octo-chat/manifest.json` 中的
-`@mlt-org/octo-card-profile-octo-chat@1.2.0-rc.3`，打包并以 `next` tag 发布。
+`@mlt-org/octo-card-profile-octo-chat@1.2.0-rc.4`，打包并以 `next` tag 发布。
 
 两个发布 workflow 都要求 tag 指向已经合入 `main` 的 commit，并使用 `npm-publish`
 environment 与 `NPM_TOKEN`。
