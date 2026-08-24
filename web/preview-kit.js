@@ -111,8 +111,28 @@ function isPreviewRenderResponse(value) {
 function createPreviewClient(options = {}) {
   return new PreviewClient(options);
 }
+function escapeMarkdownToHtml(text) {
+  return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
+}
+function createCardRenderer(adaptiveCards) {
+  adaptiveCards.AdaptiveCard.onProcessMarkdown = (text, result) => {
+    result.outputHtml = escapeMarkdownToHtml(text);
+    result.didProcess = true;
+  };
+  return {
+    renderCard(payload, hostConfig, options = {}) {
+      const card = new adaptiveCards.AdaptiveCard();
+      card.hostConfig = new adaptiveCards.HostConfig(hostConfig);
+      if (options.onAction) card.onExecuteAction = options.onAction;
+      card.parse(payload);
+      return card.render();
+    }
+  };
+}
 export {
   PreviewApiError,
   PreviewClient,
-  createPreviewClient
+  createCardRenderer,
+  createPreviewClient,
+  escapeMarkdownToHtml
 };

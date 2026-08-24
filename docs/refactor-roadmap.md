@@ -40,7 +40,7 @@ Phase 8  逐 Card 迁移与 Legacy 删除
 | Phase 0 | 已完成 | 架构、ADR、Characterization Tests 和 Golden 已建立 |
 | Phase 1 | 已完成 | Monorepo 外壳、依赖检查和兼容构建已建立 |
 | Phase 2 | 已完成 | Contract、Core、Workspace 编译链路和单一 Validator/Inspection/utility parser Gate 已完成 |
-| Phase 3 | 进行中 | Preview API、Preview Kit client、现有 Card 页面接入、Profile package foundation 和 CLI 运行时下沉（Phase 3E）已完成；共享浏览器渲染和组件预览（Phase 3D）待完成 |
+| Phase 3 | 进行中 | Preview API、Preview Kit client、现有 Card 页面接入、Profile package foundation 和 CLI 运行时下沉（Phase 3E）已完成；Phase 3D 共享浏览器渲染适配已完成，组件目录 Contract 与 specimen 迁移待后续切片 |
 | Phase 4 | 已完成 | Artifact Contract/Builder/digest/verify/CLI/Handoff/消费者 fixture/tarball 验证均已完成 |
 | Phase 5 | 未开始 | Catalog 仓库和 GitHub Delivery 尚未建立 |
 | Phase 6 | 未开始实现 | Snapshot Contract 已定义；`apps/forge-web` 仍为空壳，当前改动只发生在 legacy `web/` |
@@ -309,6 +309,11 @@ Profile package 是 Component Preview 的前置。该阶段只稳定 Profile 的
 - Profile 是 specimen 内容的唯一来源；
 - `web/components.js` 不再直接初始化 Adaptive Cards SDK 或读取旧 stylesheet URL；
 - 组件预览不依赖数据库、账号、GitHub Token 或 `octo-server`。
+
+进度（切片式推进）：
+
+- ✅ 已完成（共享渲染切片）：`packages/preview-kit` 新增 `createCardRenderer` / `escapeMarkdownToHtml` 共享 Adaptive Cards 浏览器渲染适配，`web/app.js` 与 `web/components.js` 均改为消费同一适配器，不再各自初始化 SDK 或重复 markdown 转义。对应实施顺序第 4 步与第 5 步的渲染器部分，退出 Gate 第 1、4 条已达成。
+- ⏳ 待后续切片：版本化 Component Catalog Contract（`ComponentCatalogV1`/`ComponentSpecimenV1` + Decoder + Golden）；将 `component-baseline.ts` specimen 内容迁入 `profile-octo-chat`（需先解决其 `external` 打包约束，保证 `dist/server.js` 仍可离线自包含）；`/components` 页面改为消费版本化 Contract 而非现有 `/api/component-baseline` 临时结构。对应退出 Gate 第 2、3 条尚未达成。
 
 退出 Gate：
 

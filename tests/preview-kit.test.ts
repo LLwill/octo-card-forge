@@ -122,3 +122,54 @@ describe("Preview Client", () => {
     })).resolves.toMatchObject({ valid: false, issues: [{ code: "contract.required" }] });
   });
 });
+
+describe("shared card renderer", () => {
+  it("escapes markdown consistently", async () => {
+    const { escapeMarkdownToHtml } = await import(
+      "@mlt-org/octo-card-preview-kit"
+    );
+    expect(escapeMarkdownToHtml(`<b>&"'`)).toBe("&lt;b&gt;&amp;&quot;&#039;");
+  });
+
+  it("configures markdown processing and renders through the injected SDK", async () => {
+    const { createCardRenderer } = await import(
+      "@mlt-org/octo-card-preview-kit"
+    );
+
+    const calls: Array<Record<string, unknown>> = [];
+
+    class FakeCard {
+      hostConfig: unknown;
+      onExecuteAction?: (action: unknown) => void;
+      static onProcessMarkdown?: (
+        text: string,
+        result: { outputHtml?: string; didProcess: boolean }
+      ) => void;
+      parse(payload: unknown) {
+        calls.push({ kind: "parse", payload });
+      }
+      render() {
+        calls.push({ kind: "render" });
+        return { rendered: true } as unknown as HTMLElement;
+      }
+    }
+    const adaptiveCards = {
+      AdaptiveCard: FakeCard,
+      HostConfig: class {
+        constructor(readonly config: unknown) {}
+      },
+    } as unknown as Parameters<typeof createCardRenderer>[0];
+
+    const renderer = createCardRenderer(adaptiveCards);
+    expect(typeof FakeCard.onProcessMarkdown).toBe("function");
+
+    const result = { didProcess: false } as { outputHtml?: string; didProcess: boolean };
+    FakeCard.onProcessMarkdown!("<x>", result);
+    expect(result).toEqual({ outputHtml: "&lt;x&gt;", didProcess: true });
+
+    const onAction = () => {};
+    const element = renderer.renderCard({ type: "AdaptiveCard" }, { fontFamily: "x" }, { onAction });
+    expect(element).toEqual({ rendered: true });
+    expect(calls.map((call) => call.kind)).toEqual(["parse", "render"]);
+  });
+});

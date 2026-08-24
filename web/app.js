@@ -1,4 +1,8 @@
-import { createPreviewClient, PreviewApiError } from "./preview-kit.js";
+import {
+  createPreviewClient,
+  createCardRenderer,
+  PreviewApiError,
+} from "./preview-kit.js";
 
 const catalogView = document.querySelector("#catalogView");
 const detailView = document.querySelector("#detailView");
@@ -133,15 +137,7 @@ document.querySelectorAll("[data-locale]").forEach((button) => button.addEventLi
 }));
 applyLocale();
 
-AdaptiveCards.AdaptiveCard.onProcessMarkdown = (text, result) => {
-  result.outputHtml = text
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-  result.didProcess = true;
-};
+const cardRenderer = createCardRenderer(AdaptiveCards);
 
 async function json(url, init) {
   const response = await fetch(publicUrl(url), init);
@@ -194,11 +190,7 @@ function cardMatches(item) {
 }
 
 function createCardElement(payload, hostConfig, onAction = () => {}) {
-  const card = new AdaptiveCards.AdaptiveCard();
-  card.hostConfig = new AdaptiveCards.HostConfig(hostConfig);
-  card.onExecuteAction = onAction;
-  card.parse(payload);
-  return card.render();
+  return cardRenderer.renderCard(payload, hostConfig, { onAction });
 }
 
 function cardPreview(item) {
