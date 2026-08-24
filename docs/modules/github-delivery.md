@@ -1,6 +1,6 @@
 # GitHub Delivery 模块
 
-> 状态：Delivery Contract 与首批 reusable Actions 已实现；Catalog 仓库接入待完成
+> 状态：已完成（2026-08-24）
 >
 > 目标代码：`actions/`、Catalog 仓库 `.github/workflows/`
 
@@ -37,6 +37,15 @@
 当前默认工具版本为 `@mlt-org/octo-card-cli@0.2.2` 与
 `@mlt-org/octo-card-profile-octo-chat@1.2.0-rc.4`。Catalog Workflow 应同时固定
 Action ref 和这两个输入版本，不使用 `latest`、范围版本或 workspace 源码。
+
+独立 Catalog 已落地于
+[`LLwill/octo-card-catalog`](https://github.com/LLwill/octo-card-catalog)：
+
+- `main` 要求最新分支通过聚合 `card-check`，禁止 force-push 和删除；
+- CODEOWNERS 覆盖 Card、Workflow 和 discovery script；
+- `docs.access-request` 已作为 Pilot 迁入目标目录；
+- `card/docs.access-request/v0.3.0` 已由 `card-release` 自动创建并上传五个资产；
+- 后续新增 Card 或版本不需要修改 Forge 仓库。
 
 ## 不负责
 
