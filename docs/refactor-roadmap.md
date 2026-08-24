@@ -40,7 +40,7 @@ Phase 8  逐 Card 迁移与 Legacy 删除
 | Phase 0 | 已完成 | 架构、ADR、Characterization Tests 和 Golden 已建立 |
 | Phase 1 | 已完成 | Monorepo 外壳、依赖检查和兼容构建已建立 |
 | Phase 2 | 已完成 | Contract、Core、Workspace 编译链路和单一 Validator/Inspection/utility parser Gate 已完成 |
-| Phase 3 | 进行中 | Preview API、Preview Kit client、现有 Card 页面接入、Profile package foundation 和 CLI 运行时下沉（Phase 3E）已完成；Phase 3D 共享浏览器渲染适配已完成，组件目录 Contract 与 specimen 迁移待后续切片 |
+| Phase 3 | 已完成 | Workspace/Preview/Profile/CLI package 均已收敛；Phase 3D 的共享渲染、Component Catalog Contract、Profile specimen 冻结与 server 静态消费链路已完成 |
 | Phase 4 | 已完成 | Artifact Contract/Builder/digest/verify/CLI/Handoff/消费者 fixture/tarball 验证均已完成 |
 | Phase 5 | 未开始 | Catalog 仓库和 GitHub Delivery 尚未建立 |
 | Phase 6 | 未开始实现 | Snapshot Contract 已定义；`apps/forge-web` 仍为空壳，当前改动只发生在 legacy `web/` |
@@ -180,7 +180,7 @@ card-spec
 
 目标：让本地 Card Workspace 和 Profile 成为稳定的可分发能力。
 
-状态：**进行中。Workspace、Preview API、Preview Kit client、现有 Card 页面接入和 Profile Package Foundation 已完成；组件预览、共享浏览器渲染、CLI 分包待实施。**
+状态：**已完成（2026-08-24）。Workspace、Preview API、Preview Kit、Profile package、Component Preview 与 CLI package convergence 均已关闭退出 Gate。**
 
 子阶段：
 
@@ -189,8 +189,8 @@ card-spec
 | Phase 3A Workspace Runtime | 已完成 | 路径安全、Resolved Source、`Workspace → Core` facade |
 | Phase 3B Preview Transport | 已完成 | Preview API v1、revision、Preview Kit client、legacy Card 页面接入 |
 | Phase 3C Profile Package Foundation | 已完成 | `packages/profile-octo-chat` 独立包，validate/build/pack、workspace package 优先加载、legacy 目录作开发回退 |
-| Phase 3D Component Preview | 待实施，可与 Phase 4 并行 | Component Catalog Contract、Profile specimen、共享浏览器渲染、legacy Components 页面迁移 |
-| Phase 3E CLI Package Convergence | 已完成（运行时下沉） | CLI 命令层与共享应用运行时已迁入 `packages/cli`（`@mlt-org/octo-card-cli-runtime`，导出 `runCli`）；根 `src/cli.ts` 收敛为薄入口并注入 dev server，npm 包名/bin/发布产物保持不变；`src/server.ts` 暂留应用层并反向消费该包，server 下沉留待后续 |
+| Phase 3D Component Preview | 已完成 | Component Catalog Contract、Profile specimen、共享浏览器渲染、legacy Components 页面迁移 |
+| Phase 3E CLI Package Convergence | 已完成 | CLI 命令层、共享运行时与应用服务层均已迁入 `packages/cli`；根 `src/` 已删除，npm 包名/bin/发布产物保持兼容 |
 
 工作：
 
@@ -282,6 +282,8 @@ Profile package 是 Component Preview 的前置。该阶段只稳定 Profile 的
 
 ### 6.2 Phase 3D：Component Preview
 
+状态：**已完成（2026-08-24）。**
+
 组件预览用于验证 Render Profile 的能力、样式和标准组合，不是另一套 Card Engine，也不新增数据库、
 在线组件服务或独立账号体系。
 
@@ -317,7 +319,13 @@ Profile package 是 Component Preview 的前置。该阶段只稳定 Profile 的
 - ✅ 已完成（端点接线切片）：`/api/component-baseline` 服务端在响应中新增符合 `ComponentCatalogV1` 的 `catalog` 信封（`formatVersion`/`mediaType`/`profileReference`/`groups`），顶层 `groups` 冗余已移除；`packages/preview-kit` re-export `decodeComponentCatalogV1`，浏览器 bundle 自包含该 Decoder；`web/components.js` 改为 fail-closed 校验 `catalog` 信封后再渲染。对应实施顺序第 5 步的「消费新 Contract 和共享渲染器」，退出 Gate 第 3 条已达成。
 - ✅ 已完成（specimen 落盘切片 PR-1）：新增 `scripts/generate-component-catalog.mts` 生成器，用当前 Profile capabilities 跑 `buildComponentBaselineGroups` 冻结出静态 `render-profiles/octo-chat/component-catalog.json`（`ComponentCatalogV1` 结构）；Profile manifest 新增可选 `componentCatalog` 字段，`packages/profile-octo-chat` 的 `loadProfileAssets` 加载并用 `decodeComponentCatalogV1` 校验后经 `ProfileAssetBundle.componentCatalog` 暴露；`build.mjs` 将其纳入 dist 资源；守卫测试保证「静态文件字节 == 现场生成」。此切片为纯新增，运行时行为不变。
   - 关于 `external` 约束的更正：`dist/server.js` 的离线自包含并非靠把 Profile inline 进 bundle，而是靠部署脚本把 `render-profiles/` 目录一起打包、运行时从磁盘读取。因此把 specimen 落进 Profile 目录不会破坏离线自包含。
-- ⏳ 待后续切片（PR-2）：server `/api/component-baseline` 改为直接消费 Profile 携带的静态 catalog，移除运行时 `buildComponentBaseline*` 生成路径，使 Profile 成为 specimen 内容的唯一运行时来源。
+- ✅ 已完成（server 静态消费切片 PR-2）：CLI 的 workspace/package/directory Profile loader 会读取 manifest 声明的 `componentCatalog`，用 `decodeComponentCatalogV1` fail-closed 校验，并要求 catalog 的 `profileReference` 与承载它的 manifest 精确一致；自定义 Profile bundle/pack 将该文件纳入复制、SHA-256 manifest 和 package export。server `/api/component-baseline` 直接透传 `profile.componentCatalog`，删除请求时 `buildComponentBaseline*` 调用和旧顶层 `sections`；Profile 缺失 catalog 时返回稳定的 `component_catalog_missing` 错误。生产 `dist/server.js` 已确认不含运行时 baseline builder 符号，Profile 成为 specimen 内容的唯一运行时来源。
+
+最终验证（2026-08-24）：
+
+- workspace dependency check、typecheck、build、Catalog check 全绿；
+- legacy 全量测试 32 文件、188 项全绿，workspace package 测试全绿；
+- repo-free agent smoke 与 published-consumer tarball smoke 全绿。
 
 退出 Gate：
 
