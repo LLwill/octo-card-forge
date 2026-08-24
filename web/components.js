@@ -1,3 +1,5 @@
+import { createCardRenderer } from "./preview-kit.js";
+
 const sectionsRoot = document.querySelector("#baselineSections");
 const status = document.querySelector("#baselineStatus");
 const baselineVersion = document.querySelector("#baselineVersion");
@@ -80,15 +82,7 @@ document.querySelectorAll("[data-locale]").forEach((button) => button.addEventLi
 }));
 applyComponentLocale();
 
-AdaptiveCards.AdaptiveCard.onProcessMarkdown = (text, result) => {
-  result.outputHtml = text
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-  result.didProcess = true;
-};
+const cardRenderer = createCardRenderer(AdaptiveCards);
 
 async function json(url) {
   const response = await fetch(`${basePath}${url}`);
@@ -166,13 +160,12 @@ function renderCardPreview(cardJson, sectionTitle, sectionId) {
   preview.className = "baseline-preview octo-card-profile";
   preview.dataset.baselineSection = sectionId;
 
-  const card = new AdaptiveCards.AdaptiveCard();
-  card.hostConfig = new AdaptiveCards.HostConfig(baseline.hostConfig);
-  card.onExecuteAction = (action) => {
-    status.textContent = `${sectionTitle} · ${action.getJsonTypeName()} · 本地预览未发送`;
-  };
-  card.parse(cardJson);
-  preview.replaceChildren(card.render());
+  const rendered = cardRenderer.renderCard(cardJson, baseline.hostConfig, {
+    onAction: (action) => {
+      status.textContent = `${sectionTitle} · ${action.getJsonTypeName()} · 本地预览未发送`;
+    },
+  });
+  preview.replaceChildren(rendered);
 
   shell.append(preview);
   return shell;

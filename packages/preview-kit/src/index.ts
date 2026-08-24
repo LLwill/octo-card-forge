@@ -211,3 +211,78 @@ function isPreviewRenderResponse(value: unknown): value is PreviewRenderResponse
 export function createPreviewClient(options: PreviewClientOptions = {}): PreviewClient {
   return new PreviewClient(options);
 }
+
+// --- Shared Adaptive Cards browser renderer -------------------------------
+//
+// Both the Card preview page and the Component preview page render Adaptive
+// Cards in the browser using the CDN-loaded `AdaptiveCards` global. They used
+// to each configure markdown escaping and instantiate the card the same way,
+// which is exactly the duplication Phase 3D removes. This is the single shared
+// rendering adapter for every in-browser preview surface.
+//
+// The renderer takes the `AdaptiveCards` namespace by injection so this package
+// stays dependency-free and works with whatever SDK build the host page loads.
+
+export interface AdaptiveCardInstance {
+  hostConfig: unknown;
+  onExecuteAction?: (action: unknown) => void;
+  parse(payload: unknown): void;
+  render(): HTMLElement | undefined;
+}
+
+export interface AdaptiveCardsNamespace {
+  AdaptiveCard: {
+    new (): AdaptiveCardInstance;
+    onProcessMarkdown?: (
+      text: string,
+      result: { outputHtml?: string; didProcess: boolean }
+    ) => void;
+  };
+  HostConfig: new (config: unknown) => unknown;
+}
+
+export interface RenderCardOptions {
+  onAction?: (action: unknown) => void;
+}
+
+export interface CardRenderer {
+  renderCard(
+    payload: unknown,
+    hostConfig: unknown,
+    options?: RenderCardOptions
+  ): HTMLElement | undefined;
+}
+
+/** Escape raw markdown text to HTML the same way across every preview surface. */
+export function escapeMarkdownToHtml(text: string): string {
+  return text
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+/**
+ * Configure the shared markdown processing and return a renderer bound to the
+ * supplied `AdaptiveCards` namespace. Call once per page after the SDK global
+ * is available.
+ */
+export function createCardRenderer(
+  adaptiveCards: AdaptiveCardsNamespace
+): CardRenderer {
+  adaptiveCards.AdaptiveCard.onProcessMarkdown = (text, result) => {
+    result.outputHtml = escapeMarkdownToHtml(text);
+    result.didProcess = true;
+  };
+
+  return {
+    renderCard(payload, hostConfig, options = {}) {
+      const card = new adaptiveCards.AdaptiveCard();
+      card.hostConfig = new adaptiveCards.HostConfig(hostConfig);
+      if (options.onAction) card.onExecuteAction = options.onAction;
+      card.parse(payload);
+      return card.render();
+    },
+  };
+}
