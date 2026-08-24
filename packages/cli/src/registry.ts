@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { projectRoot, readJson, resolveInProject } from "./fs.js";
+import { loadProfileComponentCatalog } from "./component-catalog-source.js";
 import type {
   CardManifest,
   CardPackage,
@@ -302,11 +303,20 @@ export async function getRenderProfile(reference?: string): Promise<RenderProfil
         `${path.join(root, "manifest.json")}: expected ${resolved}, got ${manifest.id}@${manifest.version}`
       );
     }
-    const [capabilities, hostConfig] = await Promise.all([
+    const [capabilities, hostConfig, componentCatalog] = await Promise.all([
       readJson<RenderCapabilities>(path.join(root, manifest.capabilities)),
       readJson<Record<string, unknown>>(path.join(root, manifest.hostConfig)),
+      loadProfileComponentCatalog(root, manifest),
     ]);
-    return { root, reference: resolved, source: "workspace", manifest, capabilities, hostConfig };
+    return {
+      root,
+      reference: resolved,
+      source: "workspace",
+      manifest,
+      capabilities,
+      hostConfig,
+      ...(componentCatalog ? { componentCatalog } : {}),
+    };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       throw new Error(`Unknown render profile: ${resolved}`);

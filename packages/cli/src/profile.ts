@@ -21,7 +21,7 @@ export interface ProfileValidationResult {
   packageName: string;
   version: string;
   compatibility: string;
-  files: [string, string, string, string, string];
+  files: string[];
 }
 
 function sha256(content: Buffer | string): string {
@@ -194,6 +194,7 @@ async function validateLoadedRenderProfile(
     manifest.stylesheet,
     manifest.tokens,
     manifest.capabilities,
+    ...(manifest.componentCatalog ? [manifest.componentCatalog] : []),
   ];
   const contents = await Promise.all(
     files.map((file) => readFile(path.join(profile.root, file)))
@@ -227,7 +228,14 @@ export async function bundleRenderProfile(
   const { manifest } = profile;
   const validation = await validateLoadedRenderProfile(reference, profile);
   const sourceFiles = validation.files;
-  const [hostConfig, theme, stylesheet, tokens, capabilities] = sourceFiles;
+  const {
+    hostConfig,
+    theme,
+    stylesheet,
+    tokens,
+    capabilities,
+    componentCatalog,
+  } = manifest;
   const packageRoot = path.resolve(
     outputRoot,
     `${manifest.id}-${manifest.version}`,
@@ -293,6 +301,9 @@ export async function bundleRenderProfile(
       "./styles.css": `./dist/${stylesheet}`,
       "./tokens.json": `./dist/${tokens}`,
       "./capabilities.json": `./dist/${capabilities}`,
+      ...(componentCatalog
+        ? { "./component-catalog.json": `./dist/${componentCatalog}` }
+        : {}),
       "./bundle-manifest.json": "./dist/bundle-manifest.json",
     },
   };

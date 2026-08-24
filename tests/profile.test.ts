@@ -61,6 +61,9 @@ describe("render profile bundle", () => {
       },
     });
     expect(packageJson.exports["./host-config.json"]).toBe("./dist/host-config.json");
+    expect(packageJson.exports["./component-catalog.json"]).toBe(
+      "./dist/component-catalog.json"
+    );
     expect(stylesheet).toContain(".octo-card-profile .ac-adaptiveCard");
     expect(stylesheet).toContain(".octo-card-profile {");
     expect(stylesheet).not.toContain("#preview");
@@ -70,6 +73,7 @@ describe("render profile bundle", () => {
     });
     expect(Object.keys(bundleManifest.files).sort()).toEqual([
       "capabilities.json",
+      "component-catalog.json",
       "host-config.json",
       "manifest.json",
       "styles.css",
@@ -98,6 +102,7 @@ describe("render profile bundle", () => {
     expect(profile.reference).toBe(REFERENCE);
     expect(profile.manifest.id).toBe("octo-chat");
     expect(profile.capabilities.allowedElements).toContain("TextBlock");
+    expect(profile.componentCatalog?.profileReference).toBe(REFERENCE);
     const stylesheets = profile.stylesheets;
     expect(stylesheets).toBeDefined();
     expect(stylesheets!.length).toBeGreaterThan(0);
