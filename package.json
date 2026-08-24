@@ -49,7 +49,7 @@
     "test:packages": "pnpm --recursive --filter './packages/**' --filter './apps/**' --if-present run test",
     "typecheck": "pnpm run workspace:check && pnpm run typecheck:legacy && pnpm run typecheck:packages",
     "typecheck:legacy": "tsc --noEmit",
-    "typecheck:packages": "pnpm --recursive --filter './packages/**' --filter './apps/**' --if-present run typecheck",
+    "typecheck:packages": "pnpm run build:packages && pnpm --recursive --filter './packages/**' --filter './apps/**' --if-present run typecheck",
     "workspace:check": "node scripts/check-workspace-dependencies.mjs"
   },
   "dependencies": {
