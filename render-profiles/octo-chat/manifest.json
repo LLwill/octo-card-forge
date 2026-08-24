@@ -9,5 +9,6 @@
   "theme": "theme.css",
   "stylesheet": "styles.css",
   "tokens": "tokens.json",
-  "capabilities": "capabilities.json"
+  "capabilities": "capabilities.json",
+  "componentCatalog": "component-catalog.json"
 }

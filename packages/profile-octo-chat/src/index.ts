@@ -2,8 +2,10 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  decodeComponentCatalogV1,
   decodeRenderCapabilities,
   decodeRenderProfileManifest,
+  type ComponentCatalogV1,
   type RenderCapabilitiesV1,
   type RenderProfileManifestV1,
 } from "@mlt-org/octo-card-spec";
@@ -269,6 +271,7 @@ export interface ProfileAssetBundle {
   tokens: Record<string, unknown>;
   themeCss: string;
   stylesCss: string;
+  componentCatalog?: ComponentCatalogV1;
 }
 
 export interface ProfileValidationResult {
@@ -311,6 +314,20 @@ export async function loadProfileAssets(
     ? await readFile(resolveAssetPath(assetRoot, manifest.theme), "utf8")
     : "";
 
+  let componentCatalog: ComponentCatalogV1 | undefined;
+  if (manifest.componentCatalog) {
+    const catalogPath = resolveAssetPath(assetRoot, manifest.componentCatalog);
+    const rawCatalog = await readJsonFile<unknown>(catalogPath);
+    const catalogResult = decodeComponentCatalogV1(rawCatalog);
+    if (!catalogResult.ok) {
+      const details = catalogResult.issues
+        .map((i) => `${i.path}: ${i.message}`)
+        .join("; ");
+      throw new Error(`${catalogPath}: ${details}`);
+    }
+    componentCatalog = catalogResult.value;
+  }
+
   return {
     root: assetRoot,
     manifest,
@@ -319,6 +336,7 @@ export async function loadProfileAssets(
     tokens,
     themeCss,
     stylesCss,
+    ...(componentCatalog ? { componentCatalog } : {}),
   };
 }
 

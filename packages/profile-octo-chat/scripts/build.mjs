@@ -20,6 +20,7 @@ const profileSourceRoot = path.resolve(
 const assets = [
   "manifest.json",
   "capabilities.json",
+  "component-catalog.json",
   "host-config.json",
   "tokens.json",
   "theme.css",

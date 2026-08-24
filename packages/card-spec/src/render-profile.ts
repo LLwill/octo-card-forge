@@ -14,6 +14,7 @@ export interface RenderProfileManifestV1 {
   stylesheet: string;
   tokens?: string;
   capabilities: string;
+  componentCatalog?: string;
 }
 
 export interface RenderCapabilitiesV1 {
@@ -33,7 +34,7 @@ export interface RenderCapabilitiesV1 {
 
 const ID = /^[a-z][a-z0-9.-]*$/;
 const PATH = /^(?![\\/])[^\\]*$/;
-const PROFILE_KEYS = new Set(["schemaVersion", "id", "version", "compatibility", "packageName", "adaptiveCardsSdkVersion", "hostConfig", "theme", "stylesheet", "tokens", "capabilities"]);
+const PROFILE_KEYS = new Set(["schemaVersion", "id", "version", "compatibility", "packageName", "adaptiveCardsSdkVersion", "hostConfig", "theme", "stylesheet", "tokens", "capabilities", "componentCatalog"]);
 const CAPABILITY_KEYS = new Set(["schemaVersion", "maxAdaptiveCardVersion", "allowedElements", "allowedActions", "components", "utilities", "utilityRules", "maxNodes", "maxDepth", "maxPayloadBytes", "imageUrlSchemes", "openUrlSchemes"]);
 const UTILITY_RULE_KEYS = new Set(["maxTokensPerElement"]);
 const COMPONENT_KEYS = new Set(["appliesTo", "variants"]);
@@ -167,10 +168,11 @@ export function decodeRenderProfileManifest(input: unknown, options: { allowLega
   const capabilities = pathValue(input, "capabilities", issues);
   const theme = input.theme === undefined ? undefined : pathValue(input, "theme", issues);
   const tokens = input.tokens === undefined ? undefined : pathValue(input, "tokens", issues);
+  const componentCatalog = input.componentCatalog === undefined ? undefined : pathValue(input, "componentCatalog", issues);
   if (input.compatibility !== undefined && !isNonEmptyString(input.compatibility)) issues.push(issue("contract.type", "/compatibility", "compatibility must be a string when provided"));
   if (input.packageName !== undefined && !isNonEmptyString(input.packageName)) issues.push(issue("contract.type", "/packageName", "packageName must be a string when provided"));
   if (issues.length > 0 || !id || !version || !adaptiveCardsSdkVersion || !hostConfig || !stylesheet || !capabilities) return { ok: false, issues };
-  return { ok: true, notices, value: { schemaVersion: 1, id, version, ...(typeof input.compatibility === "string" ? { compatibility: input.compatibility } : {}), ...(typeof input.packageName === "string" ? { packageName: input.packageName } : {}), adaptiveCardsSdkVersion, hostConfig, ...(theme ? { theme } : {}), stylesheet, ...(tokens ? { tokens } : {}), capabilities } };
+  return { ok: true, notices, value: { schemaVersion: 1, id, version, ...(typeof input.compatibility === "string" ? { compatibility: input.compatibility } : {}), ...(typeof input.packageName === "string" ? { packageName: input.packageName } : {}), adaptiveCardsSdkVersion, hostConfig, ...(theme ? { theme } : {}), stylesheet, ...(tokens ? { tokens } : {}), capabilities, ...(componentCatalog ? { componentCatalog } : {}) } };
 }
 
 export function parseRenderProfileManifest(input: unknown, options: { allowLegacyUnversioned?: boolean } = {}): RenderProfileManifestV1 {
