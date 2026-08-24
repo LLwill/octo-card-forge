@@ -1,5 +1,25 @@
 export type JsonObject = Record<string, unknown>;
 
+// Re-export the versioned Component Catalog contract so browser bundles that
+// only load preview-kit can decode /api/component-baseline responses without a
+// separate card-spec bundle. card-spec is dependency-free, so this keeps the
+// browser bundle self-contained.
+export {
+  decodeComponentCatalogV1,
+  COMPONENT_CATALOG_MEDIA_TYPE,
+  COMPONENT_CATALOG_CATEGORIES,
+  STYLE_MATRIX_PREVIEWS,
+} from "@mlt-org/octo-card-spec";
+export type {
+  ComponentCatalogV1,
+  ComponentCatalogGroupV1,
+  ComponentCatalogSectionV1,
+  ComponentCatalogCategory,
+  ComponentStyleMatrixRowV1,
+  ComponentUtilityTokenV1,
+  StyleMatrixPreview,
+} from "@mlt-org/octo-card-spec";
+
 export interface PreviewView {
   name: string;
   wireProfile: string;

@@ -2,6 +2,7 @@ import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { CURRENT_RENDER_PROFILE } from "../packages/cli/src/registry.js";
+import { decodeComponentCatalogV1 } from "../packages/card-spec/src/index.js";
 import { createForgeServer, normalizeBasePath } from "../packages/cli/src/server.js";
 
 describe("server base path", () => {
@@ -121,6 +122,22 @@ describe("catalog HTTP API", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/javascript");
     expect(await response.text()).toContain("createPreviewClient");
+  });
+
+  it("serves a component baseline whose catalog envelope satisfies ComponentCatalogV1", async () => {
+    const response = await fetch(`${baseUrl}/api/component-baseline`);
+    expect(response.status).toBe(200);
+    const body = await response.json() as { catalog: unknown };
+    const decoded = decodeComponentCatalogV1(body.catalog);
+    expect(decoded.ok, JSON.stringify(!decoded.ok ? decoded.issues : [])).toBe(true);
+    if (decoded.ok) {
+      expect(decoded.value.groups.map((group) => group.id)).toEqual([
+        "foundation",
+        "adaptive-card-components",
+        "octo-utility-tokens",
+        "composition-patterns",
+      ]);
+    }
   });
 });
 

@@ -314,7 +314,8 @@ Profile package 是 Component Preview 的前置。该阶段只稳定 Profile 的
 
 - ✅ 已完成（共享渲染切片）：`packages/preview-kit` 新增 `createCardRenderer` / `escapeMarkdownToHtml` 共享 Adaptive Cards 浏览器渲染适配，`web/app.js` 与 `web/components.js` 均改为消费同一适配器，不再各自初始化 SDK 或重复 markdown 转义。对应实施顺序第 4 步与第 5 步的渲染器部分，退出 Gate 第 1、4 条已达成。
 - ✅ 已完成（Contract 切片）：`packages/card-spec` 新增 `ComponentCatalogV1` 契约与 `decodeComponentCatalogV1` fail-closed Decoder，media type `application/vnd.octo.component-catalog+json;version=1`。group id 收敛为固定枚举，section 为「card / rows / utilityTokens 三选一」的可辨识联合，未知属性、枚举越界、重复 id、变体不唯一均产出结构化诊断。Golden 用真实 `getCurrentRenderProfile()` 输出验证契约可覆盖生产数据。对应实施顺序第 2 步，退出 Gate 第 2 条已达成。
-- ⏳ 待后续切片：将 `component-baseline.ts` specimen 内容迁入 `profile-octo-chat`（需先解决其 `external` 打包约束，保证 `dist/server.js` 仍可离线自包含）；`/api/component-baseline` 服务端改为吐版本化信封，`/components` 页面改为消费 `decodeComponentCatalogV1` 而非现有临时结构。对应退出 Gate 第 3 条尚未达成。
+- ✅ 已完成（端点接线切片）：`/api/component-baseline` 服务端在响应中新增符合 `ComponentCatalogV1` 的 `catalog` 信封（`formatVersion`/`mediaType`/`profileReference`/`groups`），顶层 `groups` 冗余已移除；`packages/preview-kit` re-export `decodeComponentCatalogV1`，浏览器 bundle 自包含该 Decoder；`web/components.js` 改为 fail-closed 校验 `catalog` 信封后再渲染。对应实施顺序第 5 步的「消费新 Contract 和共享渲染器」，退出 Gate 第 3 条已达成。
+- ⏳ 待后续切片：将 `component-baseline.ts` specimen 内容迁入 `profile-octo-chat`（需先解决其 `external` 打包约束，保证 `dist/server.js` 仍可离线自包含），使 Profile 成为 specimen 内容的唯一来源。
 
 退出 Gate：
 

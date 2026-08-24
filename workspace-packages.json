@@ -30,7 +30,9 @@
       "id": "preview-kit",
       "path": "packages/preview-kit",
       "name": "@mlt-org/octo-card-preview-kit",
-      "runtimeDependencies": [],
+      "runtimeDependencies": [
+        "card-spec"
+      ],
       "peerDependencies": []
     },
     {

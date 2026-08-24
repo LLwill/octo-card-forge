@@ -35,6 +35,7 @@ import {
   buildComponentBaseline,
   buildComponentBaselineGroups,
 } from "./component-baseline.js";
+import { COMPONENT_CATALOG_MEDIA_TYPE } from "@mlt-org/octo-card-spec";
 import {
   buildPreviewRenderResponse,
   buildPreviewSession,
@@ -408,6 +409,7 @@ async function handleApi(
 
   if (req.method === "GET" && url.pathname === "/api/component-baseline") {
     const profile = context.profile ?? await getCurrentRenderProfile();
+    const groups = buildComponentBaselineGroups(profile.capabilities);
     sendJson(res, 200, {
       reference: profile.reference,
       renderProfile: profile.manifest,
@@ -415,7 +417,12 @@ async function handleApi(
       capabilities: profile.capabilities,
       stylesheetUrl: publicPath(basePath, `/api/render-styles/${encodeURIComponent(profile.reference)}`),
       sections: buildComponentBaseline(profile.capabilities),
-      groups: buildComponentBaselineGroups(profile.capabilities),
+      catalog: {
+        formatVersion: 1,
+        mediaType: COMPONENT_CATALOG_MEDIA_TYPE,
+        profileReference: profile.reference,
+        groups,
+      },
     });
     return true;
   }
