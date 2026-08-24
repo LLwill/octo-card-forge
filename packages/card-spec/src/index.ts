@@ -6,3 +6,4 @@ export * from "./render-profile.js";
 export * from "./inspection.js";
 export * from "./artifact-v1.js";
 export * from "./catalog-snapshot-v1.js";
+export * from "./component-catalog-v1.js";

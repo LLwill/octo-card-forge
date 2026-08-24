@@ -8,6 +8,8 @@ import {
   decodeResolvedCardSourceV1,
   decodeCardArtifactV1,
   decodeCatalogSnapshotV1,
+  decodeComponentCatalogV1,
+  COMPONENT_CATALOG_MEDIA_TYPE,
   CARD_ARTIFACT_MEDIA_TYPE,
   CATALOG_SNAPSHOT_MEDIA_TYPE,
   decodeRenderCapabilities,
@@ -520,6 +522,188 @@ describe("resolved source contract", () => {
         expect.objectContaining({ code: "contract.unknown_property", path: "/extra" }),
         expect.objectContaining({ code: "contract.unknown_property", path: "/views/result/extra" }),
         expect.objectContaining({ code: "contract.unknown_property", path: "/views/result/samples/0/extra" }),
+      ]));
+    }
+  });
+});
+
+describe("card-spec component catalog decoder", () => {
+  function envelope(groups: unknown): Record<string, unknown> {
+    return {
+      formatVersion: 1,
+      mediaType: COMPONENT_CATALOG_MEDIA_TYPE,
+      profileReference: "octo-chat@1.2.0",
+      groups,
+    };
+  }
+
+  it("accepts the live component baseline groups as a versioned catalog", async () => {
+    const { buildComponentBaselineGroups } = await import("../packages/cli/src/component-baseline.js");
+    const { getCurrentRenderProfile } = await import("../packages/cli/src/registry.js");
+    const profile = await getCurrentRenderProfile();
+    const groups = buildComponentBaselineGroups(profile.capabilities);
+    const result = decodeComponentCatalogV1({
+      formatVersion: 1,
+      mediaType: COMPONENT_CATALOG_MEDIA_TYPE,
+      profileReference: profile.reference,
+      groups,
+    });
+    expect(result.ok, JSON.stringify(!result.ok ? result.issues : [])).toBe(true);
+    if (result.ok) {
+      expect(result.value.groups.map((group) => group.id)).toEqual([
+        "foundation",
+        "adaptive-card-components",
+        "octo-utility-tokens",
+        "composition-patterns",
+      ]);
+      const variants = result.value.groups.flatMap((group) =>
+        group.sections.map((section) =>
+          section.card ? "card" : section.rows ? "rows" : "utilityTokens"
+        )
+      );
+      expect(new Set(variants)).toEqual(new Set(["card", "rows", "utilityTokens"]));
+    }
+  });
+
+  it("accepts a minimal catalog covering all three section variants", () => {
+    const result = decodeComponentCatalogV1(envelope([
+      {
+        id: "foundation",
+        title: "Foundation",
+        description: "base scales",
+        sections: [{
+          id: "foundation-typography",
+          title: "Typography",
+          description: "text scale",
+          rows: [{ name: "Default", value: "TextBlock.size", description: "body", preview: "text" }],
+        }],
+      },
+      {
+        id: "adaptive-card-components",
+        title: "Adaptive Card Defaults",
+        description: "standard elements",
+        sections: [{
+          id: "component-textblock",
+          title: "TextBlock",
+          description: "text element",
+          card: { type: "AdaptiveCard", version: "1.5", body: [] },
+        }],
+      },
+      {
+        id: "octo-utility-tokens",
+        title: "Octo Utility Tokens",
+        description: "controlled styles",
+        sections: [{
+          id: "utility-badge-warning",
+          title: "badge-warning",
+          description: "warning badge",
+          utilityTokens: [{
+            token: "badge-warning",
+            group: "badge",
+            description: "warning",
+            appliesTo: ["Container"],
+            card: { type: "AdaptiveCard", version: "1.5", body: [] },
+          }],
+        }],
+      },
+      {
+        id: "composition-patterns",
+        title: "Composition Patterns",
+        description: "reusable fragments",
+        sections: [{
+          id: "pattern-summary",
+          title: "Summary",
+          description: "summary fragment",
+          card: { type: "AdaptiveCard", version: "1.5", body: [] },
+        }],
+      },
+    ]));
+    expect(result.ok, JSON.stringify(!result.ok ? result.issues : [])).toBe(true);
+  });
+
+  it("fails closed for unknown media type, bad group id, and multi-variant sections", () => {
+    const result = decodeComponentCatalogV1({
+      formatVersion: 1,
+      mediaType: "application/json",
+      profileReference: "octo-chat@latest",
+      groups: [
+        {
+          id: "not-a-category",
+          title: "Bad",
+          description: "bad group",
+          sections: [{
+            id: "bad-section",
+            title: "Bad",
+            description: "two variants",
+            card: { type: "AdaptiveCard" },
+            rows: [{ name: "x", value: "y", description: "z", preview: "text" }],
+          }],
+        },
+      ],
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.issues).toEqual(expect.arrayContaining([
+        expect.objectContaining({ code: "contract.enum", path: "/mediaType" }),
+        expect.objectContaining({ code: "contract.enum", path: "/groups/0/id" }),
+        expect.objectContaining({ code: "contract.invariant", path: "/groups/0/sections/0" }),
+      ]));
+    }
+  });
+
+  it("rejects unknown properties and bad preview enum values", () => {
+    const result = decodeComponentCatalogV1(envelope([
+      {
+        id: "foundation",
+        title: "Foundation",
+        description: "base",
+        extra: true,
+        sections: [{
+          id: "foundation-typography",
+          title: "One",
+          description: "row section",
+          rows: [{ name: "A", value: "B", description: "C", preview: "invalid" }],
+        }],
+      },
+    ]));
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.issues).toEqual(expect.arrayContaining([
+        expect.objectContaining({ code: "contract.unknown_property", path: "/groups/0/extra" }),
+        expect.objectContaining({ code: "contract.enum", path: "/groups/0/sections/0/rows/0/preview" }),
+      ]));
+    }
+  });
+
+  it("rejects duplicate section ids across groups", () => {
+    const result = decodeComponentCatalogV1(envelope([
+      {
+        id: "foundation",
+        title: "Foundation",
+        description: "base",
+        sections: [{
+          id: "dup",
+          title: "One",
+          description: "card section",
+          card: { type: "AdaptiveCard", version: "1.5" },
+        }],
+      },
+      {
+        id: "composition-patterns",
+        title: "Composition Patterns",
+        description: "patterns",
+        sections: [{
+          id: "dup",
+          title: "Two",
+          description: "another card section",
+          card: { type: "AdaptiveCard", version: "1.5" },
+        }],
+      },
+    ]));
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.issues).toEqual(expect.arrayContaining([
+        expect.objectContaining({ code: "contract.duplicate", path: "/groups/1/sections/0/id" }),
       ]));
     }
   });
