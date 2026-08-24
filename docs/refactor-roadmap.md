@@ -2,7 +2,7 @@
 
 > 状态：当前执行路线
 >
-> 日期：2026-08-20
+> 日期：2026-08-24
 >
 > 架构基线：[`architecture-design.md`](./architecture-design.md)
 
@@ -42,10 +42,10 @@ Phase 8  逐 Card 迁移与 Legacy 删除
 | Phase 2 | 已完成 | Contract、Core、Workspace 编译链路和单一 Validator/Inspection/utility parser Gate 已完成 |
 | Phase 3 | 已完成 | Workspace/Preview/Profile/CLI package 均已收敛；Phase 3D 的共享渲染、Component Catalog Contract、Profile specimen 冻结与 server 静态消费链路已完成 |
 | Phase 4 | 已完成 | Artifact Contract/Builder/digest/verify/CLI/Handoff/消费者 fixture/tarball 验证均已完成 |
-| Phase 5 | 未开始 | Catalog 仓库和 GitHub Delivery 尚未建立 |
+| Phase 5 | 已完成 | Delivery Actions v0.1.0、Catalog Workflow/治理、Pilot PR 与不可变 Release 已完成 |
 | Phase 6 | 未开始实现 | Snapshot Contract 已定义；`apps/forge-web` 仍为空壳，当前改动只发生在 legacy `web/` |
 | Phase 7 | 未开始 | 尚未进行真实业务后端交付验证 |
-| Phase 8 | 未开始 | Card Source 尚未迁出 Forge，Legacy 尚未删除 |
+| Phase 8 | 未开始 | Pilot Card 已迁入 Catalog；其余 Card Source 与 Forge Legacy 尚未删除 |
 
 阶段状态以退出 Gate 是否满足为准，不能因为目标目录或 Contract 空壳已经建立就标记完成。Phase 3
 的 Profile/Preview 工作与 Phase 4 Artifact Builder 现在可以按各自 Gate 并行推进。
@@ -359,8 +359,15 @@ Profile package 是 Component Preview 的前置。该阶段只稳定 Profile 的
 
 目标：将 Card Source 与平台代码分离。
 
-状态：**进行中。GitHub Delivery Contract 与首批 `card-check`/`card-release`
-reusable Actions 已实现；Catalog 仓库、治理配置和 Pilot Card 迁移待完成。**
+状态：**已完成（2026-08-24）。**
+
+已落地：
+
+- `github-delivery/v0.1.0` 提供固定已发布工具版本的 `card-check` 与 `card-release`；
+- `LLwill/octo-card-catalog` 已建立目标目录、CODEOWNERS、PR 模板与 `main` 分支保护；
+- Catalog PR 按 changed-card matrix 生成 Check/Preview workflow artifacts；
+- 合并版本目录后自动创建不可覆盖的 Card tag、Release、Artifact/Handoff 与 digest；
+- `docs.access-request@0.3.0` 已完成 Pilot 迁移和首个真实 Release。
 
 工作：
 
@@ -475,9 +482,10 @@ reusable Actions 已实现；Catalog 仓库、治理配置和 Pilot Card 迁移�
 
 当前执行顺序：
 
-1. Phase 4 Artifact v1 进入主线实现；
-2. Phase 3C Profile Package Foundation 与 Artifact 主线并行推进；
-3. Phase 3D Component Preview 在 Profile Gate 通过后继续并行推进；
-4. Artifact API 稳定后执行 Phase 3E CLI Package Convergence，避免 CLI 迁移后再次重排命令边界。
+1. Phase 6 在 Catalog 侧生成 `catalog-snapshot.v1.json` 与 Artifact 索引；
+2. `apps/forge-web` 接入 Snapshot、Artifact 和 Profile，替换 legacy 文件扫描入口；
+3. Phase 7 用真实业务后端验证 Handoff 接入与最终展示；
+4. Phase 8 逐 Card 完成迁移并删除 Forge 中的正式内容与 Legacy Registry。
 
-Card Source 目录在 Phase 5 Catalog Gate 通过前不移动。根 CLI 发布入口在 Phase 3E Gate 通过前保持兼容。
+Pilot Card 已迁入 Catalog；Forge 内对应内容暂作为兼容 Fixture 保留，直到 Phase 8
+逐 Card Gate 通过后删除。根 CLI 发布入口继续保持兼容，直到所有外部消费者完成迁移。

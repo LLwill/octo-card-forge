@@ -51,10 +51,11 @@ pnpm cli render docs.access-request@0.3.0 --sample pending
 这是迁移前的文件 Registry。目标状态是将正式 Card Source 迁入独立
 `octo-card-catalog` 内容仓库，Forge 只保留平台代码、工具和测试 Fixture。
 
-仓库已经完成 Phase 2 Card Contract / Card Engine，当前并行推进 Phase 3 Developer Toolkit /
-Render Profile 和 Phase 4 Artifact。根 package 暂时继续发布 `@mlt-org/octo-card-cli`；Contract、
-Core、Workspace 和 Preview Kit 已有实际实现，CLI、Profile、Artifact、Snapshot 和目标 Forge Web
-仍按路线渐进迁移。
+仓库已经完成 Phase 2-5：Contract/Core、Developer Toolkit/Render Profile、Artifact v1 和
+GitHub Delivery 均已闭环。独立的
+[`octo-card-catalog`](https://github.com/LLwill/octo-card-catalog) 已接入固定版本的
+`card-check`/`card-release` Actions，并发布首张 Pilot Card。下一阶段是 Catalog Snapshot 与
+目标 Forge Web；根 package 暂时继续发布 `@mlt-org/octo-card-cli`。
 `workspace-packages.json` 定义允许的内部依赖方向，执行：
 
 ```bash
@@ -67,11 +68,11 @@ pnpm build
 当前候选 Render Profile 可生成 Web 直接安装的不可变制品：
 
 ```bash
-pnpm cli profile bundle octo-chat@1.2.0-rc.3 --output .release
-pnpm cli profile pack octo-chat@1.2.0-rc.3 --output .release
+pnpm cli profile bundle octo-chat@1.2.0-rc.4 --output .release
+pnpm cli profile pack octo-chat@1.2.0-rc.4 --output .release
 ```
 
-打包结果为 `.release/mlt-org-octo-card-profile-octo-chat-1.2.0-rc.3.tgz`。
+打包结果为 `.release/mlt-org-octo-card-profile-octo-chat-1.2.0-rc.4.tgz`。
 `render-profiles/octo-chat/` 只保存当前候选 Profile 源码；历史精确版本由制品库保存，
 需要复现旧卡时从对应 card/profile 制品重新渲染，不在本仓预览。
 
@@ -272,7 +273,7 @@ pnpm prepare:agent-validation -- --scenario docs-forward
 
 卡片 `manifest.renderProfile` 支持：
 
-- 具体版本（如 `octo-chat@1.0.0` / `octo-chat@1.2.0-rc.3`）：钉死，用于历史复现
+- 具体版本（如 `octo-chat@1.0.0` / `octo-chat@1.2.0-rc.4`）：钉死，用于历史复现
 - `octo-chat@latest`：跟随仓库当前基线 `CURRENT_RENDER_PROFILE`
 - 省略字段：等价于 `@latest`
 
