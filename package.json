@@ -1,6 +1,6 @@
 {
   "name": "@mlt-org/octo-card-cli",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": false,
   "description": "Repo-free Adaptive Card authoring CLI for Octo card packages.",
   "repository": "https://github.com/LLwill/octo-card-forge",
@@ -68,6 +68,7 @@
     "@mlt-org/octo-card-workspace": "workspace:*",
     "@types/node": "24.0.13",
     "esbuild": "0.25.12",
+    "tar": "7.5.22",
     "tsx": "4.20.3",
     "typescript": "5.8.3",
     "vitest": "3.2.4"

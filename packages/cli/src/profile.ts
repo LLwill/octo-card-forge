@@ -246,7 +246,15 @@ export async function bundleRenderProfile(
   await mkdir(distRoot, { recursive: true });
 
   for (const file of sourceFiles) {
-    await cp(path.join(profile.root, file), path.join(distRoot, file));
+    const sourcePath = path.join(profile.root, file);
+    const distPath = path.join(distRoot, file);
+    const compatibilityPath = path.join(packageRoot, file);
+    await mkdir(path.dirname(distPath), { recursive: true });
+    await mkdir(path.dirname(compatibilityPath), { recursive: true });
+    await Promise.all([
+      cp(sourcePath, distPath),
+      cp(sourcePath, compatibilityPath),
+    ]);
   }
 
   const publishedManifest = {
@@ -292,7 +300,7 @@ export async function bundleRenderProfile(
       access: "public",
       registry: "https://registry.npmjs.org/",
     },
-    files: ["dist"],
+    files: ["dist", ...sourceFiles],
     sideEffects: ["*.css", "dist/*.css"],
     exports: {
       "./manifest.json": "./dist/manifest.json",
@@ -317,7 +325,12 @@ export async function bundleRenderProfile(
     packageRoot,
     packageName: validation.packageName,
     version: validation.version,
-    files: ["package.json", ...hashedFiles.map((file) => `dist/${file}`), "dist/bundle-manifest.json"],
+    files: [
+      "package.json",
+      ...sourceFiles,
+      ...hashedFiles.map((file) => `dist/${file}`),
+      "dist/bundle-manifest.json",
+    ],
   };
 }
 
