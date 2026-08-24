@@ -229,10 +229,33 @@ types/fs）迁入 `packages/cli`，消除「新包空壳、旧路径承载全部
 - 无 `packages/cli` 反向依赖根 `src/`；
 - 干净检出下 typecheck、175 项测试、check、repo-free 与 published-consumer smoke 全绿。
 
-未包含（留待后续）：
+#### Phase 3E 补完：应用服务层下沉与根 `src/` 删除（2026-08）
 
-- `src/server.ts` 及 `preview`/`component-baseline` 的正式下沉（归属后续 Phase，牵动部署包）；
-- 根发布入口最终是否直接指向包 `bin`。
+后续 PR 完成了剩余的应用层下沉，根 `src/` 目录已整体删除：
+
+- `server.ts`、`preview.ts`、`component-baseline.ts` 迁入 `packages/cli/src/`，
+  三者改为包内相对引用；barrel 追加导出 `createForgeServer`/`startServer`/
+  `normalizeBasePath`/`ForgeServerOptions` 及组件基线函数；
+- 新增 `packages/cli/src/bin.ts` 作为可执行入口（shebang + 注入 `startServer`），
+  根 `src/cli.ts` 及整个根 `src/` 目录删除；
+- `bundle-entrypoints.mjs` 改为从包源打包：`cli → packages/cli/src/bin.ts`、
+  `server → packages/cli/src/server.ts`，仍产出 `dist/cli.js` 与 `dist/server.js`，
+  npm 包名/`bin`/发布 tarball 与部署包保持不变，`scripts/start-service.mjs` 继续消费
+  `dist/server.js`；
+- 移除已无源可编的 `build:legacy` 脚本与 `tsconfig.build.json`，`dist/` 不再残留
+  逐文件 tsc 产物（只剩打包后的 `cli.js`/`server.js`）；根 `tsconfig.json` 的 include
+  收敛为仅 `tests/**`；
+- 测试对 `../src/*` 的引用全部改指 `packages/cli/src/*`，仓库内不再有任何对根 `src/`
+  的引用。
+
+补完后退出 Gate：
+
+- 根 `src/` 已删除，应用层完全由 `packages/cli` 承载；
+- npm 与部署产物形状不变（`dist/cli.js` 自包含、`dist/server.js` 可 `pnpm start`）；
+- 干净检出下 typecheck、175 项测试、check、repo-free 与 published-consumer smoke，
+  以及打包后的 `dist/cli.js`（list + dev server）与部署入口 `start-service.mjs` 全绿。
+
+仍未包含：根发布入口最终是否直接指向包 `bin`（当前仍经由 esbuild 打包为 `dist/cli.js`）。
 
 ### 6.1 Phase 3C：Profile Package Foundation
 

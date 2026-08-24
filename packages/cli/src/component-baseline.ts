@@ -1,4 +1,4 @@
-import type { JsonObject, RenderCapabilities } from "@mlt-org/octo-card-cli-runtime";
+import type { JsonObject, RenderCapabilities } from "./types.js";
 
 export interface ComponentBaselineSection {
   id: string;

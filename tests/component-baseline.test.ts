@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildComponentBaseline,
   buildComponentBaselineGroups,
-} from "../src/component-baseline.js";
+} from "../packages/cli/src/component-baseline.js";
 import {
   CURRENT_RENDER_PROFILE,
   getCurrentRenderProfile,
