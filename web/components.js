@@ -1,4 +1,4 @@
-import { createCardRenderer } from "./preview-kit.js";
+import { createCardRenderer, decodeComponentCatalogV1 } from "./preview-kit.js";
 
 const sectionsRoot = document.querySelector("#baselineSections");
 const status = document.querySelector("#baselineStatus");
@@ -16,6 +16,7 @@ const themeToggle = document.querySelector("#themeToggle");
 let previewWidth = 640;
 let activeFilter = "all";
 let baseline;
+let catalogGroups = [];
 const basePath = window.__OCTO_BASE_PATH__ || "";
 let locale = localStorage.getItem("octo-card-locale") === "en" ? "en" : "zh";
 
@@ -348,7 +349,7 @@ function renderSections() {
   sectionsRoot.replaceChildren();
   let renderedGroups = 0;
   let renderedSections = 0;
-  for (const group of baseline.groups || []) {
+  for (const group of catalogGroups) {
     const category = categoryForGroup(group);
     const sections = group.sections.filter((section) => sectionMatches(section, category));
     if (!sections.length) continue;
@@ -382,7 +383,7 @@ function renderSections() {
     empty.append(title, body);
     sectionsRoot.append(empty);
   }
-  const totalSections = (baseline.groups || []).reduce((count, group) => count + group.sections.length, 0);
+  const totalSections = catalogGroups.reduce((count, group) => count + group.sections.length, 0);
   status.textContent = renderedSections === totalSections && activeFilter === "all" && !searchInput.value.trim()
     ? `${renderedGroups} ${ct("status")} ${renderedSections} ${ct("specimens")}`
     : `${ct("shown")} ${renderedSections} ${ct("of")} ${totalSections} ${locale === "zh" ? "个样例" : "specimens"}`;
@@ -407,7 +408,13 @@ function setTheme(theme) {
 
 async function start() {
   baseline = await json("/api/component-baseline");
-  const groups = baseline.groups || [];
+  const decoded = decodeComponentCatalogV1(baseline.catalog);
+  if (!decoded.ok) {
+    const detail = decoded.issues.map((entry) => `${entry.path || "/"}: ${entry.message}`).join("; ");
+    throw new Error(`组件目录契约校验失败：${detail}`);
+  }
+  catalogGroups = decoded.value.groups;
+  const groups = catalogGroups;
   const sections = groups.flatMap((group) => group.sections);
   const utilityCount = sections.reduce((count, section) => count + (section.utilityTokens?.length || 0), 0);
   baselineVersion.textContent = baseline.reference;
