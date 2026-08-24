@@ -1,10 +1,10 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
-import { resolveInProject } from "../src/fs.js";
+import { resolveInProject } from "../packages/cli/src/fs.js";
 import {
   BASELINE_RENDER_PROFILE_FALLBACK,
   CURRENT_RENDER_PROFILE,
-} from "../src/registry.js";
+} from "../packages/cli/src/registry.js";
 
 async function readManifest(
   relativeManifest: string

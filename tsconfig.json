@@ -6,7 +6,8 @@
       "@mlt-org/octo-card-core": ["packages/core/src/index.ts"],
       "@mlt-org/octo-card-spec": ["packages/card-spec/src/index.ts"],
       "@mlt-org/octo-card-workspace": ["packages/workspace/src/index.ts"],
-      "@mlt-org/octo-card-preview-kit": ["packages/preview-kit/src/index.ts"]
+      "@mlt-org/octo-card-preview-kit": ["packages/preview-kit/src/index.ts"],
+      "@mlt-org/octo-card-cli-runtime": ["packages/cli/src/index.ts"]
     },
     "target": "ES2022",
     "module": "NodeNext",

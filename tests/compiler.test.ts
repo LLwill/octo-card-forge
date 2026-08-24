@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { CURRENT_RENDER_PROFILE } from "../src/registry.js";
-import { compileCard, compileSample } from "../src/compiler.js";
-import type { JsonObject } from "../src/types.js";
+import { CURRENT_RENDER_PROFILE } from "../packages/cli/src/registry.js";
+import { compileCard, compileSample } from "../packages/cli/src/compiler.js";
+import type { JsonObject } from "../packages/cli/src/types.js";
 
 const CHEVRON_DOWN_DATA_URL =
   "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxZW0iIGhlaWdodD0iMWVtIiB2aWV3Qm94PSIwIDAgMjQgMjQiPjxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ExYTZhYiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBzdHJva2Utd2lkdGg9IjIiIGQ9Im02IDlsNiA2bDYtNiIvPjwvc3ZnPg==";

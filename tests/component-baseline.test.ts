@@ -8,8 +8,8 @@ import {
 import {
   CURRENT_RENDER_PROFILE,
   getCurrentRenderProfile,
-} from "../src/registry.js";
-import { validateCompiledCard } from "../src/validate.js";
+} from "../packages/cli/src/registry.js";
+import { validateCompiledCard } from "../packages/cli/src/validate.js";
 
 describe("component baseline", () => {
   it("is pinned to the repository's single current HostConfig", async () => {

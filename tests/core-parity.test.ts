@@ -6,11 +6,11 @@ import {
   validateCompiledCard as validateCompiledCardCore,
 } from "../packages/core/src/index.js";
 import { loadResolvedCardSource } from "../packages/workspace/src/index.js";
-import { compileCardPackage, compileSampleFromPackage } from "../src/compiler.js";
-import { inspectCard as inspectCardFacade } from "../src/inspect.js";
-import { listCards } from "../src/registry.js";
-import { getCurrentRenderProfile } from "../src/registry.js";
-import { validateCompiledCard as validateCompiledCardFacade } from "../src/validate.js";
+import { compileCardPackage, compileSampleFromPackage } from "../packages/cli/src/compiler.js";
+import { inspectCard as inspectCardFacade } from "../packages/cli/src/inspect.js";
+import { listCards } from "../packages/cli/src/registry.js";
+import { getCurrentRenderProfile } from "../packages/cli/src/registry.js";
+import { validateCompiledCard as validateCompiledCardFacade } from "../packages/cli/src/validate.js";
 
 async function resolveSource(cardRoot: string) {
   const [loaded, profile] = await Promise.all([

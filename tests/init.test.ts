@@ -2,9 +2,9 @@ import { cp, mkdtemp, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { checkCardPackage, checkCards } from "../src/check.js";
-import { resolveInProject } from "../src/fs.js";
-import { initCard, listInitPresets } from "../src/init.js";
+import { checkCardPackage, checkCards } from "../packages/cli/src/check.js";
+import { resolveInProject } from "../packages/cli/src/fs.js";
+import { initCard, listInitPresets } from "../packages/cli/src/init.js";
 
 const temporaryRoots: string[] = [];
 

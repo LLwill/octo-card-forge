@@ -2,8 +2,8 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { initCard } from "../src/init.js";
-import { loadCardPackage } from "../src/registry.js";
+import { initCard } from "../packages/cli/src/init.js";
+import { loadCardPackage } from "../packages/cli/src/registry.js";
 
 describe("Card Package asset boundaries", () => {
   it("rejects manifest paths that escape the package root", async () => {

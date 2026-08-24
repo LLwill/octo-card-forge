@@ -61,6 +61,7 @@
   },
   "devDependencies": {
     "@mlt-org/octo-card-artifact": "workspace:*",
+    "@mlt-org/octo-card-cli-runtime": "workspace:*",
     "@mlt-org/octo-card-core": "workspace:*",
     "@mlt-org/octo-card-preview-kit": "workspace:*",
     "@mlt-org/octo-card-spec": "workspace:*",

@@ -5,7 +5,7 @@ import {
   getRenderProfile,
   listCards,
   resolveRenderProfileReference,
-} from "../src/registry.js";
+} from "../packages/cli/src/registry.js";
 
 
 describe("render profile resolution", () => {

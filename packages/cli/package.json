@@ -3,15 +3,19 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Reserved workspace boundary for the Octo Card CLI implementation.",
+  "description": "Octo Card CLI runtime: command layer and shared application runtime.",
   "dependencies": {
     "@mlt-org/octo-card-artifact": "workspace:*",
     "@mlt-org/octo-card-core": "workspace:*",
+    "@mlt-org/octo-card-preview-kit": "workspace:*",
     "@mlt-org/octo-card-spec": "workspace:*",
     "@mlt-org/octo-card-workspace": "workspace:*",
-    "@mlt-org/octo-card-profile-octo-chat": "workspace:*"
+    "@mlt-org/octo-card-profile-octo-chat": "workspace:*",
+    "jszip": "3.10.1"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": "./dist/index.js",

@@ -11,6 +11,7 @@ const workspaceAlias = {
   "@mlt-org/octo-card-preview-kit": path.join(root, "packages/preview-kit/src/index.ts"),
   "@mlt-org/octo-card-spec": path.join(root, "packages/card-spec/src/index.ts"),
   "@mlt-org/octo-card-workspace": path.join(root, "packages/workspace/src/index.ts"),
+  "@mlt-org/octo-card-cli-runtime": path.join(root, "packages/cli/src/index.ts"),
 };
 const external = [
   "@mlt-org/octo-card-profile-octo-chat",

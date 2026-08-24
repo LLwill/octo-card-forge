@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { inspectCard } from "../src/inspect.js";
-import { validateCompiledCard } from "../src/validate.js";
-import type { JsonObject, RenderCapabilities } from "../src/types.js";
+import { inspectCard } from "../packages/cli/src/inspect.js";
+import { validateCompiledCard } from "../packages/cli/src/validate.js";
+import type { JsonObject, RenderCapabilities } from "../packages/cli/src/types.js";
 
 const capabilities: RenderCapabilities = {
   maxAdaptiveCardVersion: "1.5",

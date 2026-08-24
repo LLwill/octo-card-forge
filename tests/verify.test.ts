@@ -2,8 +2,8 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { initCard } from "../src/init.js";
-import { verifyCardPackage, verifySummary } from "../src/verify.js";
+import { initCard } from "../packages/cli/src/init.js";
+import { verifyCardPackage, verifySummary } from "../packages/cli/src/verify.js";
 
 describe("repo-free card verify", () => {
   it("verifies all samples and can emit cards and handoff together", async () => {

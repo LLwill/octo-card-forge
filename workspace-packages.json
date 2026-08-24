@@ -104,7 +104,8 @@
         "core",
         "workspace",
         "artifact",
-        "preview-kit"
+        "preview-kit",
+        "cli-runtime"
       ],
       "peerDependencies": [
         "profile-octo-chat"

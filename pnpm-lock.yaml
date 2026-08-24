@@ -27,6 +27,9 @@ importers:
       '@mlt-org/octo-card-artifact':
         specifier: workspace:*
         version: link:packages/artifact
+      '@mlt-org/octo-card-cli-runtime':
+        specifier: workspace:*
+        version: link:packages/cli
       '@mlt-org/octo-card-core':
         specifier: workspace:*
         version: link:packages/core
@@ -78,6 +81,9 @@ importers:
       '@mlt-org/octo-card-core':
         specifier: workspace:*
         version: link:../core
+      '@mlt-org/octo-card-preview-kit':
+        specifier: workspace:*
+        version: link:../preview-kit
       '@mlt-org/octo-card-profile-octo-chat':
         specifier: workspace:*
         version: link:../profile-octo-chat
@@ -87,6 +93,9 @@ importers:
       '@mlt-org/octo-card-workspace':
         specifier: workspace:*
         version: link:../workspace
+      jszip:
+        specifier: 3.10.1
+        version: 3.10.1
 
   packages/core:
     dependencies:

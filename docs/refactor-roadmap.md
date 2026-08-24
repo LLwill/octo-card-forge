@@ -13,7 +13,7 @@
 3. 先生成 Artifact，再迁移 Card Source。
 4. Forge Web 可以提前使用 Fixture 开发，但只能在 Snapshot Contract 稳定后接真实数据。
 5. 每张 Card 单独迁移，不长期双写。
-6. 每个阶段必须有退出 Gate 和旧路径删除条件。
+6. 每个阶段必须有退出 Gate 和旧路径删除条件；退出 Gate 一律包含「干净检出（clean checkout）下 typecheck/test/build/check/smoke 全绿」这一条，避免只在增量环境验证造成回归。
 7. 本轮不引入数据库、账号体系、Forge API 或 Worker。
 
 ## 2. 阶段划分与依赖
@@ -40,7 +40,7 @@ Phase 8  逐 Card 迁移与 Legacy 删除
 | Phase 0 | 已完成 | 架构、ADR、Characterization Tests 和 Golden 已建立 |
 | Phase 1 | 已完成 | Monorepo 外壳、依赖检查和兼容构建已建立 |
 | Phase 2 | 已完成 | Contract、Core、Workspace 编译链路和单一 Validator/Inspection/utility parser Gate 已完成 |
-| Phase 3 | 进行中 | Preview API、Preview Kit client、现有 Card 页面接入和 Profile package foundation 已完成；共享浏览器渲染、组件预览和 CLI 分包待完成 |
+| Phase 3 | 进行中 | Preview API、Preview Kit client、现有 Card 页面接入、Profile package foundation 和 CLI 运行时下沉（Phase 3E）已完成；共享浏览器渲染和组件预览（Phase 3D）待完成 |
 | Phase 4 | 已完成 | Artifact Contract/Builder/digest/verify/CLI/Handoff/消费者 fixture/tarball 验证均已完成 |
 | Phase 5 | 未开始 | Catalog 仓库和 GitHub Delivery 尚未建立 |
 | Phase 6 | 未开始实现 | Snapshot Contract 已定义；`apps/forge-web` 仍为空壳，当前改动只发生在 legacy `web/` |
@@ -190,7 +190,7 @@ card-spec
 | Phase 3B Preview Transport | 已完成 | Preview API v1、revision、Preview Kit client、legacy Card 页面接入 |
 | Phase 3C Profile Package Foundation | 已完成 | `packages/profile-octo-chat` 独立包，validate/build/pack、workspace package 优先加载、legacy 目录作开发回退 |
 | Phase 3D Component Preview | 待实施，可与 Phase 4 并行 | Component Catalog Contract、Profile specimen、共享浏览器渲染、legacy Components 页面迁移 |
-| Phase 3E CLI Package Convergence | 进行中（占位） | `packages/cli` 占位包已建立，CLI 已暴露 artifact 命令；CLI 逻辑迁入 packages/cli、repo-free npm 消费验证待完成 |
+| Phase 3E CLI Package Convergence | 已完成（运行时下沉） | CLI 命令层与共享应用运行时已迁入 `packages/cli`（`@mlt-org/octo-card-cli-runtime`，导出 `runCli`）；根 `src/cli.ts` 收敛为薄入口并注入 dev server，npm 包名/bin/发布产物保持不变；`src/server.ts` 暂留应用层并反向消费该包，server 下沉留待后续 |
 
 工作：
 
@@ -201,6 +201,38 @@ card-spec
 - 保留 repo-free 本地开发和 Agent Skill；
 - 使用 `packages/preview-kit`，供本地 Preview 和 Forge Web 共用；
 - 在 Preview Kit 稳定前，不引入 SSE、热刷新或新的服务端状态。
+
+### 6.0 Phase 3E：CLI Package Convergence（运行时下沉）
+
+状态：**已完成运行时下沉（2026-08）。**
+
+`packages/cli` 之前是 4 行占位包，真实 CLI 与整个应用运行时仍在根 `src/`（约 5500 行）。
+本阶段把 CLI 命令层与共享运行时（registry/compiler/core-adapter/profile-source/profile/
+handoff/artifact/check/init/presets/verify/agent/agent-bootstrap/validate/inspect/utility-id/
+types/fs）迁入 `packages/cli`，消除「新包空壳、旧路径承载全部实现」的双写。
+
+已落地：
+
+- `packages/cli`（`@mlt-org/octo-card-cli-runtime`）导出 `runCli()` 与运行时 barrel；
+- 根 `src/cli.ts` 收敛为薄入口：注入 dev server（`startServer`）并转发 argv，保留 shebang，
+  esbuild 仍将其打包为 `dist/cli.js`，npm 包名 `@mlt-org/octo-card-cli`、`bin` 和发布产物不变；
+- `src/server.ts`/`src/preview.ts`/`src/component-baseline.ts` 暂留应用层，改为反向消费
+  `@mlt-org/octo-card-cli-runtime`，依赖方向保持 根 → 包，无包到根的反向引用；
+- `projectRoot()` 由「固定上溯层级」改为向上查找 `pnpm-workspace.yaml` /
+  `deployment-manifest.json` 标记，兼容源码运行、根 `dist/` 与部署包三种布局；
+- 依赖 allowlist、tsconfig paths、esbuild alias、vitest alias 已登记新包。
+
+退出 Gate：
+
+- `packages/cli` 承载真实 CLI 与运行时，不再是占位包；
+- npm 包名、`bin`、发布 tarball 内容与部署包保持兼容（`dist/cli.js` 仍自包含）；
+- 无 `packages/cli` 反向依赖根 `src/`；
+- 干净检出下 typecheck、175 项测试、check、repo-free 与 published-consumer smoke 全绿。
+
+未包含（留待后续）：
+
+- `src/server.ts` 及 `preview`/`component-baseline` 的正式下沉（归属后续 Phase，牵动部署包）；
+- 根发布入口最终是否直接指向包 `bin`。
 
 ### 6.1 Phase 3C：Profile Package Foundation
 

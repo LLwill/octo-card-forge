@@ -2,8 +2,10 @@ import type {
   PreviewRenderResponse,
   PreviewSession,
 } from "@mlt-org/octo-card-preview-kit";
-import type { CompileResult } from "./types.js";
-import type { LoadedCardRuntime } from "./core-adapter.js";
+import type {
+  CompileResult,
+  LoadedCardRuntime,
+} from "@mlt-org/octo-card-cli-runtime";
 
 export type { PreviewRenderResponse, PreviewSession } from "@mlt-org/octo-card-preview-kit";
 
