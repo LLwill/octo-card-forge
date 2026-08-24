@@ -1,0 +1,92 @@
+name: Octo Card Check
+description: Validate a Card Source package and build deterministic PR preview assets.
+
+inputs:
+  card-path:
+    description: Path to the Card Source package to validate.
+    required: true
+  cli-version:
+    description: Exact published @mlt-org/octo-card-cli version.
+    required: false
+    default: "0.2.2"
+  profile-package:
+    description: Published Render Profile npm package.
+    required: false
+    default: "@mlt-org/octo-card-profile-octo-chat"
+  profile-version:
+    description: Exact published Render Profile version.
+    required: false
+    default: "1.2.0-rc.4"
+  output-dir:
+    description: Directory for the report, compiled samples, Artifact and digest.
+    required: false
+    default: ".octo-card/check"
+  upload-artifact:
+    description: Upload the generated PR preview bundle as a workflow artifact.
+    required: false
+    default: "true"
+  retention-days:
+    description: Retention period for the uploaded PR preview bundle.
+    required: false
+    default: "14"
+
+outputs:
+  card-id:
+    description: Validated Card ID.
+    value: ${{ steps.check.outputs.card-id }}
+  card-version:
+    description: Validated Card version.
+    value: ${{ steps.check.outputs.card-version }}
+  report-file:
+    description: Absolute path to the JSON verification report.
+    value: ${{ steps.check.outputs.report-file }}
+  compiled-dir:
+    description: Absolute path to compiled preview Card JSON files.
+    value: ${{ steps.check.outputs.compiled-dir }}
+  artifact-file:
+    description: Absolute path to the Card Artifact JSON.
+    value: ${{ steps.check.outputs.artifact-file }}
+  artifact-sha256:
+    description: Canonical Card Artifact SHA-256 digest.
+    value: ${{ steps.check.outputs.artifact-sha256 }}
+  workflow-artifact-name:
+    description: Name of the uploaded PR preview workflow artifact.
+    value: ${{ steps.check.outputs.workflow-artifact-name }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v5
+      with:
+        node-version: "22"
+        registry-url: https://registry.npmjs.org/
+        package-manager-cache: false
+
+    - name: Install pinned Forge tools
+      id: tools
+      shell: bash
+      env:
+        CLI_VERSION: ${{ inputs.cli-version }}
+        PROFILE_PACKAGE: ${{ inputs.profile-package }}
+        PROFILE_VERSION: ${{ inputs.profile-version }}
+      run: "$GITHUB_ACTION_PATH/../_shared/install-tools.sh"
+
+    - name: Check Card and build preview assets
+      id: check
+      shell: bash
+      env:
+        OCTO_CARD_BIN: ${{ steps.tools.outputs.octo-card-bin }}
+        CARD_PATH: ${{ inputs.card-path }}
+        PROFILE_PACKAGE: ${{ inputs.profile-package }}
+        OUTPUT_DIR: ${{ inputs.output-dir }}
+      run: "$GITHUB_ACTION_PATH/run.sh"
+
+    - name: Upload PR preview bundle
+      if: ${{ inputs.upload-artifact == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.check.outputs.workflow-artifact-name }}
+        path: ${{ steps.check.outputs.output-dir }}
+        if-no-files-found: error
+        retention-days: ${{ inputs.retention-days }}

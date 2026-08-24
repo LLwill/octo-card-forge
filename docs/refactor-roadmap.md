@@ -359,7 +359,8 @@ Profile package 是 Component Preview 的前置。该阶段只稳定 Profile 的
 
 目标：将 Card Source 与平台代码分离。
 
-状态：**未开始。**
+状态：**进行中。GitHub Delivery Contract 与首批 `card-check`/`card-release`
+reusable Actions 已实现；Catalog 仓库、治理配置和 Pilot Card 迁移待完成。**
 
 工作：
 
