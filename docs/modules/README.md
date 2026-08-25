@@ -14,7 +14,7 @@
 | 4 | Render Profile | [`render-profile.md`](./render-profile.md) | 源码能力已存在，package 和 Component Catalog 待迁移 |
 | 5 | Artifact | [`artifact.md`](./artifact.md) | Contract 已定义，Builder 待实现 |
 | 6 | GitHub Delivery | [`github-delivery.md`](./github-delivery.md) | Actions v0.1.0、Catalog Workflow 与 Pilot Release 已完成 |
-| 7 | Forge Web | [`forge-web.md`](./forge-web.md) | legacy Card 页面已接 Preview API，目标应用仍为空壳 |
+| 7 | Forge Web | [`forge-web.md`](./forge-web.md) | Phase 6B 已完成；正式 Snapshot/Artifact/Profile 只读工作台已上线，PR Preview 待补 |
 
 工程支撑包 `testkit` 不作为业务模块单独讨论。
 
