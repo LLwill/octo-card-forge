@@ -42,18 +42,18 @@ type FeaturedCard = {
 const capabilities = [
   {
     icon: Layers3,
-    title: "完整状态表达",
-    description: "同一张卡片可以覆盖等待、成功、拒绝等不同业务状态，并保持一致的信息层级。",
+    title: "状态可演示",
+    description: "等待、成功、拒绝等业务状态使用同一套信息结构，评审时可以直接切换查看。",
   },
   {
     icon: Shapes,
-    title: "可复用设计规范",
-    description: "组件、语义色、间距和组合模式来自同一套规范，减少重复设计与实现偏差。",
+    title: "规范可复用",
+    description: "组件、语义色、间距和组合方式来自同一套规范，让新的卡片保持一致。",
   },
   {
     icon: PackageCheck,
-    title: "可验证的交付",
-    description: "数据结构、示例和检查结果随卡片一起交付，让设计效果能够稳定复现。",
+    title: "交付可验证",
+    description: "数据结构、示例和检查结果随卡片一起交付，设计效果可以被稳定复现。",
   },
 ];
 
@@ -147,46 +147,48 @@ export function ShowcasePage() {
   return (
     <main className="showcase-page">
       <section className="showcase-hero">
-        <div className="showcase-heading">
-          <div>
-            <span className="showcase-kicker">卡片能力展示 · {cardCount || "—"} 个案例</span>
-            <h1>Octo Card Forge</h1>
+        <div className="showcase-hero-copy">
+          <span className="showcase-kicker">业务卡片设计与交付</span>
+          <h1>Octo Card Forge</h1>
+          <p className="showcase-lead">把一张业务卡片从数据结构、视觉规范做到可验证交付。</p>
+          <div className="showcase-actions">
+            <Link className={cn(buttonVariants({ size: "lg" }), "showcase-primary-action")} to="/cards">查看真实案例<ArrowRight data-icon="inline-end" /></Link>
+            <Link className={cn(buttonVariants({ variant: "outline", size: "lg" }), "showcase-secondary-action")} to="/components">浏览设计规范</Link>
           </div>
-          <div className="showcase-intro">
-            <strong>让结构、状态与交互一起被看见。</strong>
-            <p>从真实业务案例出发，查看一张卡片如何组织信息、承载操作，并在不同状态下保持清晰。</p>
-            <div className="showcase-actions">
-              <Link className={cn(buttonVariants({ size: "lg" }), "bg-foreground text-background hover:bg-foreground/90")} to="/cards">浏览卡片案例<ArrowRight data-icon="inline-end" /></Link>
-              <Link className={buttonVariants({ variant: "outline", size: "lg" })} to="/components">查看设计规范</Link>
-            </div>
-          </div>
+          <dl className="showcase-proof">
+            <div><dt>{cardCount || "—"}</dt><dd>已收录案例</dd></div>
+            <div><dt>{featured?.viewCount ?? "—"}</dt><dd>业务状态</dd></div>
+            <div><dt>{featured?.sampleCount ?? "—"}</dt><dd>数据示例</dd></div>
+          </dl>
         </div>
 
-        <div className="showcase-stage">
+        <div className="showcase-product">
           <div className="showcase-stage-header">
-            <div><span>精选案例</span><strong>{featured?.name ?? "正在加载"}</strong></div>
-            {featured ? <Link to={`/cards/${encodeURIComponent(featured.reference)}`}>查看完整案例<ArrowRight size={15} /></Link> : null}
+            <div><span>实时案例</span><strong>{featured?.name ?? "正在载入"}</strong></div>
+            <span className="showcase-live"><i />检查通过</span>
           </div>
-          <div className="showcase-preview">
-            {featured?.kind === "artifact" ? <PreviewFrame artifact={featured.artifact} sample={featured.sample} title={`${featured.name} 展示`} /> : null}
-            {featured?.kind === "workspace" ? <RawPreviewFrame card={featured.payload} resources={featured.resources} title={`${featured.name} 展示`} /> : null}
+          <div className="showcase-stage">
+            <div className="showcase-preview">
+              {featured?.kind === "artifact" ? <PreviewFrame artifact={featured.artifact} sample={featured.sample} title={`${featured.name} 展示`} /> : null}
+              {featured?.kind === "workspace" ? <RawPreviewFrame card={featured.payload} resources={featured.resources} title={`${featured.name} 展示`} /> : null}
+            </div>
           </div>
           <div className="showcase-stage-footer">
             <span>{featured?.reference ?? ""}</span>
-            <span>{featured ? `${featured.viewCount} 个状态 · ${featured.sampleCount} 个示例` : ""}</span>
+            {featured ? <Link to={`/cards/${encodeURIComponent(featured.reference)}`}>打开案例<ArrowRight size={15} /></Link> : null}
           </div>
         </div>
       </section>
 
       <section className="showcase-capabilities" aria-labelledby="capabilities-title">
-        <div className="showcase-section-heading"><span>核心能力</span><h2 id="capabilities-title">不止是把 JSON 渲染出来</h2></div>
+        <div className="showcase-section-heading"><span>从设计到交付</span><h2 id="capabilities-title">一套能被看见、复用和验证的卡片系统。</h2></div>
         <div className="showcase-capability-list">
           {capabilities.map(({ icon: Icon, title, description }, index) => <article key={title}><span className="showcase-capability-number">0{index + 1}</span><Icon aria-hidden="true" /><h3>{title}</h3><p>{description}</p></article>)}
         </div>
       </section>
 
       <section className="showcase-next">
-        <div><span>开始探索</span><h2>从案例理解能力，从规范开始创作。</h2></div>
+        <div><span>继续探索</span><h2>先看真实案例，再进入规范与调试。</h2></div>
         <div className="showcase-next-links">
           <Link to="/cards">卡片案例<ArrowRight /></Link>
           <Link to="/components">设计规范<ArrowRight /></Link>

@@ -91,17 +91,22 @@ export function ComponentsPage() {
     adaptiveCardsSdkUrl: `https://cdn.jsdelivr.net/npm/adaptivecards@${data.renderProfile.adaptiveCardsSdkVersion}/dist/adaptivecards.min.js`,
   };
   return <main className="spec-page">
-    <div className="spec-shell">
-      <header className="spec-hero">
-        <div><span className="showcase-kicker">设计语言 · {sections.length} 项规范</span><h1>设计规范</h1></div>
-        <div className="spec-intro"><strong>把卡片的视觉判断，变成团队可以复用的规则。</strong><p>从基础排版到业务组合，每一项都带着可运行的示例，不需要在文档与代码之间来回猜测。</p></div>
-      </header>
-      <div className="spec-toolbar">
+    <div className="spec-layout">
+      <aside className="spec-sidebar">
+        <div className="spec-sidebar-heading"><span className="showcase-kicker">系统</span><h1>设计规范</h1><p>组件、样式与组合方式</p></div>
         <label className="flex h-10 items-center gap-2 rounded-md border bg-card px-3 text-muted-foreground focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/10"><Search className="size-4" /><span className="sr-only">搜索组件</span><input className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索组件" /></label>
-        <div className="flex min-w-0 gap-1 overflow-x-auto" aria-label="组件分类"><Button type="button" size="sm" variant={group === "all" ? "secondary" : "ghost"} onClick={() => setGroup("all")}>全部</Button>{data.catalog.groups.map((entry) => <Button key={entry.id} type="button" size="sm" variant={group === entry.id ? "secondary" : "ghost"} className="shrink-0" onClick={() => setGroup(entry.id)}>{groupName(entry.id, entry.title)}</Button>)}</div>
-        <div className="flex items-center gap-2"><span className="text-xs text-muted-foreground">预览宽度</span><div className="inline-flex rounded-md border bg-muted/50 p-1">{[320, 480, 640].map((value) => <Button key={value} type="button" size="sm" variant="ghost" className={cn("h-7 min-w-11 px-2 text-xs", width === value && "bg-background text-primary shadow-xs")} onClick={() => setWidth(value)}>{value}</Button>)}</div></div>
+        <nav className="spec-sidebar-nav" aria-label="组件分类"><button type="button" className={group === "all" ? "active" : ""} onClick={() => setGroup("all")}><span>全部</span><small>{sections.length}</small></button>{data.catalog.groups.map((entry) => <button key={entry.id} type="button" className={group === entry.id ? "active" : ""} onClick={() => setGroup(entry.id)}><span>{groupName(entry.id, entry.title)}</span><small>{entry.sections.length}</small></button>)}</nav>
+        <div className="spec-width"><span>预览宽度</span><div>{[320, 480, 640].map((value) => <Button key={value} type="button" size="sm" variant="ghost" className={cn(width === value && "active")} onClick={() => setWidth(value)}>{value}</Button>)}</div></div>
+      </aside>
+      <div className="spec-content">
+        <header className="spec-hero">
+          <span className="showcase-kicker">组件规范</span>
+          <h2>设计一次，稳定复用。</h2>
+          <p>这里收录卡片的基础样式、可用组件与组合方式。每一项都配有可运行示例和对应 JSON。</p>
+          <dl className="spec-summary"><div><dt>{data.catalog.groups.length}</dt><dd>分类</dd></div><div><dt>{sections.length}</dt><dd>规范与示例</dd></div><div><dt>{width}px</dt><dd>当前预览宽度</dd></div></dl>
+        </header>
+        <div className="spec-groups">{filteredGroups.map((entry, groupIndex) => <section className="spec-group" key={entry.id}><header className="spec-group-heading"><span>0{groupIndex + 1}</span><div><p>{groupName(entry.id, entry.title)}</p><strong>{entry.sections.length} 项</strong></div></header><div className={cn("spec-grid", entry.id === "foundation" && "spec-grid-foundation")}>{entry.sections.map((section) => <ComponentSection key={section.id} category={groupName(entry.id, entry.title)} section={section} width={width} resources={resources} compact={entry.id === "foundation"} />)}</div></section>)}{filtered.length === 0 ? <div className="empty-panel"><strong>没有找到匹配的组件</strong><span>可以尝试其他名称或分类。</span></div> : null}</div>
       </div>
-      <div className="spec-groups">{filteredGroups.map((entry, groupIndex) => <section className="spec-group" key={entry.id}><header className="spec-group-heading"><span>0{groupIndex + 1}</span><div><p>{groupName(entry.id, entry.title)}</p><strong>{entry.sections.length} 项</strong></div></header><div className={cn("spec-grid", entry.id === "foundation" && "spec-grid-foundation")}>{entry.sections.map((section) => <ComponentSection key={section.id} category={groupName(entry.id, entry.title)} section={section} width={width} resources={resources} compact={entry.id === "foundation"} />)}</div></section>)}{filtered.length === 0 ? <div className="empty-panel"><strong>没有找到匹配的组件</strong><span>可以尝试其他名称或分类。</span></div> : null}</div>
     </div>
   </main>;
 }

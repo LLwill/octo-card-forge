@@ -1,11 +1,9 @@
 import {
   Check,
-  CheckCircle2,
   Clipboard,
   Download,
   ExternalLink,
   PackageCheck,
-  ShieldCheck,
   Terminal,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -42,68 +40,41 @@ export function InstallPage() {
     <main className="install-showcase">
       <header className="install-hero">
         <div className="install-hero-inner">
-          <div className="max-w-2xl">
-            <div className="mb-4 flex flex-wrap items-center gap-2">
-              <span className="install-edition-label">最新稳定版</span>
-              <span className="text-sm text-muted-foreground">命令行工具与卡片组件</span>
-            </div>
+          <div>
+            <span className="install-edition-label">快速开始</span>
             <h1>安装 Octo Card Forge</h1>
-            <p className="mt-4 max-w-xl text-base leading-7 text-muted-foreground">
-              两步完成项目初始化，也可以单独下载 Skill 包用于已有的智能体环境。
-            </p>
+            <p>在现有项目中安装工具，然后生成所需配置。</p>
           </div>
           <div className="install-version">
-            <div className="text-right">
-              <span className="block text-xs font-medium text-muted-foreground">当前版本</span>
-              <strong className="font-mono text-lg">v{data.cli.version}</strong>
-            </div>
-            <div className="grid size-11 place-items-center rounded-md bg-primary/10 text-primary"><PackageCheck className="size-5" /></div>
+            <PackageCheck />
+            <span>稳定版</span>
+            <strong>v{data.cli.version}</strong>
           </div>
         </div>
       </header>
 
       <div className="install-body">
-        <section aria-labelledby="workspace-install-title">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <section className="install-quickstart" aria-labelledby="workspace-install-title">
+          <div className="install-section-heading">
+            <span>01</span>
             <div>
-              <div className="mb-2 flex items-center gap-2 text-primary">
-                <Terminal className="size-5" />
-                <span className="text-sm font-semibold">推荐方式</span>
-              </div>
-              <h2 id="workspace-install-title" className="text-2xl font-semibold">快速开始</h2>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">依次运行下面两条命令，即可在当前项目中开始使用。</p>
+              <h2 id="workspace-install-title">两条命令完成初始化</h2>
+              <p>命令中已经固定互相兼容的版本，可以直接运行。</p>
             </div>
-            <span className="install-recommendation">
-              <CheckCircle2 data-icon="inline-start" />
-              推荐
-            </span>
           </div>
 
           <div className="install-steps">
             <InstallStep number="01" label="安装工具" description="安装与当前版本匹配的命令行工具和卡片样式。" value={data.cli.installCommand} />
-            <Separator />
             <InstallStep number="02" label="初始化项目" description="创建项目所需文件，并检查安装是否正确。" value={data.cli.initCommand} />
-          </div>
-
-          <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-            <ShieldCheck className="size-4 text-primary" />
-            命令中已固定兼容版本，可以直接运行。
           </div>
         </section>
 
-        <Separator className="my-10 lg:my-12" />
-
-        <section className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start" aria-labelledby="portable-skill-title">
+        <section className="install-secondary" aria-labelledby="portable-skill-title">
           <div>
-            <div className="mb-2 flex items-center gap-2 text-primary">
-              <Download className="size-5" />
-              <span className="text-sm font-semibold">可选方式</span>
-            </div>
-            <h2 id="portable-skill-title" className="text-2xl font-semibold">便携 Skill 包</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-              适合已经支持导入 Skill，但没有 Node.js 运行环境的平台。
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
+            <span className="install-section-number">02</span>
+            <h2 id="portable-skill-title">直接使用 Skill 包</h2>
+            <p>适合已经支持导入 Skill，但没有 Node.js 运行环境的平台。</p>
+            <div className="install-download-actions">
               <a className={cn(buttonVariants({ size: "lg" }), "h-10 px-4")} href={data.skill.bundleUrl}>
                 <Download data-icon="inline-start" />
                 下载 Skill
@@ -116,13 +87,11 @@ export function InstallPage() {
           </div>
 
           <div className="install-skill-note">
-            <span className="text-xs font-medium text-muted-foreground">Skill 版本</span>
-            <strong className="mt-2 block text-base">v{data.skill.version}</strong>
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">下载后可直接导入支持 Skill 的环境。</p>
+            <span>Skill 版本</span>
+            <strong>v{data.skill.version}</strong>
+            <p>下载后可直接导入支持 Skill 的环境。</p>
           </div>
         </section>
-
-        <Separator className="my-10 lg:my-12" />
 
         <details className="install-details">
           <summary className="cursor-pointer px-5 py-4 text-sm font-medium">技术信息</summary>
@@ -159,13 +128,15 @@ function InstallStep({ number, label, description, value }: { number: string; la
 
   return (
     <div className="install-step">
-      <div className="install-step-number">{number}</div>
-      <div>
-        <strong className="block text-sm font-semibold">{label}</strong>
-        <span className="mt-1 block text-xs leading-5 text-muted-foreground">{description}</span>
+      <div className="install-step-copy">
+        <span>{number}</span>
+        <div>
+          <strong>{label}</strong>
+          <small>{description}</small>
+        </div>
       </div>
-      <code className="min-w-0 overflow-x-auto rounded-md bg-[#121719] px-4 py-3 text-[13px] leading-5 text-slate-100">{value}</code>
-      <Button type="button" variant="outline" size="icon-lg" aria-label={`复制${label}命令`} title="复制命令" onClick={copy}>
+      <div className="install-command"><Terminal aria-hidden="true" /><code>{value}</code></div>
+      <Button className="install-copy" type="button" variant="ghost" size="icon-lg" aria-label={`复制${label}命令`} title="复制命令" onClick={copy}>
         {copied ? <Check /> : <Clipboard />}
       </Button>
     </div>
