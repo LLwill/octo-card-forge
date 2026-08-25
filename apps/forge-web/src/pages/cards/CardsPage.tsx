@@ -7,6 +7,7 @@ import { ErrorState, LoadingState } from "../../components/AsyncState.js";
 import { PreviewFrame } from "../../components/PreviewFrame.js";
 import { bootstrap } from "../../data/client.js";
 import { deriveProfileResourceUrls, loadCardArtifact, loadCatalogSnapshot } from "../../data.js";
+import { WorkspaceCardsPage } from "./WorkspaceCardsPage.js";
 
 type CatalogCard = CatalogSnapshotV1["cards"][number];
 type CatalogVersion = CatalogCard["versions"][number];
@@ -81,7 +82,7 @@ export function CardsPage() {
 
   if (runtimeLoading) return <LoadingState label="Loading Forge runtime" />;
   if (runtimeError) return <ErrorState message={runtimeError} retry={reloadRuntime} />;
-  if (runtime?.mode !== "published") return <ErrorState message="Workspace card browsing is being moved to the unified content provider." />;
+  if (runtime?.mode === "workspace") return <WorkspaceCardsPage />;
   if (error && !snapshot) return <ErrorState message={error} retry={() => setCatalogRevision((value) => value + 1)} />;
 
   const cards = (snapshot?.cards ?? []).filter((card) => {

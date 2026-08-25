@@ -1,7 +1,9 @@
 import { Navigate, createBrowserRouter, createHashRouter } from "react-router-dom";
 import { AppShell } from "../components/AppShell.js";
 import { CardsPage } from "../pages/cards/CardsPage.js";
-import { PlaceholderPage } from "../pages/PlaceholderPage.js";
+import { ComponentsPage } from "../pages/components/ComponentsPage.js";
+import { InstallPage } from "../pages/install/InstallPage.js";
+import { PlaygroundPage } from "../pages/playground/PlaygroundPage.js";
 
 function routes() {
   return [{
@@ -11,9 +13,9 @@ function routes() {
       { index: true, element: <Navigate to="cards" replace /> },
       { path: "cards", element: <CardsPage /> },
       { path: "cards/:reference", element: <CardsPage /> },
-      { path: "components", element: <PlaceholderPage title="Components" description="Render Profile 组件、工具与 Pattern 目录。" /> },
-      { path: "playground", element: <PlaceholderPage title="Playground" description="Adaptive Card JSON 与 Template Data 预览工作台。" /> },
-      { path: "install", element: <PlaceholderPage title="Install" description="CLI、Skill 与 Render Profile 安装信息。" /> },
+      { path: "components", element: <ComponentsPage /> },
+      { path: "playground", element: <PlaygroundPage /> },
+      { path: "install", element: <InstallPage /> },
       { path: "*", element: <Navigate to="cards" replace /> },
     ],
   }];

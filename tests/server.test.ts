@@ -79,9 +79,9 @@ describe("catalog HTTP API", () => {
       mode: "published",
       capabilities: {
         cardCatalog: true,
-        componentCatalog: false,
+        componentCatalog: true,
         templateDataPreview: false,
-        rawCardPreview: false,
+        rawCardPreview: true,
         handoffDownload: false,
       },
     });
@@ -266,7 +266,7 @@ describe("Preview API v1", () => {
         cardCatalog: true,
         componentCatalog: true,
         templateDataPreview: true,
-        rawCardPreview: false,
+        rawCardPreview: true,
         handoffDownload: true,
       },
     });

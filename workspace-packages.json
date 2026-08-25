@@ -86,6 +86,7 @@
       "runtimeDependencies": [
         "card-spec",
         "catalog-snapshot",
+        "preview-kit",
         "profile-octo-chat"
       ],
       "peerDependencies": []

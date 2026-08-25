@@ -77,7 +77,7 @@ async function prepareForgeServer(options: ForgeServerOptions = {}): Promise<{
       }
       if (await handlePublishedCatalogApi(req, res, routeUrl, publishedCatalog)) return;
       if (await handlePreviewApi(req, res, routeUrl, context)) return;
-      if (handleRuntimeApi(req, res, routeUrl, context)) return;
+      if (await handleRuntimeApi(req, res, routeUrl, context)) return;
       if (await handleLegacyApi(req, res, routeUrl, context, basePath)) return;
       if (await handleStaticAsset(req, res, routePath, { basePath, forgeWebRoot, webRoot })) return;
       sendJson(res, 404, { code: "not_found" });

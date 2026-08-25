@@ -1,15 +1,24 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { ForgeRuntimeDescriptorV1 } from "@mlt-org/octo-card-spec";
+import { loadRenderProfileForReference } from "../profile-source.js";
 import { sendJson } from "./http.js";
 import type { ServerContext } from "./types.js";
 
-export function handleRuntimeApi(
+export async function handleRuntimeApi(
   req: IncomingMessage,
   res: ServerResponse,
   url: URL,
   context: ServerContext,
-): boolean {
+): Promise<boolean> {
   if (req.method !== "GET" || url.pathname !== "/api/v1/runtime") return false;
+
+  if (!context.profile) {
+    try {
+      context.profile = await loadRenderProfileForReference();
+    } catch {
+      // Published card browsing remains available when no profile package is installed.
+    }
+  }
 
   const descriptor: ForgeRuntimeDescriptorV1 = {
     schemaVersion: 1,
@@ -19,14 +28,14 @@ export function handleRuntimeApi(
           cardCatalog: true,
           componentCatalog: Boolean(context.profile?.componentCatalog),
           templateDataPreview: true,
-          rawCardPreview: false,
+          rawCardPreview: Boolean(context.profile),
           handoffDownload: true,
         }
       : {
           cardCatalog: true,
-          componentCatalog: false,
+          componentCatalog: Boolean(context.profile?.componentCatalog),
           templateDataPreview: false,
-          rawCardPreview: false,
+          rawCardPreview: Boolean(context.profile),
           handoffDownload: false,
         },
   };
