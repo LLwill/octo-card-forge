@@ -2,6 +2,7 @@ import {
   createServer,
   type Server,
 } from "node:http";
+import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { loadCardPackage } from "./registry.js";
 import { loadRenderProfileForReference } from "./profile-source.js";
@@ -21,6 +22,7 @@ import { handleRuntimeApi } from "./server/runtime.js";
 import { handlePreviewApi } from "./server/preview.js";
 import { handleLegacyApi } from "./server/legacy-api.js";
 import { handleStaticAsset } from "./server/static-assets.js";
+import { handleV1Api } from "./server/v1-api.js";
 import type {
   ForgeServerOptions,
   PublishedCatalogContext,
@@ -56,6 +58,13 @@ async function prepareForgeServer(options: ForgeServerOptions = {}): Promise<{
     ? path.resolve(options.forgeWebRoot)
     : resolveInProject("apps", "forge-web", "dist");
   const server = createServer(async (req, res) => {
+    res.setHeader("x-request-id", randomUUID());
+    res.setHeader("x-content-type-options", "nosniff");
+    res.setHeader("referrer-policy", "strict-origin-when-cross-origin");
+    res.setHeader(
+      "content-security-policy",
+      "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: https:; connect-src 'self' https:; frame-src 'self'",
+    );
     try {
       const url = new URL(req.url ?? "/", `http://${req.headers.host ?? host}`);
       if (basePath && url.pathname === basePath) {
@@ -78,6 +87,7 @@ async function prepareForgeServer(options: ForgeServerOptions = {}): Promise<{
       if (await handlePublishedCatalogApi(req, res, routeUrl, publishedCatalog)) return;
       if (await handlePreviewApi(req, res, routeUrl, context)) return;
       if (await handleRuntimeApi(req, res, routeUrl, context)) return;
+      if (await handleV1Api(req, res, routeUrl, context, publishedCatalog, basePath)) return;
       if (await handleLegacyApi(req, res, routeUrl, context, basePath)) return;
       if (await handleStaticAsset(req, res, routePath, { basePath, forgeWebRoot, webRoot })) return;
       sendJson(res, 404, { code: "not_found" });

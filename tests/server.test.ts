@@ -145,7 +145,7 @@ describe("catalog HTTP API", () => {
   });
 
   it("serves the Profile's static component catalog as the single runtime source", async () => {
-    const response = await fetch(`${baseUrl}/api/component-baseline`);
+    const response = await fetch(`${baseUrl}/api/v1/components`);
     expect(response.status).toBe(200);
     const body = await response.json() as {
       catalog: unknown;
@@ -188,10 +188,11 @@ describe("catalog HTTP API", () => {
         `http://127.0.0.1:${address.port}/api/component-baseline`
       );
       expect(response.status).toBe(500);
-      await expect(response.json()).resolves.toEqual({
+      await expect(response.json()).resolves.toMatchObject({
         code: "component_catalog_missing",
         message: `Render profile ${CURRENT_RENDER_PROFILE} does not carry a static component catalog`,
       });
+      expect(response.headers.get("x-request-id")).toMatch(/^[0-9a-f-]{36}$/);
     } finally {
       await new Promise<void>((resolve, reject) => {
         unboundServer.close((error) => error ? reject(error) : resolve());
@@ -221,7 +222,7 @@ describe("Preview API v1", () => {
   });
 
   it("exposes a path-free session and profile assets", async () => {
-    const sessionResponse = await fetch(`${baseUrl}/api/preview/v1/session`);
+    const sessionResponse = await fetch(`${baseUrl}/api/v1/preview/session`);
     const session = await sessionResponse.json() as {
       schemaVersion: number;
       revision: string;
@@ -273,10 +274,10 @@ describe("Preview API v1", () => {
   });
 
   it("renders through the session revision and returns Core diagnostics", async () => {
-    const session = await (await fetch(`${baseUrl}/api/preview/v1/session`)).json() as {
+    const session = await (await fetch(`${baseUrl}/api/v1/preview/session`)).json() as {
       revision: string;
     };
-    const response = await fetch(`${baseUrl}/api/preview/v1/render`, {
+    const response = await fetch(`${baseUrl}/api/v1/preview/compile`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({

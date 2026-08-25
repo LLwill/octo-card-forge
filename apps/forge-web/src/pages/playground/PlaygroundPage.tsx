@@ -1,6 +1,6 @@
 import { AlertTriangle, Braces, Play, WandSparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { PreviewClient, type PreviewRenderResponse, type PreviewSession } from "@mlt-org/octo-card-preview-kit";
+import type { PreviewRenderResponse, PreviewSession } from "@mlt-org/octo-card-preview-kit";
 import type { JsonObject, RenderProfileManifestV1 } from "@mlt-org/octo-card-spec";
 import { useRuntime } from "../../app/runtime.js";
 import { ErrorState, LoadingState } from "../../components/AsyncState.js";
@@ -40,7 +40,7 @@ export function PlaygroundPage() {
 
   useEffect(() => {
     let active = true;
-    void loadJson<ComponentResponse>(serverPath("/api/component-baseline"))
+    void loadJson<ComponentResponse>(serverPath("/api/v1/components"))
       .then((value) => { if (active) setProfile(value); })
       .catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : String(reason)); });
     return () => { active = false; };
@@ -49,8 +49,7 @@ export function PlaygroundPage() {
   useEffect(() => {
     if (!runtime?.capabilities.templateDataPreview || mode !== "template-data") return;
     let active = true;
-    const client = new PreviewClient({ baseUrl: window.__OCTO_BASE_PATH__ ?? "" });
-    void client.getSession()
+    void loadJson<PreviewSession>(serverPath("/api/v1/preview/session"))
       .then((value) => {
         if (!active) return;
         setSession(value);
@@ -89,11 +88,10 @@ export function PlaygroundPage() {
     }
     if (!session || !view) return;
     try {
-      const result = await new PreviewClient({ baseUrl: window.__OCTO_BASE_PATH__ ?? "" }).render({
-        cardId: session.card.reference,
-        revision: session.revision,
-        view,
-        data,
+      const result = await loadJson<PreviewRenderResponse>(serverPath("/api/v1/preview/compile"), {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ cardId: session.card.reference, revision: session.revision, view, data }),
       });
       setCompiled(result);
       if (result.valid) setPreview(result.payload as JsonObject);

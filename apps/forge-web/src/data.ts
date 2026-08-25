@@ -48,7 +48,9 @@ export async function loadCatalogSnapshot(
 }
 
 export function artifactRequestUrl(reference: string, artifactBaseUrl = DEFAULT_ARTIFACT_ENDPOINT): string {
-  return `${artifactBaseUrl}${encodeURIComponent(reference)}`;
+  return artifactBaseUrl.includes("{reference}")
+    ? artifactBaseUrl.replace("{reference}", encodeURIComponent(reference))
+    : `${artifactBaseUrl}${encodeURIComponent(reference)}`;
 }
 
 export async function loadCardArtifact(

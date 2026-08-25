@@ -187,9 +187,9 @@ jobs:
           grep -Fqx './package.json' deploy-package-contents.txt
           grep -Fqx './dist/server.js' deploy-package-contents.txt
           grep -Fqx './scripts/start-service.mjs' deploy-package-contents.txt
-          grep -Fqx './web/install.html' deploy-package-contents.txt
-          grep -Fqx './web/install.js' deploy-package-contents.txt
           grep -Fqx './web/install-manifest.json' deploy-package-contents.txt
+          grep -Fqx './apps/forge-web/dist/index.html' deploy-package-contents.txt
+          grep -Eq '^\./apps/forge-web/dist/assets/index-.*\.js$' deploy-package-contents.txt
           grep -Fqx './skills/octo-design-cards/skill-manifest.json' deploy-package-contents.txt
           grep -Fqx './deployment-manifest.json' deploy-package-contents.txt
           sha256sum "$tarball"

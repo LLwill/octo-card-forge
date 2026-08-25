@@ -281,7 +281,7 @@ GitHub Release 负责保存和分发 Artifact；Artifact 自身的 digest 负责
 
 ## 11. Forge Web
 
-Forge Web 位于 `octo-card-forge/apps/forge-web`，由当前 `web/` 渐进迁移而来。
+Forge Web 位于 `octo-card-forge/apps/forge-web`。legacy `web/` 页面已经完成迁移并删除。
 
 它是 Card 工作台，不是宣传站点，也不是带数据库的管理后台。
 
@@ -298,7 +298,8 @@ Card Detail
   Source
 Profiles
 Components
-Releases
+Playground
+Install
 ```
 
 数据来源：
@@ -319,17 +320,19 @@ Forge Web：
 - 不执行审批或部署；
 - 可以链接到 GitHub Source、PR、Release 和 Workflow；
 - 使用与 `octo-web` 相同版本的 Render Profile npm Artifact 进行预览。
+- 在 Workspace 模式通过显式 Preview/Core adapter 编译 Template Data；
+- 在 sandbox iframe 中预览标准 Adaptive Card JSON。
 
 PR 可以部署独立 Preview Snapshot，但不需要引入 Forge 用户系统。
 
 ### 11.1 本地 Preview 运行面
 
-当前本地 Server 已提供 Preview API v1，作为现有 Web 页面和 `preview-kit` client 的适配层：
+当前本地 Server 已提供统一 `/api/v1`，Preview 编译接口为：
 
 ```text
-Web → /api/preview/v1/session
-Web → /api/preview/v1/render
-Web → /api/preview/v1/profile/*
+Web → /api/v1/preview/session
+Web → /api/v1/preview/compile
+Web → /api/v1/profiles/*
 ```
 
 它复用 Workspace Loader、Core 和 Render Profile，不保存 session。Session 中的 revision 用于
@@ -419,8 +422,8 @@ Forge Web 默认只读。CLI 使用开发者现有的 Git/`gh` 凭证，不实�
 - Core 已是编译、校验、Inspection 和 utility ID 解析的唯一实现，根 `src/` 只保留兼容 facade；
 - 将正式 Card 和版本放在 `cards/`；
 - 通过 `src/registry.ts` 扫描文件；
-- 通过本地 Node HTTP 服务向 `web/` 提供 Catalog API 和 Preview API v1；
-- legacy Card 页面已接入 Preview API，Components 页面仍使用 `/api/component-baseline`；
+- 通过本地 Node HTTP 服务向 `apps/forge-web` 提供 `/api/v1` 和兼容 API；
+- legacy 页面已经删除，旧 URL 只保留重定向；
 - 将 `cards/` 打进部署包；
 - 使用 TypeScript `adaptivecards-templating` 编译。
 

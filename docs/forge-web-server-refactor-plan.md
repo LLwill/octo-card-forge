@@ -1,6 +1,6 @@
 # Forge Web 与 Server 重构方案
 
-> 状态：Draft
+> 状态：Completed
 >
 > 日期：2026-08-25
 >
@@ -10,21 +10,23 @@
 > [`modules/forge-web.md`](./modules/forge-web.md)、
 > [`adr/0003-no-forge-database-or-accounts.md`](./adr/0003-no-forge-database-or-accounts.md)
 
-实施状态：**Phase A 进行中。**
+实施状态：**Phase A-G 已完成（2026-08-25）。**
 
-已完成（2026-08-25）：
+最终交付：
 
 - 新增 `ForgeRuntimeDescriptorV1` TypeScript 契约、严格 decoder 和 JSON Schema；
 - 新增 `GET /api/v1/runtime`，显式区分 `published` 与 `workspace`；
 - Published 和 Workspace 模式开始通过 capability 描述实际开放能力；
 - Forge Web Client 与 Published Artifact Proxy 均校验 Artifact `id@version` 是否匹配请求 reference；
 - 新增契约、HTTP API 和 Artifact identity 回归测试。
-
-Phase A 剩余：
-
-- 固化 Cards、Components、Install 和 Preview 的页面级截图基线；
-- 定义统一 Card Summary、Card Detail 和 API Error 契约；
-- 将 Runtime Descriptor 从当前 Server Context 推导迁入正式 Provider 边界。
+- `apps/forge-web` 已迁移到 React 19、Vite 8 和 React Router；
+- Cards 同时支持 Published Snapshot/Artifact 与 Workspace Card/Preview；
+- Components、Install、Card JSON Playground 和 Template Data Playground 已进入统一 Shell；
+- Server 已拆分为 HTTP、Runtime、Published Catalog、Preview、v1 Adapter、Legacy Adapter 和静态资源模块；
+- `/api/v1` 成为 Web 正式入口，旧 API 暂作兼容层；
+- `/`、`/components`、`/install` 重定向到统一 Web，legacy HTML/JS/CSS 已删除；
+- Vite hashed assets、SPA deep link、Base Path、离线 bootstrap、桌面与移动端均完成回归；
+- API 响应带 request ID，并启用 CSP、`X-Content-Type-Options` 和 Referrer Policy。
 
 ## 1. 背景
 

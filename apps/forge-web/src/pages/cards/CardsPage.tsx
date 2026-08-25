@@ -5,7 +5,7 @@ import type { CardArtifactV1, CatalogSnapshotV1 } from "@mlt-org/octo-card-catal
 import { useRuntime } from "../../app/runtime.js";
 import { ErrorState, LoadingState } from "../../components/AsyncState.js";
 import { PreviewFrame } from "../../components/PreviewFrame.js";
-import { bootstrap } from "../../data/client.js";
+import { bootstrap, serverPath } from "../../data/client.js";
 import { deriveProfileResourceUrls, loadCardArtifact, loadCatalogSnapshot } from "../../data.js";
 import { WorkspaceCardsPage } from "./WorkspaceCardsPage.js";
 
@@ -42,7 +42,10 @@ export function CardsPage() {
     setLoading(true);
     setError(undefined);
     const embedded = bootstrap();
-    void loadCatalogSnapshot({ snapshot: embedded.snapshot, snapshotUrl: embedded.snapshotUrl })
+    void loadCatalogSnapshot({
+      snapshot: embedded.snapshot,
+      snapshotUrl: embedded.snapshotUrl ?? serverPath("/api/v1/cards"),
+    })
       .then((value) => { if (active) setSnapshot(value); })
       .catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : String(reason)); })
       .finally(() => { if (active) setLoading(false); });
@@ -72,7 +75,7 @@ export function CardsPage() {
     const embedded = bootstrap();
     void loadCardArtifact(selectedVersion.reference, selectedVersion.artifact.sha256, {
       artifact: embedded.artifacts?.[selectedVersion.reference],
-      artifactBaseUrl: embedded.artifactBaseUrl,
+      artifactBaseUrl: embedded.artifactBaseUrl ?? `${serverPath("/api/v1/cards/")}{reference}/artifact`,
     })
       .then((value) => { if (active) setArtifact(value); })
       .catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : String(reason)); })

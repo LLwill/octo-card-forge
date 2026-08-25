@@ -2,7 +2,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { readText } from "../fs.js";
-import { renderHtml, sendBuffer, sendText } from "./http.js";
+import { publicPath, renderHtml, sendBuffer, sendText } from "./http.js";
 
 interface StaticAssetOptions {
   basePath: string;
@@ -27,16 +27,15 @@ const CONTENT_TYPES: Record<string, string> = {
 };
 
 const LEGACY_FILES: Record<string, [string, string]> = {
-  "/": ["index.html", "text/html"],
-  "/components": ["components.html", "text/html"],
-  "/components/": ["components.html", "text/html"],
-  "/install": ["install.html", "text/html"],
-  "/install/": ["install.html", "text/html"],
-  "/app.js": ["app.js", "text/javascript"],
   "/preview-kit.js": ["preview-kit.js", "text/javascript"],
-  "/components.js": ["components.js", "text/javascript"],
-  "/install.js": ["install.js", "text/javascript"],
-  "/styles.css": ["styles.css", "text/css"],
+};
+
+const LEGACY_REDIRECTS: Record<string, string> = {
+  "/": "/forge/cards",
+  "/components": "/forge/components",
+  "/components/": "/forge/components",
+  "/install": "/forge/install",
+  "/install/": "/forge/install",
 };
 
 export async function handleStaticAsset(
@@ -46,6 +45,13 @@ export async function handleStaticAsset(
   options: StaticAssetOptions,
 ): Promise<boolean> {
   if (req.method !== "GET") return false;
+
+  const redirect = LEGACY_REDIRECTS[routePath];
+  if (redirect) {
+    res.writeHead(308, { location: publicPath(options.basePath, redirect) });
+    res.end();
+    return true;
+  }
 
   if (routePath === "/forge" || routePath.startsWith("/forge/")) {
     const requestedPath = decodeForgePath(routePath);

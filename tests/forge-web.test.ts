@@ -18,10 +18,25 @@ import {
   loadCardArtifact,
   loadCatalogSnapshot,
 } from "../apps/forge-web/src/data.js";
+import { createRawCardDocument } from "../apps/forge-web/src/data/preview-document.js";
 import { buildCardArtifact } from "../packages/cli/src/artifact.js";
 import { createForgeServer } from "../packages/cli/src/server.js";
 
 describe("Forge Web catalog client", () => {
+  it("escapes raw card JSON before embedding it in the sandbox document", () => {
+    const document = createRawCardDocument(
+      { type: "AdaptiveCard", version: "1.5", body: [{ type: "TextBlock", text: "</script><script>alert(1)</script>" }] },
+      {
+        hostConfig: {},
+        stylesheetUrls: ["https://cdn.example.test/profile.css"],
+        adaptiveCardsSdkUrl: "https://cdn.example.test/adaptivecards.js",
+      },
+    );
+
+    expect(document).not.toContain("</script><script>alert(1)</script>");
+    expect(document).toContain("\\u003c/script\\u003e\\u003cscript\\u003ealert(1)\\u003c/script\\u003e");
+  });
+
   it("loads canonical snapshot and artifact data and derives exact profile resources", async () => {
     const artifact = await buildCardArtifact("docs.access-request@0.3.0");
     const digest = artifactSha256(artifact);
@@ -197,6 +212,10 @@ describe("Forge Web server route", () => {
     expect(redirect.status).toBe(308);
     expect(redirect.headers.get("location")).toBe("/forge/");
 
+    const legacyRedirect = await fetch(`${baseUrl}/components`, { redirect: "manual" });
+    expect(legacyRedirect.status).toBe(308);
+    expect(legacyRedirect.headers.get("location")).toBe("/forge/components");
+
     const page = await fetch(`${baseUrl}/forge/`);
     expect(page.status).toBe(200);
     const pageHtml = await page.text();
@@ -216,9 +235,21 @@ describe("Forge Web server route", () => {
     expect(snapshotResponse.status).toBe(200);
     await expect(snapshotResponse.json()).resolves.toMatchObject({ revision: "c".repeat(40) });
 
+    const v1SnapshotResponse = await fetch(`${baseUrl}/api/v1/cards`);
+    expect(v1SnapshotResponse.status).toBe(200);
+    await expect(v1SnapshotResponse.json()).resolves.toMatchObject({ revision: "c".repeat(40) });
+
     const artifactResponse = await fetch(`${baseUrl}/forge/api/artifacts/docs.access-request%400.3.0`);
     expect(artifactResponse.status).toBe(200);
     await expect(artifactResponse.json()).resolves.toMatchObject({
+      card: { id: "docs.access-request", version: "0.3.0" },
+    });
+
+    const v1ArtifactResponse = await fetch(
+      `${baseUrl}/api/v1/cards/docs.access-request%400.3.0/artifact`,
+    );
+    expect(v1ArtifactResponse.status).toBe(200);
+    await expect(v1ArtifactResponse.json()).resolves.toMatchObject({
       card: { id: "docs.access-request", version: "0.3.0" },
     });
   });

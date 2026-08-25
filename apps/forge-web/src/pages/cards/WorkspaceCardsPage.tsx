@@ -52,7 +52,7 @@ export function WorkspaceCardsPage() {
 
   useEffect(() => {
     let active = true;
-    void loadJson<WorkspaceCard[]>(serverPath("/api/cards"))
+    void loadJson<WorkspaceCard[]>(serverPath("/api/v1/cards"))
       .then((value) => { if (active) setCards(value); })
       .catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : String(reason)); });
     return () => { active = false; };
@@ -74,9 +74,9 @@ export function WorkspaceCardsPage() {
     setError(undefined);
     const encoded = encodeURIComponent(selected.reference);
     void Promise.all([
-      loadJson<CardContext>(serverPath(`/api/cards/${encoded}/context`)),
-      loadJson<ContractResponse>(serverPath(`/api/cards/${encoded}/contract`)),
-      loadJson<PreviewSession>(serverPath(`/api/preview/v1/session?cardId=${encoded}`)),
+      loadJson<CardContext>(serverPath(`/api/v1/cards/${encoded}/context`)),
+      loadJson<ContractResponse>(serverPath(`/api/v1/cards/${encoded}/contract`)),
+      loadJson<PreviewSession>(serverPath(`/api/v1/preview/session?cardId=${encoded}`)),
     ]).then(([nextContext, nextContract, nextSession]) => {
       if (!active) return;
       setContext(nextContext);
@@ -89,7 +89,7 @@ export function WorkspaceCardsPage() {
   useEffect(() => {
     if (!selected || !view || !sample) return;
     let active = true;
-    const url = serverPath(`/api/cards/${encodeURIComponent(selected.reference)}/samples/${encodeURIComponent(sample)}?view=${encodeURIComponent(view)}`);
+    const url = serverPath(`/api/v1/cards/${encodeURIComponent(selected.reference)}/samples/${encodeURIComponent(sample)}?view=${encodeURIComponent(view)}`);
     void loadJson<CompileResponse>(url)
       .then((value) => { if (active) setCompiled(value); })
       .catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : String(reason)); });
@@ -108,7 +108,7 @@ export function WorkspaceCardsPage() {
   };
 
   return <main className="cards-workspace"><aside className="catalog-panel" aria-label="Workspace cards"><div className="catalog-heading"><div><span className="eyebrow">Workspace</span><h1>Cards</h1></div><span className="count">{visible.length}</span></div><label className="search-box"><Search size={16} /><span className="sr-only">Search cards</span><input value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="Search name or ID" /></label><div className="catalog-list">{visible.map((card) => <button key={card.reference} type="button" className={card.reference === selected.reference ? "catalog-row selected" : "catalog-row"} onClick={() => navigate(`/cards/${encodeURIComponent(card.reference)}`)}><strong>{card.name}</strong><span><code>{card.reference}</code><small>{card.kind}</small></span></button>)}</div><footer className="catalog-footer"><span>{selected.mutable ? "Mutable draft" : "Pinned release"}</span><code>{selected.renderProfile}</code></footer></aside>
-    <section className="card-detail"><header className="detail-header"><div><div className="identity-line"><code>{selected.reference}</code><span className="status-badge">{selected.mutable ? "Workspace" : "Release"}</span></div><h2>{selected.name}</h2><p>Contract {selected.contractVersion} · {context.renderProfile.id}@{context.renderProfile.version}</p></div><div className="detail-actions"><a className="button primary" href={serverPath(`/api/cards/${encodeURIComponent(selected.reference)}/handoff`)}><Download size={14} />Handoff</a></div></header><div className="detail-tabs" role="tablist">{[["preview", "Preview"], ["contract", "Data contract"], ["validation", "Validation"]].map(([key, label]) => <button key={key} type="button" className={tab === key ? "active" : ""} onClick={() => setQuery("tab", key)}>{label}</button>)}</div>
+    <section className="card-detail"><header className="detail-header"><div><div className="identity-line"><code>{selected.reference}</code><span className="status-badge">{selected.mutable ? "Workspace" : "Release"}</span></div><h2>{selected.name}</h2><p>Contract {selected.contractVersion} · {context.renderProfile.id}@{context.renderProfile.version}</p></div><div className="detail-actions"><a className="button primary" href={serverPath(`/api/v1/cards/${encodeURIComponent(selected.reference)}/handoff`)}><Download size={14} />Handoff</a></div></header><div className="detail-tabs" role="tablist">{[["preview", "Preview"], ["contract", "Data contract"], ["validation", "Validation"]].map(([key, label]) => <button key={key} type="button" className={tab === key ? "active" : ""} onClick={() => setQuery("tab", key)}>{label}</button>)}</div>
       {tab === "preview" ? <div className="preview-layout"><section className="preview-surface"><div className="preview-toolbar"><label>View<select value={view} onChange={(event) => setQuery("view", event.target.value)}>{Object.keys(selected.samples).map((name) => <option key={name}>{name}</option>)}</select></label><label>Sample<select value={sample} onChange={(event) => setQuery("sample", event.target.value)}>{selected.samples[view].map((name) => <option key={name}>{name}</option>)}</select></label><span className="valid-dot">{compiled.issues.length ? `${compiled.issues.length} diagnostics` : "Compile valid"}</span></div><RawPreviewFrame card={compiled.payload} resources={resources} title={`${selected.name} preview`} /></section><aside className="facts-panel"><h3>Workspace facts</h3><dl><div><dt>Revision</dt><dd><code>{session.revision.slice(0, 20)}...</code></dd></div><div><dt>Render Profile</dt><dd><code>{session.renderProfile.reference}</code></dd></div><div><dt>Source</dt><dd>{context.renderProfileSource}</dd></div><div><dt>View</dt><dd><code>{view}</code></dd></div></dl></aside></div> : null}
       {tab === "contract" ? <section className="panel code-panel"><h3>Data contract</h3><pre><code>{JSON.stringify(contract.schema, null, 2)}</code></pre></section> : null}
       {tab === "validation" ? <section className="panel"><h3>Interaction reports</h3><div className="issue-list">{contract.interactionReports.map((report) => <div key={`${report.view}-${report.sample}`}><code>{report.view}/{report.sample}</code><strong>Compiled with current profile</strong><span>{JSON.stringify(report.inspection)}</span></div>)}</div></section> : null}

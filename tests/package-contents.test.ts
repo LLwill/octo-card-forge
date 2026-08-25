@@ -96,10 +96,10 @@ describe("CLI package contents", () => {
     expect(files).toContain("package/skills/octo-design-cards/skill-manifest.json");
     expect(files).toContain("package/skills/octo-design-cards/references/card-package-workflow.md");
     expect(files).toContain("package/skills/octo-design-cards/references/component-system.md");
-    expect(files).toContain("package/web/install.html");
-    expect(files).toContain("package/web/install.js");
     expect(files).toContain("package/web/install-manifest.json");
     expect(files).toContain("package/web/preview-kit.js");
+    expect(files).toContain("package/apps/forge-web/dist/index.html");
+    expect(files.some((file) => file.startsWith("package/apps/forge-web/dist/assets/index-") && file.endsWith(".js"))).toBe(true);
     expect(files.some((file) => file.endsWith(".handoff.zip"))).toBe(false);
     expect(files.some((file) => file.startsWith("package/cards/"))).toBe(false);
     expect(files.some((file) => file.startsWith("package/render-profiles/"))).toBe(false);
@@ -147,7 +147,7 @@ describe("CLI package contents", () => {
           "./deployment-manifest.json",
           "./dist/server.js",
           "./scripts/start-service.mjs",
-          "./web/index.html",
+          "./apps/forge-web/dist/index.html",
           "./cards/docs.access-request/goldens/pending.card.json",
           "./skills/octo-design-cards/skill-manifest.json",
         ])

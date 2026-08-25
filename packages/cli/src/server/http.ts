@@ -57,11 +57,15 @@ export function renderHtml(value: string, basePath: string, appPath = ""): strin
 }
 
 export function sendJson(res: ServerResponse, status: number, value: unknown): void {
+  const requestId = res.getHeader("x-request-id");
+  const body = status >= 400 && isJsonObject(value) && typeof requestId === "string"
+    ? { ...value, requestId, details: Array.isArray(value.details) ? value.details : [] }
+    : value;
   res.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
     "cache-control": "no-store",
   });
-  res.end(JSON.stringify(value, null, 2));
+  res.end(JSON.stringify(body, null, 2));
 }
 
 export function sendBinaryDownload(

@@ -16,7 +16,7 @@ export function InstallPage() {
   useEffect(() => {
     let active = true;
     setError(undefined);
-    void loadJson<InstallManifest>(serverPath("/api/install"))
+    void loadJson<InstallManifest>(serverPath("/api/v1/install"))
       .then((value) => { if (active) setData(value); })
       .catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : String(reason)); });
     return () => { active = false; };

@@ -35,7 +35,7 @@ pnpm dev
 
 打开 `http://127.0.0.1:4318`，可切换待处理、已允许、已拒绝示例，编辑业务数据并实时查看组装结果。
 
-组件基线位于 `http://127.0.0.1:4318/components`。它固定使用仓库当前唯一的
+组件目录位于 `http://127.0.0.1:4318/forge/components`。它固定使用仓库当前唯一的
 HostConfig，分别展示文字、容器、布局、图片、FactSet、Table、Inputs 和 Actions，
 并提供 320 / 480 / 640 三档宽度，作为 Render Profile 升级前后的视觉回归入口。
 

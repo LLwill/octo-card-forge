@@ -24,7 +24,7 @@ export function ComponentsPage() {
   useEffect(() => {
     let active = true;
     setError(undefined);
-    void loadJson<ComponentResponse>(serverPath("/api/component-baseline"))
+    void loadJson<ComponentResponse>(serverPath("/api/v1/components"))
       .then((value) => { if (active) setData(value); })
       .catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : String(reason)); });
     return () => { active = false; };
