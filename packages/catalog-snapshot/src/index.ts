@@ -1,15 +1,19 @@
 import {
   CARD_ARTIFACT_MEDIA_TYPE,
   CATALOG_SNAPSHOT_MEDIA_TYPE,
+  decodeCardArtifactV1,
   decodeCatalogSnapshotV1,
   issue,
   parseCardId,
   parseSemVer,
+  type CardArtifactV1,
   type CatalogSnapshotV1,
   type DecodeIssue,
   type JsonObject,
   type JsonValue,
 } from "@mlt-org/octo-card-spec";
+
+export type { CardArtifactV1, CatalogSnapshotV1 } from "@mlt-org/octo-card-spec";
 
 export interface CatalogReleaseRecord {
   card: {
@@ -43,6 +47,16 @@ export class CatalogSnapshotBuildError extends Error {
   constructor(issues: DecodeIssue[]) {
     super(`Catalog snapshot build failed: ${issues.map((item) => item.message).join("; ")}`);
     this.name = "CatalogSnapshotBuildError";
+    this.issues = issues;
+  }
+}
+
+export class CatalogArtifactParseError extends Error {
+  readonly issues: DecodeIssue[];
+
+  constructor(issues: DecodeIssue[]) {
+    super(`Card artifact parse failed: ${issues.map((item) => item.message).join("; ")}`);
+    this.name = "CatalogArtifactParseError";
     this.issues = issues;
   }
 }
@@ -206,4 +220,20 @@ export function parseCatalogSnapshot(input: unknown): CatalogSnapshotV1 {
     return decodedSnapshot(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(input)));
   }
   return decodedSnapshot(input);
+}
+
+export function parseCardArtifact(input: unknown): CardArtifactV1 {
+  let parsed = input;
+  if (typeof input === "string") parsed = JSON.parse(input);
+  if (input instanceof Uint8Array) {
+    parsed = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(input));
+  }
+  const result = decodeCardArtifactV1(parsed);
+  if (!result.ok) throw new CatalogArtifactParseError(result.issues);
+  return result.value;
+}
+
+/** Canonical artifact bytes use the same recursive key ordering as snapshot bytes. */
+export function canonicalCardArtifactBytes(input: unknown): Uint8Array {
+  return new TextEncoder().encode(JSON.stringify(canonicalValue(parseCardArtifact(input), "")));
 }
