@@ -70,6 +70,10 @@ export async function loadCardArtifact(
   if (actualSha256 !== expectedSha256) {
     throw new Error(`Card artifact digest mismatch: expected ${expectedSha256}, received ${actualSha256}`);
   }
+  const actualReference = `${artifact.card.id}@${artifact.card.version}`;
+  if (actualReference !== reference) {
+    throw new Error(`Card artifact identity mismatch: expected ${reference}, received ${actualReference}`);
+  }
   return artifact;
 }
 

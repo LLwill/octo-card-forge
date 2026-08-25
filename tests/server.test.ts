@@ -70,6 +70,23 @@ describe("catalog HTTP API", () => {
     );
   });
 
+  it("describes the default published runtime capabilities", async () => {
+    const response = await fetch(`${baseUrl}/api/v1/runtime`);
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      schemaVersion: 1,
+      mode: "published",
+      capabilities: {
+        cardCatalog: true,
+        componentCatalog: false,
+        templateDataPreview: false,
+        rawCardPreview: false,
+        handoffDownload: false,
+      },
+    });
+  });
+
   it("compiles a draft sample through its stable card id", async () => {
     const response = await fetch(
       `${baseUrl}/api/cards/docs.access-request/samples/pending`
@@ -236,6 +253,23 @@ describe("Preview API v1", () => {
     expect(stylesResponse.status).toBe(200);
     expect(stylesResponse.headers.get("content-type")).toContain("text/css");
     expect(await stylesResponse.text()).toContain(".ac-");
+  });
+
+  it("describes workspace-only preview capabilities", async () => {
+    const response = await fetch(`${baseUrl}/api/v1/runtime`);
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      schemaVersion: 1,
+      mode: "workspace",
+      capabilities: {
+        cardCatalog: true,
+        componentCatalog: true,
+        templateDataPreview: true,
+        rawCardPreview: false,
+        handoffDownload: true,
+      },
+    });
   });
 
   it("renders through the session revision and returns Core diagnostics", async () => {

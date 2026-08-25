@@ -7,3 +7,4 @@ export * from "./inspection.js";
 export * from "./artifact-v1.js";
 export * from "./catalog-snapshot-v1.js";
 export * from "./component-catalog-v1.js";
+export * from "./forge-runtime-v1.js";

@@ -4,6 +4,9 @@
 >
 > 目标代码：`apps/forge-web`、`packages/catalog-snapshot`
 
+> 统一 Cards、Components、Playground、Install 以及 Server 分层的后续方案见
+> [`../forge-web-server-refactor-plan.md`](../forge-web-server-refactor-plan.md)。
+
 ## 定位
 
 静态、只读、Artifact 驱动的 Card 工作台。

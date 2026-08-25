@@ -9,6 +9,7 @@ import {
   decodeCardArtifactV1,
   decodeCatalogSnapshotV1,
   decodeComponentCatalogV1,
+  decodeForgeRuntimeDescriptorV1,
   COMPONENT_CATALOG_MEDIA_TYPE,
   CARD_ARTIFACT_MEDIA_TYPE,
   CATALOG_SNAPSHOT_MEDIA_TYPE,
@@ -17,6 +18,47 @@ import {
   isPinnedRenderProfileReference,
   validateCardManifestPolicy,
 } from "../packages/card-spec/src/index.js";
+
+describe("forge runtime descriptor decoder", () => {
+  it("accepts a complete published runtime descriptor", () => {
+    const result = decodeForgeRuntimeDescriptorV1({
+      schemaVersion: 1,
+      mode: "published",
+      capabilities: {
+        cardCatalog: true,
+        componentCatalog: false,
+        templateDataPreview: false,
+        rawCardPreview: false,
+        handoffDownload: false,
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.mode).toBe("published");
+  });
+
+  it("fails closed for incomplete capabilities and unknown properties", () => {
+    const result = decodeForgeRuntimeDescriptorV1({
+      schemaVersion: 1,
+      mode: "workspace",
+      capabilities: {
+        cardCatalog: true,
+        componentCatalog: true,
+        templateDataPreview: true,
+        rawCardPreview: false,
+        extra: true,
+      },
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.issues).toEqual(expect.arrayContaining([
+        expect.objectContaining({ path: "/capabilities/handoffDownload" }),
+        expect.objectContaining({ path: "/capabilities/extra" }),
+      ]));
+    }
+  });
+});
 
 async function readJson(path: string): Promise<unknown> {
   const root = pathModule.resolve(pathModule.dirname(fileURLToPath(import.meta.url)), "..");

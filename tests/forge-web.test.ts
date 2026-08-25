@@ -78,6 +78,17 @@ describe("Forge Web catalog client", () => {
     })).rejects.toThrow("digest mismatch");
   });
 
+  it("rejects an artifact whose identity does not match the requested reference", async () => {
+    const artifact = await buildCardArtifact("ai.decision-action@0.2.0");
+    const digest = artifactSha256(artifact);
+
+    await expect(loadCardArtifact("docs.access-request@0.3.0", digest, {
+      artifact,
+    })).rejects.toThrow(
+      "Card artifact identity mismatch: expected docs.access-request@0.3.0, received ai.decision-action@0.2.0",
+    );
+  });
+
   it("loads an embedded preview Snapshot and Artifact without network access", async () => {
     const artifact = await buildCardArtifact("docs.access-request@0.3.0");
     const digest = artifactSha256(artifact);
@@ -198,5 +209,62 @@ describe("Forge Web server route", () => {
     await expect(artifactResponse.json()).resolves.toMatchObject({
       card: { id: "docs.access-request", version: "0.3.0" },
     });
+  });
+
+  it("rejects an artifact whose verified content has the wrong identity", async () => {
+    const wrongArtifact = await buildCardArtifact("ai.decision-action@0.2.0");
+    const snapshot = buildCatalogSnapshot({
+      channel: "release",
+      revision: "f".repeat(40),
+      records: [{
+        card: {
+          id: "docs.access-request",
+          name: "Access request",
+          version: "0.3.0",
+          contractVersion: "1.0.0",
+          renderProfile: wrongArtifact.profile.reference,
+          defaultLocale: "zh-CN",
+        },
+        artifact: {
+          url: "https://example.test/wrong-card.artifact.json",
+          sha256: artifactSha256(wrongArtifact),
+        },
+        source: {
+          repository: "example/catalog",
+          commit: "e".repeat(40),
+          path: "cards/docs/access-request",
+        },
+        release: {
+          tag: "card/docs.access-request/v0.3.0",
+          url: "https://example.test/releases/0.3.0",
+        },
+      }],
+    });
+    const identityServer = await createForgeServer({
+      catalogSnapshotUrl: "https://example.test/snapshot",
+      catalogFetch: async (input) => String(input).includes("snapshot")
+        ? new Response(canonicalCatalogSnapshotBytes(snapshot))
+        : new Response(canonicalArtifactBytes(wrongArtifact)),
+      forgeWebRoot: temporaryRoot,
+    });
+    await new Promise<void>((resolve, reject) => {
+      identityServer.once("error", reject);
+      identityServer.listen(0, "127.0.0.1", resolve);
+    });
+
+    try {
+      const address = identityServer.address() as AddressInfo;
+      const response = await fetch(
+        `http://127.0.0.1:${address.port}/forge/api/artifacts/docs.access-request%400.3.0`,
+      );
+      expect(response.status).toBe(502);
+      await expect(response.json()).resolves.toMatchObject({
+        code: "catalog.artifact_identity_mismatch",
+      });
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        identityServer.close((error) => error ? reject(error) : resolve());
+      });
+    }
   });
 });

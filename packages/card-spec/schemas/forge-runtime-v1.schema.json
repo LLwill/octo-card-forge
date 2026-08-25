@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:octo-card:schema:forge-runtime:1",
+  "title": "Octo Card Forge Runtime Descriptor v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "mode", "capabilities"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "mode": { "enum": ["published", "workspace"] },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cardCatalog",
+        "componentCatalog",
+        "templateDataPreview",
+        "rawCardPreview",
+        "handoffDownload"
+      ],
+      "properties": {
+        "cardCatalog": { "type": "boolean" },
+        "componentCatalog": { "type": "boolean" },
+        "templateDataPreview": { "type": "boolean" },
+        "rawCardPreview": { "type": "boolean" },
+        "handoffDownload": { "type": "boolean" }
+      }
+    }
+  }
+}

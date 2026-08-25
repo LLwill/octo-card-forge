@@ -10,6 +10,10 @@ import {
   parseCatalogSnapshot,
   type CatalogSnapshotV1,
 } from "@mlt-org/octo-card-catalog-snapshot";
+import type {
+  ForgeRuntimeDescriptorV1,
+  ForgeRuntimeMode,
+} from "@mlt-org/octo-card-spec";
 import {
   buildHandoffArchive,
   buildHandoffArchiveForCard,
@@ -42,6 +46,7 @@ import {
 } from "./preview.js";
 
 interface ServerContext {
+  mode: ForgeRuntimeMode;
   card?: CardPackage;
   profile?: RenderProfileSource;
 }
@@ -257,6 +262,14 @@ async function handlePublishedCatalogApi(
           verification.issues.map((issue) => issue.message).join("; ") || "Card artifact is invalid",
         );
       }
+      const actualReference = `${verification.artifact.card.id}@${verification.artifact.card.version}`;
+      if (actualReference !== reference) {
+        throw new PublishedCatalogError(
+          502,
+          "catalog.artifact_identity_mismatch",
+          `Card artifact identity mismatch: expected ${reference}, received ${actualReference}`,
+        );
+      }
       sendJson(res, 200, verification.artifact);
       return true;
     }
@@ -448,6 +461,30 @@ async function handleApi(
   basePath: string,
 ): Promise<boolean> {
   if (await handlePreviewApi(req, res, url, context)) return true;
+
+  if (req.method === "GET" && url.pathname === "/api/v1/runtime") {
+    const descriptor: ForgeRuntimeDescriptorV1 = {
+      schemaVersion: 1,
+      mode: context.mode,
+      capabilities: context.mode === "workspace"
+        ? {
+            cardCatalog: true,
+            componentCatalog: Boolean(context.profile?.componentCatalog),
+            templateDataPreview: true,
+            rawCardPreview: false,
+            handoffDownload: true,
+          }
+        : {
+            cardCatalog: true,
+            componentCatalog: false,
+            templateDataPreview: false,
+            rawCardPreview: false,
+            handoffDownload: false,
+          },
+    };
+    sendJson(res, 200, descriptor);
+    return true;
+  }
 
   if (req.method === "GET" && url.pathname === "/healthz") {
     sendJson(res, 200, { status: "ok" });
@@ -727,7 +764,11 @@ async function prepareForgeServer(options: ForgeServerOptions = {}): Promise<{
   const profile = card
     ? await loadRenderProfileForReference(card.manifest.renderProfile, options.profile)
     : options.profile;
-  const context: ServerContext = { card, profile };
+  const context: ServerContext = {
+    mode: card || profile ? "workspace" : "published",
+    card,
+    profile,
+  };
   const publishedCatalog: PublishedCatalogContext = {
     snapshotUrl: options.catalogSnapshotUrl ?? DEFAULT_CATALOG_SNAPSHOT_URL,
     fetch: options.catalogFetch ?? fetch,
