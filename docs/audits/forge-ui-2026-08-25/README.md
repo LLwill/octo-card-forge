@@ -22,10 +22,15 @@ inspect it, test JSON or template data, and install the matching toolchain.
 - `04-components.png`
 - `05-playground-shadcn.png`
 - `06-playground-shadcn-mobile.png`
+- `07-install-shadcn.png`
+- `08-install-shadcn-mobile.png`
 
 The last two captures record the first implementation checkpoint using the
 shadcn Nova preset, Base UI primitives, Tailwind CSS, and the existing Forge
 green accent.
+
+The final two captures show the second implementation checkpoint: the shared
+lightweight tool rail and the redesigned Install workflow.
 
 ## Overall verdict
 
