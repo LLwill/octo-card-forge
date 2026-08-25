@@ -37,7 +37,7 @@ export function InstallPage() {
   }, [revision]);
 
   if (error) return <ErrorState message={error} retry={() => setRevision((value) => value + 1)} />;
-  if (!data) return <LoadingState label="Loading install manifest" />;
+  if (!data) return <LoadingState label="正在准备安装信息" />;
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -45,17 +45,17 @@ export function InstallPage() {
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-5 py-10 sm:px-8 lg:flex-row lg:items-end lg:justify-between lg:px-10 lg:py-14">
           <div className="max-w-2xl">
             <div className="mb-4 flex flex-wrap items-center gap-2">
-              <Badge className="h-6 bg-primary/10 px-2.5 text-primary">Current release</Badge>
-              <span className="text-sm text-muted-foreground">CLI, Skill and Render Profile</span>
+              <Badge className="h-6 bg-primary/10 px-2.5 text-primary">最新稳定版</Badge>
+              <span className="text-sm text-muted-foreground">命令行工具与卡片组件</span>
             </div>
-            <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Install Octo Card Forge</h1>
+            <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">安装 Octo Card Forge</h1>
             <p className="mt-4 max-w-xl text-base leading-7 text-muted-foreground">
-              Set up a complete Card authoring workspace, or download the portable Skill bundle for an existing agent environment.
+              两步完成项目初始化，也可以单独下载 Skill 包用于已有的智能体环境。
             </p>
           </div>
           <div className="flex items-center gap-3 lg:pb-1">
             <div className="text-right">
-              <span className="block text-xs font-medium uppercase text-muted-foreground">Stable version</span>
+              <span className="block text-xs font-medium text-muted-foreground">当前版本</span>
               <strong className="font-mono text-lg">v{data.cli.version}</strong>
             </div>
             <div className="grid size-11 place-items-center rounded-lg bg-primary/10 text-primary"><PackageCheck className="size-5" /></div>
@@ -69,26 +69,26 @@ export function InstallPage() {
             <div>
               <div className="mb-2 flex items-center gap-2 text-primary">
                 <Terminal className="size-5" />
-                <span className="text-sm font-semibold">Recommended setup</span>
+                <span className="text-sm font-semibold">推荐方式</span>
               </div>
-              <h2 id="workspace-install-title" className="text-2xl font-semibold">Complete workspace</h2>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">Install the exact toolchain, then initialize the agent-facing workspace files.</p>
+              <h2 id="workspace-install-title" className="text-2xl font-semibold">快速开始</h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">依次运行下面两条命令，即可在当前项目中开始使用。</p>
             </div>
             <Badge variant="outline" className="h-7 w-fit border-primary/25 bg-primary/8 px-3 text-primary">
               <CheckCircle2 data-icon="inline-start" />
-              Recommended
+              推荐
             </Badge>
           </div>
 
           <div className="mt-7 overflow-hidden rounded-lg border bg-card shadow-xs">
-            <InstallStep number="01" label="Install tools" description="Pins the Forge CLI and the active Octo Chat render profile." value={data.cli.installCommand} />
+            <InstallStep number="01" label="安装工具" description="安装与当前版本匹配的命令行工具和卡片样式。" value={data.cli.installCommand} />
             <Separator />
-            <InstallStep number="02" label="Initialize workspace" description="Creates the local agent instructions and validates the installation." value={data.cli.initCommand} />
+            <InstallStep number="02" label="初始化项目" description="创建项目所需文件，并检查安装是否正确。" value={data.cli.initCommand} />
           </div>
 
           <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
             <ShieldCheck className="size-4 text-primary" />
-            Versions are generated from the published install manifest, not floating latest tags.
+            命令中已固定兼容版本，可以直接运行。
           </div>
         </section>
 
@@ -98,52 +98,52 @@ export function InstallPage() {
           <div>
             <div className="mb-2 flex items-center gap-2 text-primary">
               <Download className="size-5" />
-              <span className="text-sm font-semibold">Portable option</span>
+              <span className="text-sm font-semibold">可选方式</span>
             </div>
-            <h2 id="portable-skill-title" className="text-2xl font-semibold">Skill bundle</h2>
+            <h2 id="portable-skill-title" className="text-2xl font-semibold">便携 Skill 包</h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-              Use this path when the target environment accepts uploaded Skills but does not provide a Node.js runtime.
+              适合已经支持导入 Skill，但没有 Node.js 运行环境的平台。
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <a className={cn(buttonVariants({ size: "lg" }), "h-10 px-4")} href={data.skill.bundleUrl}>
                 <Download data-icon="inline-start" />
-                Download Skill
+                下载 Skill
               </a>
               <a className={cn(buttonVariants({ variant: "outline", size: "lg" }), "h-10 px-4")} href={data.skill.releaseUrl} target="_blank" rel="noreferrer">
-                Release notes
+                发行说明
                 <ExternalLink data-icon="inline-end" />
               </a>
             </div>
           </div>
 
           <div className="rounded-lg border bg-muted/45 p-5">
-            <span className="text-xs font-medium uppercase text-muted-foreground">Bundle identity</span>
-            <strong className="mt-2 block text-base">{data.skill.name}@{data.skill.version}</strong>
-            <code className="mt-3 block break-all text-xs leading-5 text-muted-foreground">sha256:{data.skill.sha256}</code>
+            <span className="text-xs font-medium text-muted-foreground">Skill 版本</span>
+            <strong className="mt-2 block text-base">v{data.skill.version}</strong>
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">下载后可直接导入支持 Skill 的环境。</p>
           </div>
         </section>
 
         <Separator className="my-10 lg:my-12" />
 
-        <section aria-labelledby="compatibility-title">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h2 id="compatibility-title" className="text-2xl font-semibold">Versions and compatibility</h2>
-              <p className="mt-2 text-sm text-muted-foreground">The exact packages included in this release.</p>
-            </div>
+        <details className="overflow-hidden rounded-lg border bg-card">
+          <summary className="cursor-pointer px-5 py-4 text-sm font-medium">技术信息</summary>
+          <Separator />
+          <div className="flex flex-col gap-2 border-b px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">当前安装包含的具体包版本与兼容范围。</p>
             <a className="text-sm font-medium text-primary hover:underline" href={data.cli.npmUrl} target="_blank" rel="noreferrer">
-              View CLI package <ExternalLink className="ml-1 inline size-3.5" />
+              查看命令行工具 <ExternalLink className="ml-1 inline size-3.5" />
             </a>
           </div>
-
-          <div className="mt-6 overflow-hidden rounded-lg border bg-card">
-            <VersionRow label="CLI" value={`${data.cli.package}@${data.cli.version}`} note={data.cli.compatibleRange} />
+          <div>
+            <VersionRow label="命令行工具" value={`${data.cli.package}@${data.cli.version}`} note={data.cli.compatibleRange} />
             <Separator />
-            <VersionRow label="Skill" value={`${data.skill.name}@${data.skill.version}`} note={data.skill.entry} />
+            <VersionRow label="Skill 包" value={`${data.skill.name}@${data.skill.version}`} note={data.skill.entry} />
             <Separator />
-            <VersionRow label="Render Profile" value={`${data.renderProfile.id}@${data.renderProfile.version}`} note={data.renderProfile.compatibleRange ?? data.renderProfile.source} />
+            <VersionRow label="卡片样式" value={`${data.renderProfile.id}@${data.renderProfile.version}`} note={data.renderProfile.compatibleRange ?? data.renderProfile.source} />
+            <Separator />
+            <VersionRow label="文件校验" value={`sha256:${data.skill.sha256}`} />
           </div>
-        </section>
+        </details>
       </div>
     </main>
   );
@@ -166,7 +166,7 @@ function InstallStep({ number, label, description, value }: { number: string; la
         <span className="mt-1 block text-xs leading-5 text-muted-foreground">{description}</span>
       </div>
       <code className="min-w-0 overflow-x-auto rounded-md bg-[#121719] px-4 py-3 text-[13px] leading-5 text-slate-100">{value}</code>
-      <Button type="button" variant="outline" size="icon-lg" aria-label={`Copy ${label}`} onClick={copy}>
+      <Button type="button" variant="outline" size="icon-lg" aria-label={`复制${label}命令`} title="复制命令" onClick={copy}>
         {copied ? <Check /> : <Clipboard />}
       </Button>
     </div>

@@ -11,17 +11,16 @@ import { WorkspaceCardsPage } from "./WorkspaceCardsPage.js";
 
 type CatalogCard = CatalogSnapshotV1["cards"][number];
 type CatalogVersion = CatalogCard["versions"][number];
-type DetailTab = "preview" | "contract" | "validation" | "versions";
+type DetailTab = "preview" | "contract" | "validation";
 
 const tabLabels: Record<DetailTab, string> = {
-  preview: "Preview",
-  contract: "Data contract",
-  validation: "Validation",
-  versions: "Versions",
+  preview: "预览",
+  contract: "数据结构",
+  validation: "检查结果",
 };
 
 function isTab(value: string | null): value is DetailTab {
-  return value === "preview" || value === "contract" || value === "validation" || value === "versions";
+  return value === "preview" || value === "contract" || value === "validation";
 }
 
 export function CardsPage() {
@@ -83,7 +82,7 @@ export function CardsPage() {
     return () => { active = false; };
   }, [selectedVersion]);
 
-  if (runtimeLoading) return <LoadingState label="Loading Forge runtime" />;
+  if (runtimeLoading) return <LoadingState label="正在准备卡片库" />;
   if (runtimeError) return <ErrorState message={runtimeError} retry={reloadRuntime} />;
   if (runtime?.mode === "workspace") return <WorkspaceCardsPage />;
   if (error && !snapshot) return <ErrorState message={error} retry={() => setCatalogRevision((value) => value + 1)} />;
@@ -95,20 +94,19 @@ export function CardsPage() {
 
   return (
     <main className="cards-workspace">
-      <aside className="catalog-panel" aria-label="Card catalog">
-        <div className="catalog-heading"><div><span className="eyebrow">Catalog</span><h1>Cards</h1></div><span className="count">{cards.length}</span></div>
-        <label className="search-box"><Search size={16} aria-hidden="true" /><span className="sr-only">Search cards</span><input value={filter} onChange={(event) => {
+      <aside className="catalog-panel" aria-label="卡片库">
+        <div className="catalog-heading"><div><span className="eyebrow">卡片库</span><h1>卡片</h1></div><span className="count">{cards.length}</span></div>
+        <label className="search-box"><Search size={16} aria-hidden="true" /><span className="sr-only">搜索卡片</span><input value={filter} onChange={(event) => {
           const value = event.target.value;
           setFilter(value);
           const next = new URLSearchParams(searchParams);
           value ? next.set("q", value) : next.delete("q");
           setSearchParams(next, { replace: true });
-        }} placeholder="Search name or ID" /></label>
-        <div className="catalog-list">{cards.map((card) => <button key={card.id} type="button" className={card.id === selectedCard?.id ? "catalog-row selected" : "catalog-row"} onClick={() => navigate(`/cards/${encodeURIComponent(card.id)}`)}><strong>{card.name}</strong><span><code>{card.id}</code><small>v{card.latest}</small></span></button>)}{!loading && cards.length === 0 ? <div className="empty-list">No cards match this search.</div> : null}</div>
-        <footer className="catalog-footer"><span>{snapshot?.channel === "preview" ? "Preview snapshot" : "Release snapshot"}</span><code>{snapshot?.revision.slice(0, 12) ?? "-"}</code></footer>
+        }} placeholder="搜索名称或 ID" /></label>
+        <div className="catalog-list">{cards.map((card) => <button key={card.id} type="button" className={card.id === selectedCard?.id ? "catalog-row selected" : "catalog-row"} onClick={() => navigate(`/cards/${encodeURIComponent(card.id)}`)}><strong>{card.name}</strong><span><code>{card.id}</code><small>v{card.latest}</small></span></button>)}{!loading && cards.length === 0 ? <div className="empty-list">没有找到匹配的卡片。</div> : null}</div>
       </aside>
       <section className="card-detail">
-        {loading || !selectedCard || !selectedVersion || !artifact ? <LoadingState label="Verifying card artifact" /> : <CardDetail card={selectedCard} version={selectedVersion} artifact={artifact} searchParams={searchParams} setSearchParams={setSearchParams} />}
+        {loading || !selectedCard || !selectedVersion || !artifact ? <LoadingState label="正在加载卡片" /> : <CardDetail card={selectedCard} version={selectedVersion} artifact={artifact} searchParams={searchParams} setSearchParams={setSearchParams} />}
         {error && snapshot ? <div className="inline-error"><ErrorState message={error} /></div> : null}
       </section>
     </main>
@@ -136,19 +134,18 @@ function CardDetail({ card, version, artifact, searchParams, setSearchParams }: 
     setSearchParams(next, { replace: true });
   };
   return <>
-    <header className="detail-header"><div><div className="identity-line"><code>{card.id}</code><span className="status-badge">Read only</span></div><h2>{card.name}</h2><p>{version.reference} · Contract {version.contractVersion} · {artifact.card.defaultLocale}</p></div><div className="detail-actions"><label>Version<select value={version.reference} onChange={(event) => setQuery("version", event.target.value)}>{card.versions.map((candidate) => <option key={candidate.reference} value={candidate.reference}>{candidate.version}</option>)}</select></label><SafeExternalLink href={version.release?.url ?? version.artifact.url}>Release</SafeExternalLink></div></header>
+    <header className="detail-header"><div><div className="identity-line"><code>{card.id}</code><span className="status-badge">v{version.version}</span></div><h2>{card.name}</h2><p>查看卡片效果、所需数据和检查结果</p></div><div className="detail-actions">{card.versions.length > 1 ? <label>版本<select value={version.reference} onChange={(event) => setQuery("version", event.target.value)}>{card.versions.map((candidate) => <option key={candidate.reference} value={candidate.reference}>{candidate.version}</option>)}</select></label> : null}<SafeExternalLink href={version.release?.url ?? version.artifact.url}>发行说明</SafeExternalLink></div></header>
     <div className="detail-tabs" role="tablist">{Object.entries(tabLabels).map(([key, label]) => <button key={key} type="button" className={tab === key ? "active" : ""} onClick={() => setQuery("tab", key)}>{label}</button>)}</div>
     {tab === "preview" ? <PreviewPanel artifact={artifact} version={version} viewName={viewName} sample={sample} setQuery={setQuery} /> : null}
-    {tab === "contract" ? <JsonPanel title="Data contract" value={artifact.dataContract} /> : null}
+    {tab === "contract" ? <JsonPanel title="卡片需要的数据" value={artifact.dataContract} /> : null}
     {tab === "validation" ? <ValidationPanel artifact={artifact} /> : null}
-    {tab === "versions" ? <VersionsPanel card={card} setQuery={setQuery} /> : null}
   </>;
 }
 
 function PreviewPanel({ artifact, version, viewName, sample, setQuery }: { artifact: CardArtifactV1; version: CatalogVersion; viewName: string; sample: CardArtifactV1["views"][string]["samples"][number]; setQuery(key: string, value: string): void }) {
   const view = artifact.views[viewName];
   const resources = deriveProfileResourceUrls(artifact);
-  return <div className="preview-layout"><section className="preview-surface"><div className="preview-toolbar"><label>View<select value={viewName} onChange={(event) => setQuery("view", event.target.value)}>{Object.keys(artifact.views).map((name) => <option key={name}>{name}</option>)}</select></label><label>Sample<select value={sample.name} onChange={(event) => setQuery("sample", event.target.value)}>{view.samples.map((candidate) => <option key={candidate.name}>{candidate.name}</option>)}</select></label><span className="valid-dot">Artifact valid</span></div><PreviewFrame artifact={artifact} sample={sample} title={`${artifact.card.name} ${viewName} preview`} /></section><aside className="facts-panel"><h3>Release facts</h3><dl><Fact label="Artifact SHA-256" value={`${version.artifact.sha256.slice(0, 10)}...${version.artifact.sha256.slice(-8)}`} mono /><Fact label="Render Profile" value={artifact.profile.reference} mono /><Fact label="Adaptive Cards SDK" value={artifact.profile.manifest.adaptiveCardsSdkVersion} /><Fact label="Wire profile" value={view.wireProfile} mono /><Fact label="Source commit" value={version.source.commit.slice(0, 12)} mono /></dl><div className="resource-links"><SafeExternalLink href={resources.hostConfig}>HostConfig</SafeExternalLink><SafeExternalLink href={resources.stylesheet}>Profile CSS</SafeExternalLink></div></aside></div>;
+  return <div className="preview-stack"><section className="preview-surface"><div className="preview-toolbar"><label>状态<select value={viewName} onChange={(event) => setQuery("view", event.target.value)}>{Object.keys(artifact.views).map((name) => <option key={name}>{name}</option>)}</select></label><label>示例<select value={sample.name} onChange={(event) => setQuery("sample", event.target.value)}>{view.samples.map((candidate) => <option key={candidate.name}>{candidate.name}</option>)}</select></label><span className="valid-dot">检查通过</span></div><PreviewFrame artifact={artifact} sample={sample} title={`${artifact.card.name} ${viewName} 预览`} /></section><details className="technical-details"><summary>技术信息</summary><div className="technical-details-content"><dl><Fact label="产物摘要" value={`${version.artifact.sha256.slice(0, 10)}...${version.artifact.sha256.slice(-8)}`} mono /><Fact label="渲染配置" value={artifact.profile.reference} mono /><Fact label="渲染 SDK" value={artifact.profile.manifest.adaptiveCardsSdkVersion} /><Fact label="数据协议" value={view.wireProfile} mono /><Fact label="来源提交" value={version.source.commit.slice(0, 12)} mono /></dl><div className="resource-links"><SafeExternalLink href={resources.hostConfig}>主机配置</SafeExternalLink><SafeExternalLink href={resources.stylesheet}>样式文件</SafeExternalLink></div></div></details></div>;
 }
 
 function Fact({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) { return <div><dt>{label}</dt><dd>{mono ? <code>{value}</code> : value}</dd></div>; }
@@ -157,11 +154,7 @@ function Metric({ label, value }: { label: string; value: string | number }) { r
 
 function ValidationPanel({ artifact }: { artifact: CardArtifactV1 }) {
   const samples = Object.values(artifact.views).reduce((sum, view) => sum + view.samples.length, 0);
-  return <section className="panel validation-panel"><div className="validation-summary"><strong>Artifact validation passed</strong><span>{Object.keys(artifact.views).length} views · {samples} compiled samples · {artifact.validation.issues.length} warnings</span></div><div className="metrics"><Metric label="Max card version" value={artifact.profile.capabilities.maxAdaptiveCardVersion} /><Metric label="Max nodes" value={artifact.profile.capabilities.maxNodes} /><Metric label="Max depth" value={artifact.profile.capabilities.maxDepth} /><Metric label="Max payload" value={`${Math.round(artifact.profile.capabilities.maxPayloadBytes / 1024)} KiB`} /></div>{artifact.validation.issues.length ? <div className="issue-list">{artifact.validation.issues.map((issue, index) => <div key={`${issue.code}-${index}`}><code>{issue.code}</code><strong>{issue.message}</strong><span>{issue.path}</span></div>)}</div> : <p className="empty-panel">No validation warnings in this immutable artifact.</p>}</section>;
-}
-
-function VersionsPanel({ card, setQuery }: { card: CatalogCard; setQuery(key: string, value: string): void }) {
-  return <section className="panel"><h3>Published versions</h3><div className="versions-table"><div className="table-head"><span>Version</span><span>Profile</span><span>Source</span><span></span></div>{card.versions.map((version) => <div className="table-row" key={version.reference}><strong>{version.version}</strong><code>{version.renderProfile}</code><code>{version.source.commit.slice(0, 12)}</code><button type="button" onClick={() => setQuery("version", version.reference)}>Open</button></div>)}</div></section>;
+  return <section className="panel validation-panel"><div className="validation-summary"><strong>{artifact.validation.issues.length ? "发现需要关注的问题" : "全部检查通过"}</strong><span>已检查 {Object.keys(artifact.views).length} 个状态和 {samples} 个示例</span></div>{artifact.validation.issues.length ? <div className="issue-list">{artifact.validation.issues.map((issue, index) => <div key={`${issue.code}-${index}`}><code>{issue.code}</code><strong>{issue.message}</strong><span>{issue.path}</span></div>)}</div> : <p className="empty-panel">当前版本没有发现问题。</p>}<details className="technical-details"><summary>技术限制</summary><div className="metrics"><Metric label="卡片版本上限" value={artifact.profile.capabilities.maxAdaptiveCardVersion} /><Metric label="节点上限" value={artifact.profile.capabilities.maxNodes} /><Metric label="层级上限" value={artifact.profile.capabilities.maxDepth} /><Metric label="数据大小上限" value={`${Math.round(artifact.profile.capabilities.maxPayloadBytes / 1024)} KiB`} /></div></details></section>;
 }
 
 function SafeExternalLink({ href, children }: { href: string; children: ReactNode }) {

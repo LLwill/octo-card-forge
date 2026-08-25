@@ -4,7 +4,6 @@ import {
   CheckCircle2,
   Code2,
   Play,
-  Sparkles,
   WandSparkles,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -13,7 +12,6 @@ import type { JsonObject, RenderProfileManifestV1 } from "@mlt-org/octo-card-spe
 import { useRuntime } from "../../app/runtime.js";
 import { ErrorState, LoadingState } from "../../components/AsyncState.js";
 import { RawPreviewFrame } from "../../components/PreviewFrame.js";
-import { Badge } from "../../components/ui/badge.js";
 import { Button } from "../../components/ui/button.js";
 import {
   Select,
@@ -40,10 +38,10 @@ const starterCard: JsonObject = {
   type: "AdaptiveCard",
   version: "1.5",
   body: [
-    { type: "TextBlock", text: "Card JSON playground", weight: "Bolder", size: "Medium" },
-    { type: "TextBlock", text: "Edit this JSON and render it with the active Render Profile.", wrap: true },
+    { type: "TextBlock", text: "卡片预览", weight: "Bolder", size: "Medium" },
+    { type: "TextBlock", text: "修改左侧 JSON，然后查看实时效果。", wrap: true },
   ],
-  actions: [{ type: "Action.Submit", title: "Preview action", data: { action: "preview" } }],
+  actions: [{ type: "Action.Submit", title: "确认", data: { action: "preview" } }],
 };
 
 const previewWidths = [320, 480, 640] as const;
@@ -89,7 +87,7 @@ export function PlaygroundPage() {
     adaptiveCardsSdkUrl: `https://cdn.jsdelivr.net/npm/adaptivecards@${profile.renderProfile.adaptiveCardsSdkVersion}/dist/adaptivecards.min.js`,
   } : undefined, [profile]);
 
-  if (runtimeLoading || !profile) return <LoadingState label="Preparing playground" />;
+  if (runtimeLoading || !profile) return <LoadingState label="正在准备预览工具" />;
   if (runtimeError) return <ErrorState message={runtimeError} />;
 
   const activateMode = (nextMode: Mode) => {
@@ -108,7 +106,7 @@ export function PlaygroundPage() {
     let data: JsonObject;
     try {
       const parsed = JSON.parse(input) as unknown;
-      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("JSON root must be an object");
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("JSON 顶层必须是对象");
       data = parsed as JsonObject;
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
@@ -148,23 +146,15 @@ export function PlaygroundPage() {
       <div className="mx-auto max-w-[1600px]">
         <header className="flex flex-col gap-5 border-b pb-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <div className="mb-2 flex items-center gap-2">
-              <Badge variant="outline" className="border-primary/25 bg-primary/8 text-primary">
-                <Sparkles data-icon="inline-start" />
-                Safe sandbox
-              </Badge>
-              <span className="text-sm text-muted-foreground">
-                {runtime?.mode === "workspace" ? "Workspace compiler connected" : "Published preview"}
-              </span>
-            </div>
-            <h1 className="text-3xl font-semibold">Playground</h1>
+            <h1 className="text-3xl font-semibold">预览调试</h1>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Edit Card JSON directly, or compile Template Data through the active workspace profile.
+              编辑卡片 JSON，立即检查不同宽度下的实际效果。
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <div className="inline-flex rounded-lg border bg-muted/60 p-1" aria-label="Preview width">
+            <span className="text-xs text-muted-foreground">预览宽度</span>
+            <div className="inline-flex rounded-lg border bg-muted/60 p-1" aria-label="预览宽度">
               {previewWidths.map((value) => (
                 <Button
                   key={value}
@@ -179,13 +169,10 @@ export function PlaygroundPage() {
                 </Button>
               ))}
             </div>
-            <Badge variant="secondary" className="h-8 px-3 text-xs">
-              {profile.reference}
-            </Badge>
           </div>
         </header>
 
-        <section className="flex flex-col gap-4 py-5 sm:flex-row sm:items-center sm:justify-between" aria-label="Playground controls">
+        {runtime?.capabilities.templateDataPreview ? <section className="flex flex-col gap-4 py-5 sm:flex-row sm:items-center sm:justify-between" aria-label="预览模式">
           <div className="inline-flex w-fit rounded-lg border bg-muted/60 p-1">
             <Button
               type="button"
@@ -195,43 +182,36 @@ export function PlaygroundPage() {
               onClick={() => activateMode("card-json")}
             >
               <Braces data-icon="inline-start" />
-              Card JSON
+              卡片 JSON
             </Button>
             <Button
               type="button"
               variant={mode === "template-data" ? "outline" : "ghost"}
               aria-pressed={mode === "template-data"}
-              disabled={!runtime?.capabilities.templateDataPreview}
-              title={runtime?.capabilities.templateDataPreview ? undefined : "Template Data requires workspace mode"}
               className={cn("h-9", mode === "template-data" && "bg-background text-primary shadow-sm")}
               onClick={() => activateMode("template-data")}
             >
               <WandSparkles data-icon="inline-start" />
-              Template Data
+              模板数据
             </Button>
           </div>
-
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>Adaptive Cards SDK</span>
-            <Badge variant="outline">{profile.renderProfile.adaptiveCardsSdkVersion}</Badge>
-          </div>
-        </section>
+        </section> : <div className="py-2" />}
 
         <div className="grid gap-4 xl:grid-cols-[minmax(420px,0.95fr)_minmax(440px,1.05fr)]">
-          <section className="min-w-0 overflow-hidden rounded-lg border bg-card shadow-xs" aria-label="JSON editor">
+          <section className="min-w-0 overflow-hidden rounded-lg border bg-card shadow-xs" aria-label="JSON 编辑器">
             <div className="flex min-h-14 flex-wrap items-center gap-2 border-b px-4 py-2">
               <div className="mr-auto">
                 <strong className="block text-sm font-semibold">
-                  {mode === "card-json" ? "Adaptive Card JSON" : "ViewModel JSON"}
+                  {mode === "card-json" ? "卡片 JSON" : "模板数据"}
                 </strong>
                 <span className="text-xs text-muted-foreground">
-                  {mode === "card-json" ? "Rendered locally in the preview sandbox" : "Compiled by the workspace server"}
+                  {mode === "card-json" ? "修改后点击预览查看结果" : "选择卡片状态并填写对应数据"}
                 </span>
               </div>
 
               {mode === "template-data" && session ? (
                 <Select value={view ?? null} onValueChange={(value) => setView(value ?? undefined)}>
-                  <SelectTrigger className="h-9 min-w-36 bg-background" aria-label="Template view">
+                  <SelectTrigger className="h-9 min-w-36 bg-background" aria-label="卡片状态">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -242,11 +222,11 @@ export function PlaygroundPage() {
 
               <Button type="button" variant="ghost" className="h-9" onClick={format}>
                 <Code2 data-icon="inline-start" />
-                Format
+                格式化
               </Button>
               <Button type="button" className="h-9 px-4" onClick={() => void render()}>
                 <Play data-icon="inline-start" />
-                Render
+                预览
               </Button>
             </div>
 
@@ -254,7 +234,7 @@ export function PlaygroundPage() {
               value={input}
               onChange={(event) => setInput(event.target.value)}
               spellCheck={false}
-              aria-label={mode === "card-json" ? "Adaptive Card JSON" : "ViewModel JSON"}
+              aria-label={mode === "card-json" ? "卡片 JSON" : "模板数据 JSON"}
               className="field-sizing-fixed h-[calc(100vh-350px)] min-h-[520px] resize-y rounded-none border-0 bg-[#121719] px-5 py-4 font-mono text-[13px] leading-6 text-slate-100 shadow-none focus-visible:border-transparent focus-visible:ring-0"
             />
 
@@ -266,24 +246,23 @@ export function PlaygroundPage() {
               aria-live="polite"
             >
               {error ? <AlertTriangle className="mt-0.5 size-4 shrink-0" /> : <CheckCircle2 className="size-4 shrink-0" />}
-              {error ? <pre className="m-0 whitespace-pre-wrap font-sans">{error}</pre> : <span>Last render succeeded</span>}
+              {error ? <pre className="m-0 whitespace-pre-wrap font-sans">{error}</pre> : <span>预览已更新</span>}
             </div>
           </section>
 
-          <section className="min-w-0 overflow-hidden rounded-lg border bg-card shadow-xs" aria-label="Card preview">
+          <section className="min-w-0 overflow-hidden rounded-lg border bg-card shadow-xs" aria-label="卡片预览">
             <div className="flex min-h-14 items-center gap-3 border-b px-4 py-2">
               <div className="mr-auto">
-                <strong className="block text-sm font-semibold">Preview</strong>
-                <span className="text-xs text-muted-foreground">Live output at {width}px</span>
+                <strong className="block text-sm font-semibold">预览</strong>
+                <span className="text-xs text-muted-foreground">当前宽度 {width}px</span>
               </div>
-              <Badge variant="outline" className="font-mono text-[11px]">{profile.reference}</Badge>
             </div>
             <div className="flex h-[calc(100vh-294px)] min-h-[576px] overflow-auto bg-[#edf1f2] p-5 sm:p-7">
               <div
                 className="mx-auto h-fit min-h-[520px] max-w-full overflow-hidden rounded-lg border bg-white shadow-sm transition-[width] duration-200 [&_.card-preview]:h-[560px] [&_.card-preview]:min-h-[560px]"
                 style={{ width: `min(100%, ${width}px)` }}
               >
-                {resources ? <RawPreviewFrame card={preview} resources={resources} title="Playground preview" /> : null}
+                {resources ? <RawPreviewFrame card={preview} resources={resources} title="卡片预览" /> : null}
               </div>
             </div>
           </section>
@@ -291,7 +270,7 @@ export function PlaygroundPage() {
 
         {compiled ? (
           <details className="mt-5 overflow-hidden rounded-lg border bg-card">
-            <summary className="cursor-pointer px-4 py-3 text-sm font-medium">Compiled Adaptive Card JSON</summary>
+            <summary className="cursor-pointer px-4 py-3 text-sm font-medium">查看生成的卡片 JSON</summary>
             <Separator />
             <pre className="m-0 max-h-[420px] overflow-auto bg-[#121719] p-5 text-xs leading-6 text-slate-100">
               <code>{JSON.stringify(compiled.payload, null, 2)}</code>
