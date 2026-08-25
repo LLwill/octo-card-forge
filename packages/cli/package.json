@@ -6,6 +6,7 @@
   "description": "Octo Card CLI runtime: command layer and shared application runtime.",
   "dependencies": {
     "@mlt-org/octo-card-artifact": "workspace:*",
+    "@mlt-org/octo-card-catalog-snapshot": "workspace:*",
     "@mlt-org/octo-card-core": "workspace:*",
     "@mlt-org/octo-card-preview-kit": "workspace:*",
     "@mlt-org/octo-card-spec": "workspace:*",

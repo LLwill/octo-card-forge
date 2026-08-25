@@ -3,13 +3,17 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Reserved workspace boundary for versioned Catalog snapshots.",
+  "description": "Deterministic builder and verifier for versioned Octo Card Catalog snapshots.",
+  "dependencies": {
+    "@mlt-org/octo-card-spec": "workspace:*"
+  },
   "files": ["dist"],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": "./dist/index.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run --root ../.. --config vitest.legacy.config.ts tests/catalog-snapshot.test.ts"
   }
 }

@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const workspaceAlias = {
   "@mlt-org/octo-card-artifact": path.join(root, "packages/artifact/src/index.ts"),
+  "@mlt-org/octo-card-catalog-snapshot": path.join(root, "packages/catalog-snapshot/src/index.ts"),
   "@mlt-org/octo-card-core": path.join(root, "packages/core/src/index.ts"),
   "@mlt-org/octo-card-preview-kit": path.join(root, "packages/preview-kit/src/index.ts"),
   "@mlt-org/octo-card-spec": path.join(root, "packages/card-spec/src/index.ts"),

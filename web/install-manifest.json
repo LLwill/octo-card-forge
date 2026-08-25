@@ -1,7 +1,7 @@
 {
   "skill": {
-    "bundleUrl": "https://github.com/LLwill/octo-card-forge/releases/latest/download/octo-design-cards-skill-0.2.2.tgz",
+    "bundleUrl": "https://github.com/LLwill/octo-card-forge/releases/latest/download/octo-design-cards-skill-0.2.3.tgz",
     "releaseUrl": "https://github.com/LLwill/octo-card-forge/releases/latest",
-    "sha256": "aee0a73023bb8964bae42f3290f23d7eb3ec98534bc6d8a9db2a7a42ac19c06a"
+    "sha256": "86f8e7004fe8ba40f2b58e1f3d3cd23d02211f85807fb5492e38e4286f0862ec"
   }
 }

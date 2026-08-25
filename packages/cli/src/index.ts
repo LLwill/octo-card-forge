@@ -40,3 +40,4 @@ export * from "./presets.js";
 export * from "./verify.js";
 export * from "./agent.js";
 export * from "./agent-bootstrap.js";
+export * from "@mlt-org/octo-card-catalog-snapshot";

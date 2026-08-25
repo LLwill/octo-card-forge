@@ -136,6 +136,8 @@ octo-card check [docs.access-request] [--card ./docs.access-request] [--format j
 octo-card agent init [--target generic] [--workspace <dir>] [--profile octo-chat@version] [--format json]
 octo-card agent doctor [--workspace <dir>] [--format json]
 octo-card agent upgrade --check [--workspace <dir>] [--format json]
+octo-card snapshot build --input ./release-records.json --revision <commit> [--channel release|preview] [--out catalog-snapshot.v1.json] [--format json]
+octo-card snapshot verify ./catalog-snapshot.v1.json [--sha256 <digest>] [--format json]
 octo-card dev [docs.access-request] [--card ./docs.access-request] [--host 127.0.0.1] [--port 4318]
 ```
 
@@ -321,19 +323,19 @@ PORT=4318 BASE_PATH=/card-forge pnpm start
 发布 Agent 侧 CLI：
 
 ```bash
-git tag octo-card-cli/v0.2.2
-git push origin octo-card-cli/v0.2.2
+git tag octo-card-cli/v0.2.3
+git push origin octo-card-cli/v0.2.3
 ```
 
 这会触发 `publish-octo-card-cli`，验证 `package.json` 中的
-`@mlt-org/octo-card-cli@0.2.2`，运行 `typecheck/test/check/smoke:repo-free-agent`，
+`@mlt-org/octo-card-cli@0.2.3`，运行 `typecheck/test/check/smoke:repo-free-agent`，
 打包并发布 `@mlt-org/octo-card-cli`。
 
 发布 Portable Skill Bundle：
 
 ```bash
-git tag octo-design-cards-skill/v0.2.2
-git push origin octo-design-cards-skill/v0.2.2
+git tag octo-design-cards-skill/v0.2.3
+git push origin octo-design-cards-skill/v0.2.3
 ```
 
 这会触发 `publish-octo-design-cards-skill`，生成 Skill Bundle、checksum manifest，
