@@ -6,9 +6,9 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-const cliVersion = process.env.CONSUMER_CLI_VERSION ?? "0.2.0";
-const profileVersion = process.env.CONSUMER_PROFILE_VERSION ?? "1.2.0-rc.2";
-const skillVersion = process.env.CONSUMER_SKILL_VERSION ?? "0.2.0";
+const cliVersion = process.env.CONSUMER_CLI_VERSION ?? "0.2.4";
+const profileVersion = process.env.CONSUMER_PROFILE_VERSION ?? "1.2.0-rc.4";
+const skillVersion = process.env.CONSUMER_SKILL_VERSION ?? "0.2.4";
 const profilePackage = "@mlt-org/octo-card-profile-octo-chat";
 const cliPackage = "@mlt-org/octo-card-cli";
 const profileSpec = process.env.CONSUMER_PROFILE_SPEC ?? `${profilePackage}@${profileVersion}`;

@@ -2,7 +2,7 @@
 
 > 状态：当前执行路线
 >
-> 日期：2026-08-24
+> 日期：2026-08-25
 >
 > 架构基线：[`architecture-design.md`](./architecture-design.md)
 
@@ -43,7 +43,7 @@ Phase 8  逐 Card 迁移与 Legacy 删除
 | Phase 3 | 已完成 | Workspace/Preview/Profile/CLI package 均已收敛；Phase 3D 的共享渲染、Component Catalog Contract、Profile specimen 冻结与 server 静态消费链路已完成 |
 | Phase 4 | 已完成 | Artifact Contract/Builder/digest/verify/CLI/Handoff/消费者 fixture/tarball 验证均已完成 |
 | Phase 5 | 已完成 | Delivery Actions v0.1.0、Catalog Workflow/治理、Pilot PR 与不可变 Release 已完成 |
-| Phase 6 | 进行中 | Phase 6A Snapshot 发布链路和 Phase 6B 正式只读 Forge Web 已完成；Phase 6C PR Preview Snapshot 待实施 |
+| Phase 6 | 已完成 | Snapshot 发布、正式只读 Forge Web、PR Preview Snapshot 与自包含预览入口均已完成 |
 | Phase 7 | 未开始 | 尚未进行真实业务后端交付验证 |
 | Phase 8 | 未开始 | Pilot Card 已迁入 Catalog；其余 Card Source 与 Forge Legacy 尚未删除 |
 
@@ -389,7 +389,7 @@ Profile package 是 Component Preview 的前置。该阶段只稳定 Profile 的
 
 目标：把当前页面改造成静态 Card 工作台。
 
-状态：**进行中。Phase 6A Catalog Snapshot 与 Phase 6B 正式只读 Forge Web 已完成；下一步进入 Phase 6C PR Preview Snapshot。**
+状态：**已完成（2026-08-25）。**
 
 Phase 6A 已交付：
 
@@ -407,6 +407,15 @@ Phase 6B 已交付（2026-08-25）：
 - Preview 使用 Artifact 固定的 npm Profile、HostConfig、CSS 与 Adaptive Cards SDK，不复制本地 Profile 样式；
 - loading、error、empty 和响应式布局已覆盖，桌面与 `390x844` 移动端完成浏览器验收；
 - npm 包和 deploy bundle 均携带 Forge Web 静态产物，legacy `/` 页面继续兼容。
+
+Phase 6C 已交付（2026-08-25）：
+
+- `card-check` 为每个 Card PR 生成独立的 `channel=preview` Catalog Snapshot、canonical digest 和 Card Artifact；
+- Forge Web 支持内嵌 Snapshot/Artifact 启动模式，下载后的 `preview/index.html` 不依赖 Forge server 或 Card 目录扫描；
+- PR Preview 记录真实 head commit、head repository、Card path 和 Pull Request URL，不使用 GitHub merge commit；
+- CLI/Skill `0.2.4` 与不可变 Action `github-delivery/v0.2.0` 已发布，并通过公网消费者烟测；
+- Catalog PR #3 已使用固定版本完成真实预览 Artifact 生成，桌面与 `390x844` 移动端验收通过；
+- Catalog `main` 已用 CLI `0.2.4` 重新发布不可变 release-channel Snapshot。
 
 工作：
 
@@ -501,9 +510,9 @@ Phase 6B 已交付（2026-08-25）：
 
 1. 已完成 Phase 6A：Catalog 侧生成并不可变发布 `catalog-snapshot.v1.json` 与 Artifact 索引；
 2. 已完成 Phase 6B：`apps/forge-web` 接入正式 Snapshot、Artifact 和精确 Profile，并停止依赖 Card 目录扫描；
-3. Phase 6C：补齐 PR Preview Snapshot、预览独立入口和 legacy Components 迁移决策；
-4. Phase 7 用真实业务后端验证 Handoff 接入与最终展示；
-5. Phase 8 逐 Card 完成迁移并删除 Forge 中的正式内容与 Legacy Registry。
+3. 已完成 Phase 6C：Card PR 生成独立 Preview Snapshot、Artifact 和自包含 Forge Web 入口；
+4. 下一步进入 Phase 7，用真实业务后端验证 Handoff 接入与最终展示；
+5. Phase 8 逐 Card 完成迁移，并删除 Forge 中的正式内容、Legacy Registry 与 legacy Components 页面。
 
 Pilot Card 已迁入 Catalog；Forge 内对应内容暂作为兼容 Fixture 保留，直到 Phase 8
 逐 Card Gate 通过后删除。根 CLI 发布入口继续保持兼容，直到所有外部消费者完成迁移。
