@@ -348,6 +348,8 @@ describe("artifact and snapshot contracts", () => {
       revision: "abc123",
       cards: [{
         id: "docs.access-request",
+        namespace: "docs",
+        key: "access-request",
         name: "Access",
         defaultLocale: "en-US",
         latest: "0.3.0",
@@ -370,6 +372,8 @@ describe("artifact and snapshot contracts", () => {
       revision: "abc123",
       cards: [{
         id: "docs.access-request",
+        namespace: "docs",
+        key: "access-request",
         name: "Access",
         defaultLocale: "en-US",
         latest: "0.4.0",
@@ -441,6 +445,8 @@ describe("artifact and snapshot contracts", () => {
       revision: "abc123",
       cards: [{
         id: "docs.access-request",
+        namespace: "docs",
+        key: "access-request",
         name: "Access",
         defaultLocale: "en-US",
         versions: [{

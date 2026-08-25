@@ -39,9 +39,11 @@
     "card": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "name", "defaultLocale", "versions"],
+      "required": ["id", "namespace", "key", "name", "defaultLocale", "versions"],
       "properties": {
         "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*\\.[a-z][a-z0-9-]*$" },
+        "namespace": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "key": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
         "name": { "type": "string", "minLength": 1 },
         "defaultLocale": { "type": "string", "minLength": 1 },
         "latest": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$" },

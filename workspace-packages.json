@@ -73,6 +73,7 @@
         "core",
         "workspace",
         "artifact",
+        "catalog-snapshot",
         "preview-kit",
         "profile-octo-chat"
       ],
@@ -106,6 +107,7 @@
         "core",
         "workspace",
         "artifact",
+        "catalog-snapshot",
         "preview-kit",
         "cli-runtime"
       ],

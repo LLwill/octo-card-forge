@@ -1,4 +1,5 @@
 import path from "node:path";
+import { createHash } from "node:crypto";
 import { checkAgentUpgrade, doctorAgent, initAgent } from "./agent-bootstrap.js";
 import {
   discoverUtilities,
@@ -31,6 +32,12 @@ import {
   buildCardArtifactForCard,
 } from "./artifact.js";
 import { verifyCardArtifact, artifactSha256 } from "@mlt-org/octo-card-artifact";
+import {
+  buildCatalogSnapshot,
+  canonicalCatalogSnapshotBytes,
+  parseCatalogSnapshot,
+  type CatalogReleaseRecord,
+} from "@mlt-org/octo-card-catalog-snapshot";
 import { writeFile, mkdir, readFile } from "node:fs/promises";
 import {
   loadRenderProfileFromDirectory,
@@ -68,6 +75,7 @@ export async function runCli(
 const DEFAULT_HANDOFF_OUTPUT = "handoff";
 const VALUE_FLAGS = new Set([
   "--card",
+  "--channel",
   "--data",
   "--emit-dir",
   "--format",
@@ -83,7 +91,9 @@ const VALUE_FLAGS = new Set([
   "--profile-package",
   "--preset",
   "--render-profile",
+  "--revision",
   "--sample",
+  "--sha256",
   "--view",
   "--wire-profile",
   "--target",
@@ -123,6 +133,8 @@ function usage(): void {
   artifact build <card-id> [--out <file>] [--format json]
   artifact build --card <dir> [--out <file>] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
   artifact verify <file> [--sha256 <hash>] [--format json]
+  snapshot build --input <records.json> --revision <revision> [--channel release|preview] [--out catalog-snapshot.v1.json] [--format json]
+  snapshot verify <file> [--sha256 <hash>] [--format json]
   agent init [--target generic] [--workspace <dir>] [--profile octo-chat@version] [--format json]
   agent doctor [--workspace <dir>] [--format json]
   agent upgrade --check [--workspace <dir>] [--format json]
@@ -632,6 +644,58 @@ try {
           ? await bundleRenderProfile(reference, flag("--output") ?? ".release")
           : await packRenderProfile(reference, flag("--output") ?? ".release");
     console.log(JSON.stringify(result, null, 2));
+  } else if (command === "snapshot") {
+    const action = args[0];
+    const digest = (snapshot: unknown) =>
+      createHash("sha256").update(canonicalCatalogSnapshotBytes(snapshot)).digest("hex");
+    if (action === "build") {
+      const inputPath = flag("--input");
+      const revision = flag("--revision");
+      const channel = flag("--channel") ?? "release";
+      if (!inputPath) throw new Error("snapshot build requires --input <records.json>");
+      if (!revision) throw new Error("snapshot build requires --revision <revision>");
+      if (channel !== "release" && channel !== "preview") {
+        throw new Error("snapshot channel must be release or preview");
+      }
+      const records = await readJson<unknown>(path.resolve(inputPath));
+      if (!Array.isArray(records)) throw new Error("snapshot input must be a JSON array of release records");
+      const snapshot = buildCatalogSnapshot({
+        channel,
+        revision,
+        records: records as CatalogReleaseRecord[],
+      });
+      const sha256 = digest(snapshot);
+      const outFile = flag("--out");
+      if (outFile) {
+        const outPath = path.resolve(outFile);
+        await mkdir(path.dirname(outPath), { recursive: true });
+        await writeFile(outPath, `${JSON.stringify(snapshot, null, 2)}\n`);
+        if (flag("--format") === "json") console.log(JSON.stringify({ file: outPath, sha256 }, null, 2));
+        else console.log(`Built catalog snapshot: ${outPath} (sha256: ${sha256})`);
+      } else if (flag("--format") === "json") {
+        console.log(JSON.stringify({ snapshot, sha256 }, null, 2));
+      } else {
+        console.log(JSON.stringify(snapshot, null, 2));
+      }
+    } else if (action === "verify") {
+      const filePath = args[1];
+      if (!filePath) throw new Error("snapshot file path is required");
+      const snapshot = parseCatalogSnapshot(await readFile(path.resolve(filePath), "utf8"));
+      const sha256 = digest(snapshot);
+      const expectedSha = flag("--sha256");
+      const valid = expectedSha === undefined || expectedSha === sha256;
+      const result = {
+        valid,
+        snapshot,
+        sha256,
+        issues: valid ? [] : [{ code: "snapshot.digest_mismatch", path: "", message: `Expected SHA-256 ${expectedSha}, received ${sha256}` }],
+      };
+      if (flag("--format") === "json") console.log(JSON.stringify(result, null, 2));
+      else console.log(valid ? `✓ Valid catalog snapshot (sha256: ${sha256})` : "✗ Catalog snapshot digest mismatch");
+      if (!valid) process.exitCode = 1;
+    } else {
+      throw new Error("snapshot action must be build or verify");
+    }
   } else if (command === "artifact") {
     const action = args[0];
     if (action === "build") {

@@ -27,6 +27,9 @@ importers:
       '@mlt-org/octo-card-artifact':
         specifier: workspace:*
         version: link:packages/artifact
+      '@mlt-org/octo-card-catalog-snapshot':
+        specifier: workspace:*
+        version: link:packages/catalog-snapshot
       '@mlt-org/octo-card-cli-runtime':
         specifier: workspace:*
         version: link:packages/cli
@@ -74,13 +77,20 @@ importers:
 
   packages/card-spec: {}
 
-  packages/catalog-snapshot: {}
+  packages/catalog-snapshot:
+    dependencies:
+      '@mlt-org/octo-card-spec':
+        specifier: workspace:*
+        version: link:../card-spec
 
   packages/cli:
     dependencies:
       '@mlt-org/octo-card-artifact':
         specifier: workspace:*
         version: link:../artifact
+      '@mlt-org/octo-card-catalog-snapshot':
+        specifier: workspace:*
+        version: link:../catalog-snapshot
       '@mlt-org/octo-card-core':
         specifier: workspace:*
         version: link:../core

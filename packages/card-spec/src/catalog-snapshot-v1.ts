@@ -32,7 +32,7 @@ export interface CatalogSnapshotV1 {
 
 const SHA256 = /^[a-f0-9]{64}$/;
 const SNAPSHOT_KEYS = new Set(["formatVersion", "mediaType", "channel", "revision", "cards"]);
-const CARD_KEYS = new Set(["id", "name", "defaultLocale", "latest", "versions"]);
+const CARD_KEYS = new Set(["id", "namespace", "key", "name", "defaultLocale", "latest", "versions"]);
 const VERSION_KEYS = new Set(["reference", "version", "contractVersion", "renderProfile", "artifact", "handoff", "source", "release"]);
 const ARTIFACT_KEYS = new Set(["url", "sha256", "mediaType"]);
 const HANDOFF_KEYS = new Set(["url", "sha256"]);
@@ -85,6 +85,10 @@ export function decodeCatalogSnapshotV1(input: unknown): DecodeResult<CatalogSna
       if (!parsedId) { issues.push(issue("contract.pattern", `${cardPath}/id`, "id must match <namespace>.<card-key>")); continue; }
       if (cardIds.has(parsedId.value)) issues.push(issue("contract.duplicate", `${cardPath}/id`, `duplicate card id ${parsedId.value}`));
       cardIds.add(parsedId.value);
+      const namespace = requiredString(rawCard.namespace, `${cardPath}/namespace`, issues);
+      const key = requiredString(rawCard.key, `${cardPath}/key`, issues);
+      if (namespace && namespace !== parsedId.namespace) issues.push(issue("contract.invariant", `${cardPath}/namespace`, "namespace must match the card id"));
+      if (key && key !== parsedId.key) issues.push(issue("contract.invariant", `${cardPath}/key`, "key must match the card id"));
       for (const key of ["name", "defaultLocale"]) requiredString(rawCard[key], `${cardPath}/${key}`, issues);
       if (!Array.isArray(rawCard.versions) || rawCard.versions.length === 0) { issues.push(issue("contract.required", `${cardPath}/versions`, "versions must be a non-empty array")); continue; }
       const versions: CatalogSnapshotV1["cards"][number]["versions"] = [];
@@ -150,7 +154,7 @@ export function decodeCatalogSnapshotV1(input: unknown): DecodeResult<CatalogSna
       const latest = rawCard.latest === undefined ? undefined : parseSemVer(rawCard.latest);
       if (rawCard.latest !== undefined && !latest) issues.push(issue("contract.pattern", `${cardPath}/latest`, "latest must use SemVer"));
       if (latest && !versions.some((item) => item.version === latest)) issues.push(issue("contract.invariant", `${cardPath}/latest`, "latest must refer to a version in versions"));
-      if (isNonEmptyString(rawCard.name) && isNonEmptyString(rawCard.defaultLocale) && versions.length > 0) cards.push({ id: parsedId.value, namespace: parsedId.namespace, key: parsedId.key, name: rawCard.name, defaultLocale: rawCard.defaultLocale, ...(latest ? { latest } : {}), versions });
+      if (namespace && key && isNonEmptyString(rawCard.name) && isNonEmptyString(rawCard.defaultLocale) && versions.length > 0) cards.push({ id: parsedId.value, namespace: parsedId.namespace, key: parsedId.key, name: rawCard.name, defaultLocale: rawCard.defaultLocale, ...(latest ? { latest } : {}), versions });
     }
   }
   if (issues.length > 0 || !revision || (input.channel !== "release" && input.channel !== "preview")) return { ok: false, issues };
