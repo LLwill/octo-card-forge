@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from "react";
 import type { ComponentCatalogV1, JsonObject, RenderProfileManifestV1 } from "@mlt-org/octo-card-spec";
 import { ErrorState, LoadingState } from "../../components/AsyncState.js";
 import { RawPreviewFrame } from "../../components/PreviewFrame.js";
-import { Badge } from "../../components/ui/badge.js";
 import { Button } from "../../components/ui/button.js";
 import { loadJson, serverPath } from "../../data/client.js";
 import { cn } from "../../lib/utils.js";
@@ -27,6 +26,22 @@ const sectionNames: Record<string, string> = {
   "foundation-typography": "字号与字重",
   "foundation-colors": "语义颜色",
   "foundation-layout": "间距与圆角",
+  typography: "文字与语义色",
+  containers: "容器语义",
+  "semantic-primitives": "显式视觉语义",
+  layout: "布局、间距与分隔",
+  "media-facts": "图片与事实列表",
+  table: "表格",
+  "inputs-basic": "基础输入控件",
+  "inputs-choice": "选择控件",
+  actions: "操作按钮",
+  "utility-surface": "容器背景工具",
+  "utility-badge": "徽标工具",
+  "utility-inset": "内边距工具",
+  "utility-line": "线条工具",
+  "utility-motion": "动效工具",
+  "pattern-skeleton-preview": "骨架屏预览",
+  "pattern-status-block": "状态信息块",
 };
 
 function groupName(id: string, fallback: string) {
@@ -35,7 +50,6 @@ function groupName(id: string, fallback: string) {
 
 function sectionName(id: string, fallback: string) {
   if (sectionNames[id]) return sectionNames[id];
-  if (id.startsWith("utility-")) return `${id.slice("utility-".length)} 样式工具`;
   return fallback;
 }
 
@@ -58,10 +72,15 @@ export function ComponentsPage() {
 
   const sections = useMemo(() => (data?.catalog.groups ?? []).flatMap((entry) =>
     entry.sections.map((section) => ({ group: entry, section }))), [data]);
-  const filtered = sections.filter(({ group: entry, section }) => {
+  const matches = ({ group: entry, section }: (typeof sections)[number]) => {
     const text = `${section.id} ${section.title} ${section.description}`.toLocaleLowerCase();
     return (group === "all" || entry.id === group) && (!query.trim() || text.includes(query.trim().toLocaleLowerCase()));
-  });
+  };
+  const filtered = sections.filter(matches);
+  const filteredGroups = (data?.catalog.groups ?? []).map((entry) => ({
+    ...entry,
+    sections: entry.sections.filter((section) => matches({ group: entry, section })),
+  })).filter((entry) => entry.sections.length > 0);
 
   if (error) return <ErrorState message={error} retry={() => setRevision((value) => value + 1)} />;
   if (!data) return <LoadingState label="正在加载组件规范" />;
@@ -71,24 +90,28 @@ export function ComponentsPage() {
     stylesheetUrls: [data.stylesheetUrl],
     adaptiveCardsSdkUrl: `https://cdn.jsdelivr.net/npm/adaptivecards@${data.renderProfile.adaptiveCardsSdkVersion}/dist/adaptivecards.min.js`,
   };
-  return <main className="min-h-screen bg-background px-4 py-6 text-foreground sm:px-7 lg:px-10 lg:py-9">
-    <div className="mx-auto max-w-6xl">
-      <header className="border-b pb-6"><h1 className="text-3xl font-semibold">组件规范</h1><p className="mt-2 text-sm leading-6 text-muted-foreground">查找可复用的基础组件、样式和组合方式。</p></header>
-      <div className="grid gap-4 border-b py-4 lg:grid-cols-[minmax(240px,320px)_minmax(0,1fr)_auto] lg:items-center">
+  return <main className="spec-page">
+    <div className="spec-shell">
+      <header className="spec-hero">
+        <div><span className="showcase-kicker">设计语言 · {sections.length} 项规范</span><h1>设计规范</h1></div>
+        <div className="spec-intro"><strong>把卡片的视觉判断，变成团队可以复用的规则。</strong><p>从基础排版到业务组合，每一项都带着可运行的示例，不需要在文档与代码之间来回猜测。</p></div>
+      </header>
+      <div className="spec-toolbar">
         <label className="flex h-10 items-center gap-2 rounded-md border bg-card px-3 text-muted-foreground focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/10"><Search className="size-4" /><span className="sr-only">搜索组件</span><input className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索组件" /></label>
         <div className="flex min-w-0 gap-1 overflow-x-auto" aria-label="组件分类"><Button type="button" size="sm" variant={group === "all" ? "secondary" : "ghost"} onClick={() => setGroup("all")}>全部</Button>{data.catalog.groups.map((entry) => <Button key={entry.id} type="button" size="sm" variant={group === entry.id ? "secondary" : "ghost"} className="shrink-0" onClick={() => setGroup(entry.id)}>{groupName(entry.id, entry.title)}</Button>)}</div>
         <div className="flex items-center gap-2"><span className="text-xs text-muted-foreground">预览宽度</span><div className="inline-flex rounded-md border bg-muted/50 p-1">{[320, 480, 640].map((value) => <Button key={value} type="button" size="sm" variant="ghost" className={cn("h-7 min-w-11 px-2 text-xs", width === value && "bg-background text-primary shadow-xs")} onClick={() => setWidth(value)}>{value}</Button>)}</div></div>
       </div>
-      <div>{filtered.map(({ group: entry, section }) => <ComponentSection key={section.id} category={groupName(entry.id, entry.title)} section={section} width={width} resources={resources} />)}{filtered.length === 0 ? <div className="empty-panel"><strong>没有找到匹配的组件</strong><span>可以尝试其他名称或分类。</span></div> : null}</div>
+      <div className="spec-groups">{filteredGroups.map((entry, groupIndex) => <section className="spec-group" key={entry.id}><header className="spec-group-heading"><span>0{groupIndex + 1}</span><div><p>{groupName(entry.id, entry.title)}</p><strong>{entry.sections.length} 项</strong></div></header><div className={cn("spec-grid", entry.id === "foundation" && "spec-grid-foundation")}>{entry.sections.map((section) => <ComponentSection key={section.id} category={groupName(entry.id, entry.title)} section={section} width={width} resources={resources} compact={entry.id === "foundation"} />)}</div></section>)}{filtered.length === 0 ? <div className="empty-panel"><strong>没有找到匹配的组件</strong><span>可以尝试其他名称或分类。</span></div> : null}</div>
     </div>
   </main>;
 }
 
-function ComponentSection({ category, section, width, resources }: {
+function ComponentSection({ category, section, width, resources, compact }: {
   category: string;
   section: ComponentCatalogV1["groups"][number]["sections"][number];
   width: number;
   resources: Parameters<typeof RawPreviewFrame>[0]["resources"];
+  compact?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
   const json = section.card ?? section.utilityTokens?.[0]?.card;
@@ -99,8 +122,8 @@ function ComponentSection({ category, section, width, resources }: {
     window.setTimeout(() => setCopied(false), 1200);
   };
   const title = sectionName(section.id, section.title);
-  return <article className="border-b py-7"><header className="flex items-start gap-4"><div className="min-w-0 flex-1"><Badge variant="secondary" className="mb-2">{category}</Badge><h2 className="text-lg font-semibold">{title}</h2><p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">{section.description}</p></div>{json ? <Button variant="outline" size="icon" type="button" title="复制 JSON" aria-label="复制 JSON" onClick={() => void copy()}>{copied ? <Check /> : <Clipboard />}</Button> : null}</header>
-    {json ? <div className="mx-auto mt-5 max-w-full overflow-hidden rounded-lg border bg-muted/35 shadow-xs transition-[width]" style={{ width: `min(100%, ${width}px)` }}><RawPreviewFrame card={json as JsonObject} resources={resources} title={`${title}预览`} /></div> : null}
+  return <article className={cn("component-section", compact && "component-section-compact")}><header><div className="min-w-0 flex-1"><span className="component-category">{category}</span><h2>{title}</h2><p>{section.description}</p></div>{json ? <Button variant="outline" size="icon" type="button" title="复制 JSON" aria-label="复制 JSON" onClick={() => void copy()}>{copied ? <Check /> : <Clipboard />}</Button> : null}</header>
+    {json ? <div className="component-preview" style={{ width: `min(100%, ${width}px)` }}><RawPreviewFrame card={json as JsonObject} resources={resources} title={`${title}预览`} /></div> : null}
     {section.rows ? <div className="matrix-table">{section.rows.map((row) => <div key={row.name}><code>{row.name}</code><strong>{row.value}</strong><span>{row.description}</span></div>)}</div> : null}
     {section.utilityTokens ? <div className="token-list">{section.utilityTokens.map((token) => <div key={token.token}><code>{token.token}</code><span>{token.description}</span><small>{token.appliesTo.join(" · ")}</small></div>)}</div> : null}
     {json ? <details className="technical-details"><summary>查看 JSON</summary><pre><code>{JSON.stringify(json, null, 2)}</code></pre></details> : null}

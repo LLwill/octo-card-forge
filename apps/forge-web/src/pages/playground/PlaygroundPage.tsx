@@ -142,11 +142,12 @@ export function PlaygroundPage() {
   };
 
   return (
-    <main className="min-h-screen bg-background px-4 py-5 text-foreground sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[1600px]">
-        <header className="flex flex-col gap-5 border-b pb-6 lg:flex-row lg:items-end lg:justify-between">
+    <main className="playground-page">
+      <div className="playground-shell">
+        <header className="playground-header">
           <div className="max-w-2xl">
-            <h1 className="text-3xl font-semibold">预览调试</h1>
+            <span className="showcase-kicker">数据实验室</span>
+            <h1>预览调试</h1>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
               编辑卡片 JSON，立即检查不同宽度下的实际效果。
             </p>
@@ -172,7 +173,7 @@ export function PlaygroundPage() {
           </div>
         </header>
 
-        {runtime?.capabilities.templateDataPreview ? <section className="flex flex-col gap-4 py-5 sm:flex-row sm:items-center sm:justify-between" aria-label="预览模式">
+        {runtime?.capabilities.templateDataPreview ? <section className="playground-mode" aria-label="预览模式">
           <div className="inline-flex w-fit rounded-lg border bg-muted/60 p-1">
             <Button
               type="button"
@@ -197,8 +198,8 @@ export function PlaygroundPage() {
           </div>
         </section> : <div className="py-2" />}
 
-        <div className="grid gap-4 xl:grid-cols-[minmax(420px,0.95fr)_minmax(440px,1.05fr)]">
-          <section className="min-w-0 overflow-hidden rounded-lg border bg-card shadow-xs" aria-label="JSON 编辑器">
+        <div className="playground-workbench">
+          <section className="workbench-pane" aria-label="JSON 编辑器">
             <div className="flex min-h-14 flex-wrap items-center gap-2 border-b px-4 py-2">
               <div className="mr-auto">
                 <strong className="block text-sm font-semibold">
@@ -250,16 +251,16 @@ export function PlaygroundPage() {
             </div>
           </section>
 
-          <section className="min-w-0 overflow-hidden rounded-lg border bg-card shadow-xs" aria-label="卡片预览">
+          <section className="workbench-pane workbench-preview" aria-label="卡片预览">
             <div className="flex min-h-14 items-center gap-3 border-b px-4 py-2">
               <div className="mr-auto">
                 <strong className="block text-sm font-semibold">预览</strong>
                 <span className="text-xs text-muted-foreground">当前宽度 {width}px</span>
               </div>
             </div>
-            <div className="flex h-[calc(100vh-294px)] min-h-[576px] overflow-auto bg-[#edf1f2] p-5 sm:p-7">
+            <div className="playground-stage">
               <div
-                className="mx-auto h-fit min-h-[520px] max-w-full overflow-hidden rounded-lg border bg-white shadow-sm transition-[width] duration-200 [&_.card-preview]:h-[560px] [&_.card-preview]:min-h-[560px]"
+                className="playground-canvas"
                 style={{ width: `min(100%, ${width}px)` }}
               >
                 {resources ? <RawPreviewFrame card={preview} resources={resources} title="卡片预览" /> : null}

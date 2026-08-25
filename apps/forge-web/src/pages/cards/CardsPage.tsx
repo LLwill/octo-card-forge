@@ -1,6 +1,6 @@
-import { ExternalLink, Search } from "lucide-react";
+import { Braces, ExternalLink, Search } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import type { CardArtifactV1, CatalogSnapshotV1 } from "@mlt-org/octo-card-catalog-snapshot";
 import { useRuntime } from "../../app/runtime.js";
 import { ErrorState, LoadingState } from "../../components/AsyncState.js";
@@ -95,7 +95,7 @@ export function CardsPage() {
   return (
     <main className="cards-workspace">
       <aside className="catalog-panel" aria-label="卡片库">
-        <div className="catalog-heading"><div><span className="eyebrow">卡片库</span><h1>卡片</h1></div><span className="count">{cards.length}</span></div>
+        <div className="catalog-heading"><div><span className="eyebrow">能力案例</span><h1>卡片案例</h1></div><span className="count">{cards.length}</span></div>
         <label className="search-box"><Search size={16} aria-hidden="true" /><span className="sr-only">搜索卡片</span><input value={filter} onChange={(event) => {
           const value = event.target.value;
           setFilter(value);
@@ -106,8 +106,10 @@ export function CardsPage() {
         <div className="catalog-list">{cards.map((card) => <button key={card.id} type="button" className={card.id === selectedCard?.id ? "catalog-row selected" : "catalog-row"} onClick={() => navigate(`/cards/${encodeURIComponent(card.id)}`)}><strong>{card.name}</strong><span><code>{card.id}</code><small>v{card.latest}</small></span></button>)}{!loading && cards.length === 0 ? <div className="empty-list">没有找到匹配的卡片。</div> : null}</div>
       </aside>
       <section className="card-detail">
-        {loading || !selectedCard || !selectedVersion || !artifact ? <LoadingState label="正在加载卡片" /> : <CardDetail card={selectedCard} version={selectedVersion} artifact={artifact} searchParams={searchParams} setSearchParams={setSearchParams} />}
-        {error && snapshot ? <div className="inline-error"><ErrorState message={error} /></div> : null}
+        <div className="card-detail-inner">
+          {loading || !selectedCard || !selectedVersion || !artifact ? <LoadingState label="正在加载卡片" /> : <CardDetail card={selectedCard} version={selectedVersion} artifact={artifact} searchParams={searchParams} setSearchParams={setSearchParams} />}
+          {error && snapshot ? <div className="inline-error"><ErrorState message={error} /></div> : null}
+        </div>
       </section>
     </main>
   );
@@ -134,7 +136,7 @@ function CardDetail({ card, version, artifact, searchParams, setSearchParams }: 
     setSearchParams(next, { replace: true });
   };
   return <>
-    <header className="detail-header"><div><div className="identity-line"><code>{card.id}</code><span className="status-badge">v{version.version}</span></div><h2>{card.name}</h2><p>查看卡片效果、所需数据和检查结果</p></div><div className="detail-actions">{card.versions.length > 1 ? <label>版本<select value={version.reference} onChange={(event) => setQuery("version", event.target.value)}>{card.versions.map((candidate) => <option key={candidate.reference} value={candidate.reference}>{candidate.version}</option>)}</select></label> : null}<SafeExternalLink href={version.release?.url ?? version.artifact.url}>发行说明</SafeExternalLink></div></header>
+    <header className="detail-header"><div><div className="identity-line"><code>{card.id}</code><span className="status-badge">v{version.version}</span></div><h2>{card.name}</h2><p>查看卡片效果、所需数据和检查结果</p></div><div className="detail-actions">{card.versions.length > 1 ? <label>版本<select value={version.reference} onChange={(event) => setQuery("version", event.target.value)}>{card.versions.map((candidate) => <option key={candidate.reference} value={candidate.reference}>{candidate.version}</option>)}</select></label> : null}<Link className="button secondary" to="/playground"><Braces size={14} />用数据预览</Link><SafeExternalLink href={version.release?.url ?? version.artifact.url}>发行说明</SafeExternalLink></div></header>
     <div className="detail-tabs" role="tablist">{Object.entries(tabLabels).map(([key, label]) => <button key={key} type="button" className={tab === key ? "active" : ""} onClick={() => setQuery("tab", key)}>{label}</button>)}</div>
     {tab === "preview" ? <PreviewPanel artifact={artifact} version={version} viewName={viewName} sample={sample} setQuery={setQuery} /> : null}
     {tab === "contract" ? <JsonPanel title="卡片需要的数据" value={artifact.dataContract} /> : null}

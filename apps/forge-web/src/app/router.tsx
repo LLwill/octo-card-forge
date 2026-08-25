@@ -4,13 +4,14 @@ import { CardsPage } from "../pages/cards/CardsPage.js";
 import { ComponentsPage } from "../pages/components/ComponentsPage.js";
 import { InstallPage } from "../pages/install/InstallPage.js";
 import { PlaygroundPage } from "../pages/playground/PlaygroundPage.js";
+import { ShowcasePage } from "../pages/showcase/ShowcasePage.js";
 
 function routes() {
   return [{
     path: "/",
     element: <AppShell />,
     children: [
-      { index: true, element: <Navigate to="cards" replace /> },
+      { index: true, element: <ShowcasePage /> },
       { path: "cards", element: <CardsPage /> },
       { path: "cards/:reference", element: <CardsPage /> },
       { path: "components", element: <ComponentsPage /> },

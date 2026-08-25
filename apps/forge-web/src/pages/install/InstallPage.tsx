@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ErrorState, LoadingState } from "../../components/AsyncState.js";
-import { Badge } from "../../components/ui/badge.js";
 import { Button, buttonVariants } from "../../components/ui/button.js";
 import { Separator } from "../../components/ui/separator.js";
 import { loadJson, serverPath } from "../../data/client.js";
@@ -40,30 +39,30 @@ export function InstallPage() {
   if (!data) return <LoadingState label="正在准备安装信息" />;
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <header className="border-b bg-card">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-5 py-10 sm:px-8 lg:flex-row lg:items-end lg:justify-between lg:px-10 lg:py-14">
+    <main className="install-showcase">
+      <header className="install-hero">
+        <div className="install-hero-inner">
           <div className="max-w-2xl">
             <div className="mb-4 flex flex-wrap items-center gap-2">
-              <Badge className="h-6 bg-primary/10 px-2.5 text-primary">最新稳定版</Badge>
+              <span className="install-edition-label">最新稳定版</span>
               <span className="text-sm text-muted-foreground">命令行工具与卡片组件</span>
             </div>
-            <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">安装 Octo Card Forge</h1>
+            <h1>安装 Octo Card Forge</h1>
             <p className="mt-4 max-w-xl text-base leading-7 text-muted-foreground">
               两步完成项目初始化，也可以单独下载 Skill 包用于已有的智能体环境。
             </p>
           </div>
-          <div className="flex items-center gap-3 lg:pb-1">
+          <div className="install-version">
             <div className="text-right">
               <span className="block text-xs font-medium text-muted-foreground">当前版本</span>
               <strong className="font-mono text-lg">v{data.cli.version}</strong>
             </div>
-            <div className="grid size-11 place-items-center rounded-lg bg-primary/10 text-primary"><PackageCheck className="size-5" /></div>
+            <div className="grid size-11 place-items-center rounded-md bg-primary/10 text-primary"><PackageCheck className="size-5" /></div>
           </div>
         </div>
       </header>
 
-      <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 lg:px-10 lg:py-12">
+      <div className="install-body">
         <section aria-labelledby="workspace-install-title">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
@@ -74,13 +73,13 @@ export function InstallPage() {
               <h2 id="workspace-install-title" className="text-2xl font-semibold">快速开始</h2>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">依次运行下面两条命令，即可在当前项目中开始使用。</p>
             </div>
-            <Badge variant="outline" className="h-7 w-fit border-primary/25 bg-primary/8 px-3 text-primary">
+            <span className="install-recommendation">
               <CheckCircle2 data-icon="inline-start" />
               推荐
-            </Badge>
+            </span>
           </div>
 
-          <div className="mt-7 overflow-hidden rounded-lg border bg-card shadow-xs">
+          <div className="install-steps">
             <InstallStep number="01" label="安装工具" description="安装与当前版本匹配的命令行工具和卡片样式。" value={data.cli.installCommand} />
             <Separator />
             <InstallStep number="02" label="初始化项目" description="创建项目所需文件，并检查安装是否正确。" value={data.cli.initCommand} />
@@ -116,7 +115,7 @@ export function InstallPage() {
             </div>
           </div>
 
-          <div className="rounded-lg border bg-muted/45 p-5">
+          <div className="install-skill-note">
             <span className="text-xs font-medium text-muted-foreground">Skill 版本</span>
             <strong className="mt-2 block text-base">v{data.skill.version}</strong>
             <p className="mt-2 text-xs leading-5 text-muted-foreground">下载后可直接导入支持 Skill 的环境。</p>
@@ -125,7 +124,7 @@ export function InstallPage() {
 
         <Separator className="my-10 lg:my-12" />
 
-        <details className="overflow-hidden rounded-lg border bg-card">
+        <details className="install-details">
           <summary className="cursor-pointer px-5 py-4 text-sm font-medium">技术信息</summary>
           <Separator />
           <div className="flex flex-col gap-2 border-b px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -159,8 +158,8 @@ function InstallStep({ number, label, description, value }: { number: string; la
   };
 
   return (
-    <div className="grid gap-4 p-5 sm:grid-cols-[48px_170px_minmax(0,1fr)_44px] sm:items-center sm:p-6">
-      <div className="grid size-10 place-items-center rounded-lg bg-primary/10 font-mono text-sm font-semibold text-primary">{number}</div>
+    <div className="install-step">
+      <div className="install-step-number">{number}</div>
       <div>
         <strong className="block text-sm font-semibold">{label}</strong>
         <span className="mt-1 block text-xs leading-5 text-muted-foreground">{description}</span>
