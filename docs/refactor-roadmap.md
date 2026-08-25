@@ -389,7 +389,15 @@ Profile package 是 Component Preview 的前置。该阶段只稳定 Profile 的
 
 目标：把当前页面改造成静态 Card 工作台。
 
-状态：**未开始实现。Snapshot Contract 已定义，`apps/forge-web` 仍为空壳；legacy `web/` 的 Preview API 接入只作为迁移基础。**
+状态：**进行中。Phase 6A Catalog Snapshot 已完成；`apps/forge-web` 仍为空壳，下一步进入只读 Snapshot/Artifact/Profile 消费层。**
+
+Phase 6A 已交付：
+
+- `packages/catalog-snapshot` 实现确定性 Builder、SemVer 排序、冲突检测和 canonical digest；
+- CLI/Skill `0.2.3` 已发布，CLI 提供 `snapshot build/verify`；
+- Catalog CI 从不可变 Card Releases 生成 Snapshot，并按 `catalog-snapshot/<catalog-commit>` 创建不可覆盖的 GitHub Release；
+- 首个正式 Release 为 `catalog-snapshot/6b7623cfb919eb737e7cb1bce91195749f30c9b7`，canonical SHA-256 为 `e02fd0cd9209185e928ccac6e24d333f96bfcb4b6d17f49c0f2069046d14c4a7`；
+- 已用 npm 发布的 `@mlt-org/octo-card-cli@0.2.3` 下载并复验正式 Snapshot。
 
 工作：
 
@@ -482,10 +490,11 @@ Profile package 是 Component Preview 的前置。该阶段只稳定 Profile 的
 
 当前执行顺序：
 
-1. Phase 6 在 Catalog 侧生成 `catalog-snapshot.v1.json` 与 Artifact 索引；
-2. `apps/forge-web` 接入 Snapshot、Artifact 和 Profile，替换 legacy 文件扫描入口；
-3. Phase 7 用真实业务后端验证 Handoff 接入与最终展示；
-4. Phase 8 逐 Card 完成迁移并删除 Forge 中的正式内容与 Legacy Registry。
+1. 已完成 Phase 6A：Catalog 侧生成并不可变发布 `catalog-snapshot.v1.json` 与 Artifact 索引；
+2. Phase 6B：`apps/forge-web` 接入 Snapshot、Artifact 和 Profile，替换 legacy 文件扫描入口；
+3. Phase 6C：补齐 PR Preview Snapshot 和静态工作台完整状态；
+4. Phase 7 用真实业务后端验证 Handoff 接入与最终展示；
+5. Phase 8 逐 Card 完成迁移并删除 Forge 中的正式内容与 Legacy Registry。
 
 Pilot Card 已迁入 Catalog；Forge 内对应内容暂作为兼容 Fixture 保留，直到 Phase 8
 逐 Card Gate 通过后删除。根 CLI 发布入口继续保持兼容，直到所有外部消费者完成迁移。

@@ -54,8 +54,9 @@ pnpm cli render docs.access-request@0.3.0 --sample pending
 仓库已经完成 Phase 2-5：Contract/Core、Developer Toolkit/Render Profile、Artifact v1 和
 GitHub Delivery 均已闭环。独立的
 [`octo-card-catalog`](https://github.com/LLwill/octo-card-catalog) 已接入固定版本的
-`card-check`/`card-release` Actions，并发布首张 Pilot Card。下一阶段是 Catalog Snapshot 与
-目标 Forge Web；根 package 暂时继续发布 `@mlt-org/octo-card-cli`。
+`card-check`/`card-release` Actions，并发布首张 Pilot Card。Catalog Snapshot Builder、
+固定版本 CI 和首个不可变 Snapshot Release 已完成；下一阶段是让目标 Forge Web 只读取
+Snapshot、Artifact 和 Profile。根 package 暂时继续发布 `@mlt-org/octo-card-cli`。
 `workspace-packages.json` 定义允许的内部依赖方向，执行：
 
 ```bash
