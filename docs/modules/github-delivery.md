@@ -1,6 +1,6 @@
 # GitHub Delivery 模块
 
-> 状态：已完成（2026-08-24）
+> 状态：已完成（2026-08-25）
 >
 > 目标代码：`actions/`、Catalog 仓库 `.github/workflows/`
 
@@ -47,6 +47,7 @@ Action ref 和这两个输入版本，不使用 `latest`、范围版本或 works
 - CODEOWNERS 覆盖 Card、Workflow 和 discovery script；
 - `docs.access-request` 已作为 Pilot 迁入目标目录；
 - `card/docs.access-request/v0.3.0` 已由 `card-release` 自动创建并上传五个资产；
+- Catalog PR #3 已通过 `github-delivery/v0.2.0` 生成并复验独立 PR Preview bundle；
 - 后续新增 Card 或版本不需要修改 Forge 仓库。
 
 ## 不负责

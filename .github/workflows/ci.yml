@@ -70,9 +70,9 @@ jobs:
 
       - name: Run published consumer smoke
         env:
-          CONSUMER_CLI_VERSION: "0.2.0"
-          CONSUMER_PROFILE_VERSION: "1.2.0-rc.2"
-          CONSUMER_SKILL_VERSION: "0.2.0"
+          CONSUMER_CLI_VERSION: "0.2.4"
+          CONSUMER_PROFILE_VERSION: "1.2.0-rc.4"
+          CONSUMER_SKILL_VERSION: "0.2.4"
         run: pnpm smoke:published-consumer
 
       - name: Compile and validate every Card sample
@@ -222,7 +222,7 @@ jobs:
         uses: ./actions/card-check
         with:
           card-path: cards/docs.access-request
-          cli-version: "0.2.3"
+          cli-version: "0.2.4"
           forge-web-dir: apps/forge-web/dist
           upload-artifact: "false"
           output-dir: .release/action-smoke/check
@@ -232,7 +232,7 @@ jobs:
         uses: ./actions/card-release
         with:
           card-path: cards/docs.access-request/versions/0.3.0
-          cli-version: "0.2.3"
+          cli-version: "0.2.4"
           publish: "false"
           output-dir: .release/action-smoke/release
 
@@ -241,7 +241,7 @@ jobs:
         uses: ./actions/card-release
         with:
           card-path: cards/docs.access-request/versions/0.3.0
-          cli-version: "0.2.3"
+          cli-version: "0.2.4"
           publish: "false"
           output-dir: .release/action-smoke/release-repeat
 

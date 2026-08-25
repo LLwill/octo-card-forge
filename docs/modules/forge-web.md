@@ -1,6 +1,6 @@
 # Forge Web 模块
 
-> 状态：Phase 6B 已完成；`apps/forge-web` 已只读接入正式 Snapshot、Artifact 和精确 Profile
+> 状态：Phase 6 已完成；正式与 PR Preview 两条 Snapshot/Artifact 消费链路均已上线
 >
 > 目标代码：`apps/forge-web`、`packages/catalog-snapshot`
 
@@ -37,9 +37,11 @@ v1 获取 session、编译结果和 Profile 资源。该 API 是过渡性的本�
 - 服务端与浏览器均按 canonical SHA-256 验证 Artifact，失败时关闭展示；
 - Preview 按 Artifact 固定的 Profile npm 版本、HostConfig、CSS 和 Adaptive Cards SDK 版本隔离渲染；
 - npm CLI 包与 deploy bundle 均携带 `apps/forge-web/dist`，CLI 在 `/forge/` 提供新工作台；
+- PR Preview 通过 `window.__OCTO_FORGE_BOOTSTRAP__` 内嵌已验证 Snapshot/Artifact，解压后可从 `preview/index.html` 独立启动；
+- 内嵌预览仍执行 Snapshot/Artifact canonical digest 校验，并使用 Artifact 固定的 Profile 与 SDK；
 - legacy `web/app.js` 已通过 Preview Kit client 使用 Preview API v1；
 - legacy `web/components.js` 仍消费 `/api/component-baseline` 并直接初始化 Adaptive Cards；
-- legacy `/` 页面暂时保留，Phase 6C 完成 PR Preview Snapshot 后再收敛迁移入口。
+- legacy `/` 与 Components 页面作为兼容入口暂时保留，随 Phase 8 的逐 Card 迁移统一删除。
 
 ## 完成标准
 
@@ -48,8 +50,8 @@ v1 获取 session、编译结果和 Profile 资源。该 API 是过渡性的本�
 - Preview 与 `octo-web` 使用同源 Profile；
 - 页面具备完整 loading/error/empty/responsive 状态。
 
-当前剩余 Gate：
+完成证据：
 
-- PR 使用独立 Snapshot 生成 Preview；
-- Preview 与 `octo-web` 完成同源 Profile 的实际展示对照；
-- 评估并迁移 legacy Components 页面。
+- 正式页面与 PR Preview 均只消费版本化 Snapshot、Artifact 和同源 Profile；
+- PR Preview 已在真实 Catalog PR 上生成、下载、复验并完成桌面与移动端浏览器验收；
+- 页面覆盖 loading/error/empty/responsive 状态，Catalog 更新不要求修改 Web 代码。
