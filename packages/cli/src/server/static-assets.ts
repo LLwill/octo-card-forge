@@ -44,14 +44,14 @@ export async function handleStaticAsset(
   routePath: string,
   options: StaticAssetOptions,
 ): Promise<boolean> {
-  if (req.method !== "GET") return false;
-
   const redirect = LEGACY_REDIRECTS[routePath];
-  if (redirect) {
+  if (redirect && (req.method === "GET" || req.method === "HEAD")) {
     res.writeHead(308, { location: publicPath(options.basePath, redirect) });
     res.end();
     return true;
   }
+
+  if (req.method !== "GET") return false;
 
   if (routePath === "/forge" || routePath.startsWith("/forge/")) {
     const requestedPath = decodeForgePath(routePath);
