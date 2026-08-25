@@ -30,6 +30,7 @@ const files = [
   ".npmrc",
   "dist",
   "web",
+  "apps/forge-web/dist",
   "cards",
   "render-profiles",
   "skills/octo-design-cards/skill-manifest.json",

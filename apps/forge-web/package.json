@@ -3,13 +3,13 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Reserved workspace boundary for the static Forge Web application.",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": "./dist/index.js",
+  "description": "Read-only Octo Card catalog workbench backed by immutable releases.",
+  "dependencies": {
+    "@mlt-org/octo-card-catalog-snapshot": "workspace:*"
+  },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run --root ../.. --config vitest.legacy.config.ts tests/forge-web.test.ts"
   }
 }
-

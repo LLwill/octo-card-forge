@@ -20,6 +20,7 @@ describe("CLI package metadata", () => {
       "dist/cli.js",
       "dist/cli.js.map",
       "web",
+      "apps/forge-web/dist",
       "skills",
       "README.md",
     ]);

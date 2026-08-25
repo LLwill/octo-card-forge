@@ -1,0 +1,161 @@
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import type { Server } from "node:http";
+import type { AddressInfo } from "node:net";
+import os from "node:os";
+import path from "node:path";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import {
+  artifactSha256,
+  canonicalArtifactBytes,
+} from "@mlt-org/octo-card-artifact";
+import {
+  buildCatalogSnapshot,
+  canonicalCatalogSnapshotBytes,
+} from "@mlt-org/octo-card-catalog-snapshot";
+import {
+  artifactRequestUrl,
+  deriveProfileResourceUrls,
+  loadCardArtifact,
+  loadCatalogSnapshot,
+} from "../apps/forge-web/src/data.js";
+import { buildCardArtifact } from "../packages/cli/src/artifact.js";
+import { createForgeServer } from "../packages/cli/src/server.js";
+
+describe("Forge Web catalog client", () => {
+  it("loads canonical snapshot and artifact data and derives exact profile resources", async () => {
+    const artifact = await buildCardArtifact("docs.access-request@0.3.0");
+    const digest = artifactSha256(artifact);
+    const snapshot = buildCatalogSnapshot({
+      channel: "release",
+      revision: "a".repeat(40),
+      records: [{
+        card: {
+          id: artifact.card.id,
+          name: artifact.card.name,
+          version: artifact.card.version,
+          contractVersion: artifact.card.contractVersion,
+          renderProfile: artifact.profile.reference,
+          defaultLocale: artifact.card.defaultLocale,
+        },
+        artifact: { url: "https://example.test/card.artifact.json", sha256: digest },
+        source: { repository: "example/catalog", commit: "b".repeat(40), path: "cards/docs/access-request" },
+        release: { tag: "card/docs.access-request/v0.3.0", url: "https://example.test/releases/0.3.0" },
+      }],
+    });
+    const fetcher = async (input: RequestInfo | URL): Promise<Response> => {
+      const url = String(input);
+      if (url.endsWith("snapshot")) return new Response(canonicalCatalogSnapshotBytes(snapshot));
+      return new Response(JSON.stringify(artifact, null, 2));
+    };
+
+    const loadedSnapshot = await loadCatalogSnapshot({
+      snapshotUrl: "https://example.test/snapshot",
+      fetch: fetcher,
+    });
+    const loadedArtifact = await loadCardArtifact(artifact.card.id + "@" + artifact.card.version, digest, {
+      artifactBaseUrl: "https://example.test/artifacts/",
+      fetch: fetcher,
+    });
+    const resources = deriveProfileResourceUrls(loadedArtifact);
+
+    expect(loadedSnapshot.cards[0].latest).toBe("0.3.0");
+    expect(loadedArtifact.profile.reference).toBe("octo-chat@1.2.0-rc.4");
+    expect(resources).toEqual({
+      hostConfig: "https://cdn.jsdelivr.net/npm/@mlt-org/octo-card-profile-octo-chat@1.2.0-rc.4/dist/host-config.json",
+      theme: "https://cdn.jsdelivr.net/npm/@mlt-org/octo-card-profile-octo-chat@1.2.0-rc.4/dist/theme.css",
+      stylesheet: "https://cdn.jsdelivr.net/npm/@mlt-org/octo-card-profile-octo-chat@1.2.0-rc.4/dist/styles.css",
+      adaptiveCardsSdk: "https://cdn.jsdelivr.net/npm/adaptivecards@3.0.6/dist/adaptivecards.min.js",
+    });
+    expect(artifactRequestUrl("docs.access-request@0.3.0")).toBe(
+      "./api/artifacts/docs.access-request%400.3.0",
+    );
+  });
+
+  it("rejects a canonical digest mismatch", async () => {
+    const artifact = await buildCardArtifact("docs.access-request@0.3.0");
+    await expect(loadCardArtifact("docs.access-request@0.3.0", "0".repeat(64), {
+      fetch: async () => new Response(canonicalArtifactBytes(artifact)),
+    })).rejects.toThrow("digest mismatch");
+  });
+});
+
+describe("Forge Web server route", () => {
+  let server: Server;
+  let baseUrl: string;
+  let temporaryRoot: string;
+
+  beforeAll(async () => {
+    const artifact = await buildCardArtifact("docs.access-request@0.3.0");
+    const digest = artifactSha256(artifact);
+    const snapshot = buildCatalogSnapshot({
+      channel: "release",
+      revision: "c".repeat(40),
+      records: [{
+        card: {
+          id: artifact.card.id,
+          name: artifact.card.name,
+          version: artifact.card.version,
+          contractVersion: artifact.card.contractVersion,
+          renderProfile: artifact.profile.reference,
+          defaultLocale: artifact.card.defaultLocale,
+        },
+        artifact: { url: "https://example.test/card.artifact.json", sha256: digest },
+        source: { repository: "example/catalog", commit: "d".repeat(40), path: "cards/docs/access-request" },
+        release: { tag: "card/docs.access-request/v0.3.0", url: "https://example.test/releases/0.3.0" },
+      }],
+    });
+    temporaryRoot = await mkdtemp(path.join(os.tmpdir(), "octo-forge-web-"));
+    await mkdir(temporaryRoot, { recursive: true });
+    await Promise.all([
+      writeFile(path.join(temporaryRoot, "index.html"), "<!doctype html><title>Forge Web fixture</title>"),
+      writeFile(path.join(temporaryRoot, "app.js"), "export {};"),
+      writeFile(path.join(temporaryRoot, "app.js.map"), "{}"),
+      writeFile(path.join(temporaryRoot, "styles.css"), "body{}"),
+    ]);
+    const catalogFetch = async (input: string | URL | Request): Promise<Response> => {
+      return String(input).includes("snapshot")
+        ? new Response(canonicalCatalogSnapshotBytes(snapshot))
+        : new Response(JSON.stringify(artifact, null, 2));
+    };
+    server = await createForgeServer({
+      catalogSnapshotUrl: "https://example.test/snapshot",
+      catalogFetch: catalogFetch as typeof fetch,
+      forgeWebRoot: temporaryRoot,
+    });
+    await new Promise<void>((resolve, reject) => {
+      server.once("error", reject);
+      server.listen(0, "127.0.0.1", resolve);
+    });
+    const address = server.address() as AddressInfo;
+    baseUrl = `http://127.0.0.1:${address.port}`;
+  });
+
+  afterAll(async () => {
+    if (server) {
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => error ? reject(error) : resolve());
+      });
+    }
+    if (temporaryRoot) await rm(temporaryRoot, { recursive: true, force: true });
+  });
+
+  it("serves the workbench and verified published catalog assets", async () => {
+    const redirect = await fetch(`${baseUrl}/forge`, { redirect: "manual" });
+    expect(redirect.status).toBe(308);
+    expect(redirect.headers.get("location")).toBe("/forge/");
+
+    const page = await fetch(`${baseUrl}/forge/`);
+    expect(page.status).toBe(200);
+    expect(await page.text()).toContain("Forge Web fixture");
+
+    const snapshotResponse = await fetch(`${baseUrl}/forge/api/catalog-snapshot`);
+    expect(snapshotResponse.status).toBe(200);
+    await expect(snapshotResponse.json()).resolves.toMatchObject({ revision: "c".repeat(40) });
+
+    const artifactResponse = await fetch(`${baseUrl}/forge/api/artifacts/docs.access-request%400.3.0`);
+    expect(artifactResponse.status).toBe(200);
+    await expect(artifactResponse.json()).resolves.toMatchObject({
+      card: { id: "docs.access-request", version: "0.3.0" },
+    });
+  });
+});
