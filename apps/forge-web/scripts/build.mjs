@@ -14,7 +14,7 @@ await build({
   entryPoints: [path.join(root, "src/index.ts")],
   outfile: path.join(dist, "app.js"),
   bundle: true,
-  format: "esm",
+  format: "iife",
   platform: "browser",
   target: ["es2022"],
   sourcemap: true,

@@ -211,11 +211,20 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v5
 
+      - name: Build Forge Web preview assets
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm --filter @mlt-org/octo-card-catalog-snapshot build
+          pnpm --filter @mlt-org/octo-card-forge-web build
+
       - name: Smoke card-check Action
         id: card-check
         uses: ./actions/card-check
         with:
           card-path: cards/docs.access-request
+          cli-version: "0.2.3"
+          forge-web-dir: apps/forge-web/dist
           upload-artifact: "false"
           output-dir: .release/action-smoke/check
 
@@ -224,6 +233,7 @@ jobs:
         uses: ./actions/card-release
         with:
           card-path: cards/docs.access-request/versions/0.3.0
+          cli-version: "0.2.3"
           publish: "false"
           output-dir: .release/action-smoke/release
 
@@ -232,6 +242,7 @@ jobs:
         uses: ./actions/card-release
         with:
           card-path: cards/docs.access-request/versions/0.3.0
+          cli-version: "0.2.3"
           publish: "false"
           output-dir: .release/action-smoke/release-repeat
 
@@ -239,6 +250,9 @@ jobs:
         env:
           CHECK_ARTIFACT: ${{ steps.card-check.outputs.artifact-file }}
           CHECK_SHA256: ${{ steps.card-check.outputs.artifact-sha256 }}
+          PREVIEW_ENTRY: ${{ steps.card-check.outputs.preview-entry }}
+          PREVIEW_SNAPSHOT: ${{ steps.card-check.outputs.preview-snapshot-file }}
+          PREVIEW_SNAPSHOT_SHA256: ${{ steps.card-check.outputs.preview-snapshot-sha256 }}
           RELEASE_ARTIFACT: ${{ steps.card-release.outputs.artifact-file }}
           RELEASE_SHA256: ${{ steps.card-release.outputs.artifact-sha256 }}
           HANDOFF_FILE: ${{ steps.card-release.outputs.handoff-file }}
@@ -249,6 +263,10 @@ jobs:
         run: |
           set -euo pipefail
           test -f "$CHECK_ARTIFACT"
+          test -f "$PREVIEW_ENTRY"
+          test -f "$PREVIEW_SNAPSHOT"
+          grep -Fq 'window.__OCTO_FORGE_BOOTSTRAP__=' "$PREVIEW_ENTRY"
+          pnpm cli snapshot verify "$PREVIEW_SNAPSHOT" --sha256 "$PREVIEW_SNAPSHOT_SHA256" --format json >/dev/null
           test -f "$RELEASE_ARTIFACT"
           test -f "$HANDOFF_FILE"
           test "$(cat "${CHECK_ARTIFACT%.json}.sha256")" = "$CHECK_SHA256"

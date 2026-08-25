@@ -14,6 +14,8 @@ export type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promis
 export interface ForgeCatalogClientOptions {
   snapshotUrl?: string;
   artifactBaseUrl?: string;
+  snapshot?: unknown;
+  artifact?: unknown;
   fetch?: FetchLike;
 }
 
@@ -36,6 +38,7 @@ export async function sha256Hex(bytes: Uint8Array): Promise<string> {
 export async function loadCatalogSnapshot(
   options: ForgeCatalogClientOptions = {},
 ): Promise<CatalogSnapshotV1> {
+  if (options.snapshot !== undefined) return parseCatalogSnapshot(options.snapshot);
   const fetcher = options.fetch ?? fetch;
   const response = await fetcher(options.snapshotUrl ?? DEFAULT_SNAPSHOT_ENDPOINT, {
     headers: { accept: "application/json" },
@@ -53,13 +56,16 @@ export async function loadCardArtifact(
   expectedSha256: string,
   options: ForgeCatalogClientOptions = {},
 ): Promise<CardArtifactV1> {
-  const fetcher = options.fetch ?? fetch;
-  const response = await fetcher(artifactRequestUrl(reference, options.artifactBaseUrl), {
-    headers: { accept: "application/json" },
-  });
-  if (!response.ok) throw responseError(response, `Card artifact ${reference}`);
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  const artifact = parseCardArtifact(bytes);
+  let input = options.artifact;
+  if (input === undefined) {
+    const fetcher = options.fetch ?? fetch;
+    const response = await fetcher(artifactRequestUrl(reference, options.artifactBaseUrl), {
+      headers: { accept: "application/json" },
+    });
+    if (!response.ok) throw responseError(response, `Card artifact ${reference}`);
+    input = new Uint8Array(await response.arrayBuffer());
+  }
+  const artifact = parseCardArtifact(input);
   const actualSha256 = await sha256Hex(canonicalCardArtifactBytes(artifact));
   if (actualSha256 !== expectedSha256) {
     throw new Error(`Card artifact digest mismatch: expected ${expectedSha256}, received ${actualSha256}`);

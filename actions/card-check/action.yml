@@ -8,7 +8,7 @@ inputs:
   cli-version:
     description: Exact published @mlt-org/octo-card-cli version.
     required: false
-    default: "0.2.2"
+    default: "0.2.4"
   profile-package:
     description: Published Render Profile npm package.
     required: false
@@ -21,6 +21,10 @@ inputs:
     description: Directory for the report, compiled samples, Artifact and digest.
     required: false
     default: ".octo-card/check"
+  forge-web-dir:
+    description: Optional prebuilt Forge Web directory. Defaults to the pinned CLI package bundle.
+    required: false
+    default: ""
   upload-artifact:
     description: Upload the generated PR preview bundle as a workflow artifact.
     required: false
@@ -52,6 +56,18 @@ outputs:
   workflow-artifact-name:
     description: Name of the uploaded PR preview workflow artifact.
     value: ${{ steps.check.outputs.workflow-artifact-name }}
+  preview-dir:
+    description: Absolute path to the self-contained PR preview directory.
+    value: ${{ steps.check.outputs.preview-dir }}
+  preview-entry:
+    description: Absolute path to the self-contained PR preview index.html.
+    value: ${{ steps.check.outputs.preview-entry }}
+  preview-snapshot-file:
+    description: Absolute path to the preview-channel Catalog Snapshot.
+    value: ${{ steps.check.outputs.preview-snapshot-file }}
+  preview-snapshot-sha256:
+    description: Canonical preview Snapshot SHA-256 digest.
+    value: ${{ steps.check.outputs.preview-snapshot-sha256 }}
 
 runs:
   using: composite
@@ -77,9 +93,11 @@ runs:
       shell: bash
       env:
         OCTO_CARD_BIN: ${{ steps.tools.outputs.octo-card-bin }}
+        CLI_PACKAGE_ROOT: ${{ steps.tools.outputs.cli-package-root }}
         CARD_PATH: ${{ inputs.card-path }}
         PROFILE_PACKAGE: ${{ inputs.profile-package }}
         OUTPUT_DIR: ${{ inputs.output-dir }}
+        FORGE_WEB_DIR: ${{ inputs.forge-web-dir }}
       run: "$GITHUB_ACTION_PATH/run.sh"
 
     - name: Upload PR preview bundle

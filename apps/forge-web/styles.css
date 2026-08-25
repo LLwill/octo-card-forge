@@ -49,6 +49,7 @@ code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; le
 .title-block { min-width: 0; }
 .eyebrow { min-height: 22px; display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; }
 .readonly-badge { padding: 2px 7px; border: 1px solid #b7d8d0; border-radius: 999px; background: var(--accent-soft); color: #0d5f4f; font-size: 11px; font-weight: 700; }
+.readonly-badge.is-preview { border-color: #d5c28c; background: #fff7dc; color: #72570a; }
 .title-block h1 { margin: 8px 0 5px; font-size: clamp(25px, 3vw, 34px); line-height: 1.18; letter-spacing: 0; }
 .title-block p { margin: 0; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
 .header-actions { display: flex; align-items: flex-end; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }

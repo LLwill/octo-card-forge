@@ -25,6 +25,19 @@ interface AppState {
   error?: string;
 }
 
+interface ForgeWebBootstrap {
+  snapshot?: unknown;
+  artifacts?: Record<string, unknown>;
+  snapshotUrl?: string;
+  artifactBaseUrl?: string;
+}
+
+declare global {
+  interface Window {
+    __OCTO_FORGE_BOOTSTRAP__?: ForgeWebBootstrap;
+  }
+}
+
 function requireRoot(): HTMLElement {
   const element = document.querySelector<HTMLElement>("#app");
   if (!element) throw new Error("Forge Web root was not found");
@@ -32,6 +45,7 @@ function requireRoot(): HTMLElement {
 }
 
 const root = requireRoot();
+const bootstrap = window.__OCTO_FORGE_BOOTSTRAP__ ?? {};
 
 const state: AppState = { filter: "", tab: "preview", loading: true };
 let artifactRequest = 0;
@@ -53,8 +67,10 @@ function jsonForScript(value: unknown): string {
 function safeLink(value: string | undefined): string | undefined {
   if (!value) return undefined;
   try {
-    const url = new URL(value);
-    return url.protocol === "https:" ? url.toString() : undefined;
+    const url = new URL(value, window.location.href);
+    if (url.protocol === "https:") return url.toString();
+    if (url.protocol === "http:" && url.origin === window.location.origin) return url.toString();
+    return undefined;
   } catch {
     return undefined;
   }
@@ -95,7 +111,7 @@ function renderSidebar(): string {
         `).join("")}
       </div>
       <footer class="catalog-revision">
-        <span>Snapshot</span>
+        <span>${state.snapshot?.channel === "preview" ? "Preview Snapshot" : "Snapshot"}</span>
         <code title="${escapeHtml(state.snapshot?.revision ?? "")}">${state.snapshot ? escapeHtml(state.snapshot.revision.slice(0, 12)) : "-"}</code>
       </footer>
     </aside>`;
@@ -115,10 +131,11 @@ function externalLink(label: string, url: string | undefined): string {
 }
 
 function renderHeader(card: CatalogCard, version: CatalogVersion, artifact: CardArtifactV1): string {
+  const preview = state.snapshot?.channel === "preview";
   return `
     <header class="detail-header">
       <div class="title-block">
-        <div class="eyebrow"><code>${escapeHtml(card.id)}</code><span class="readonly-badge">只读</span></div>
+        <div class="eyebrow"><code>${escapeHtml(card.id)}</code><span class="readonly-badge${preview ? " is-preview" : ""}">${preview ? "PR Preview" : "只读"}</span></div>
         <h1>${escapeHtml(card.name)}</h1>
         <p>${escapeHtml(version.reference)} · Contract ${escapeHtml(version.contractVersion)} · ${escapeHtml(artifact.card.defaultLocale)}</p>
       </div>
@@ -130,6 +147,7 @@ function renderHeader(card: CatalogCard, version: CatalogVersion, artifact: Card
         </label>
         ${externalLink("Release", version.release?.url)}
         ${externalLink("Artifact", version.artifact.url)}
+        ${preview ? externalLink("Pull Request", version.source.pullRequestUrl) : ""}
       </div>
     </header>`;
 }
@@ -262,7 +280,10 @@ async function selectVersion(version: CatalogVersion): Promise<void> {
   state.loading = true;
   render();
   try {
-    const artifact = await loadCardArtifact(version.reference, version.artifact.sha256);
+    const artifact = await loadCardArtifact(version.reference, version.artifact.sha256, {
+      artifactBaseUrl: bootstrap.artifactBaseUrl,
+      artifact: bootstrap.artifacts?.[version.reference],
+    });
     if (request !== artifactRequest) return;
     state.artifact = artifact;
     state.view = Object.keys(artifact.views)[0];
@@ -295,7 +316,10 @@ async function loadCatalog(): Promise<void> {
   state.loading = true;
   render();
   try {
-    const snapshot = await loadCatalogSnapshot();
+    const snapshot = await loadCatalogSnapshot({
+      snapshotUrl: bootstrap.snapshotUrl,
+      snapshot: bootstrap.snapshot,
+    });
     state.snapshot = snapshot;
     if (snapshot.cards.length === 0) throw new Error("Catalog snapshot does not contain cards");
     state.loading = false;
