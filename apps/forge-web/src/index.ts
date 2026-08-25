@@ -183,7 +183,7 @@ function previewDocument(artifact: CardArtifactV1, sample: CardArtifactV1["views
   return `<!doctype html><html><head><meta charset="utf-8">${styles}<style>
     html,body{margin:0;min-height:100%;background:#f4f6f8;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
     body{padding:28px 20px;box-sizing:border-box}.preview-root{max-width:560px;margin:0 auto}.preview-error{padding:20px;color:#9b2c2c;background:#fff;border:1px solid #e8b4b4;border-radius:6px;white-space:pre-wrap}
-  </style></head><body><div id="card" class="preview-root"></div><script src="${escapeHtml(resources.adaptiveCardsSdk)}"></script><script>
+  </style></head><body><div id="card" class="preview-root octo-card-profile"></div><script src="${escapeHtml(resources.adaptiveCardsSdk)}"></script><script>
     const hostConfig=${jsonForScript(resources.hostConfig)};
     const payload=${jsonForScript(sample.card)};
     Promise.resolve().then(async()=>{const response=await fetch(hostConfig);if(!response.ok)throw new Error('HostConfig '+response.status);const config=await response.json();const card=new AdaptiveCards.AdaptiveCard();card.hostConfig=new AdaptiveCards.HostConfig(config);card.parse(payload);const rendered=card.render();if(!rendered)throw new Error('Adaptive Card SDK did not return a rendered element');document.getElementById('card').append(rendered)}).catch((error)=>{document.getElementById('card').innerHTML='<div class="preview-error">'+String(error.message||error).replace(/[&<>]/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))+'</div>'});
