@@ -1,9 +1,15 @@
 {
   "extends": "../../tsconfig.workspace-package.json",
   "compilerOptions": {
+    "baseUrl": ".",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx",
-    "noEmit": true
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts"]
 }

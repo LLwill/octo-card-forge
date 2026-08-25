@@ -20,6 +20,12 @@ inspect it, test JSON or template data, and install the matching toolchain.
 - `02-playground.png`
 - `03-install.png`
 - `04-components.png`
+- `05-playground-shadcn.png`
+- `06-playground-shadcn-mobile.png`
+
+The last two captures record the first implementation checkpoint using the
+shadcn Nova preset, Base UI primitives, Tailwind CSS, and the existing Forge
+green accent.
 
 ## Overall verdict
 
