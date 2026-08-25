@@ -215,8 +215,7 @@ jobs:
         run: |
           corepack enable
           pnpm install --frozen-lockfile
-          pnpm --filter @mlt-org/octo-card-catalog-snapshot build
-          pnpm --filter @mlt-org/octo-card-forge-web build
+          pnpm --filter @mlt-org/octo-card-forge-web... build
 
       - name: Smoke card-check Action
         id: card-check
