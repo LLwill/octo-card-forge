@@ -47,8 +47,8 @@ function escapeInlineScript(value: string): string {
     .replaceAll("\u2029", "\\u2029");
 }
 
-export function renderHtml(value: string, basePath: string): string {
-  const baseHref = `${basePath || ""}/`;
+export function renderHtml(value: string, basePath: string, appPath = ""): string {
+  const baseHref = `${basePath}${appPath}/`;
   const runtimePath = escapeInlineScript(JSON.stringify(basePath));
   return value.replace(
     "<head>",
@@ -86,6 +86,19 @@ export function sendText(
   value: string,
 ): void {
   res.writeHead(status, { "content-type": `${contentType}; charset=utf-8` });
+  res.end(value);
+}
+
+export function sendBuffer(
+  res: ServerResponse,
+  status: number,
+  contentType: string,
+  value: Buffer,
+): void {
+  res.writeHead(status, {
+    "content-type": contentType,
+    "content-length": value.byteLength,
+  });
   res.end(value);
 }
 

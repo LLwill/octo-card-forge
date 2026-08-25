@@ -157,12 +157,13 @@ describe("Forge Web server route", () => {
       }],
     });
     temporaryRoot = await mkdtemp(path.join(os.tmpdir(), "octo-forge-web-"));
-    await mkdir(temporaryRoot, { recursive: true });
+    await mkdir(path.join(temporaryRoot, "assets"), { recursive: true });
     await Promise.all([
-      writeFile(path.join(temporaryRoot, "index.html"), "<!doctype html><title>Forge Web fixture</title>"),
+      writeFile(path.join(temporaryRoot, "index.html"), "<!doctype html><html><head><title>Forge Web fixture</title></head><body></body></html>"),
       writeFile(path.join(temporaryRoot, "app.js"), "export {};"),
       writeFile(path.join(temporaryRoot, "app.js.map"), "{}"),
       writeFile(path.join(temporaryRoot, "styles.css"), "body{}"),
+      writeFile(path.join(temporaryRoot, "assets", "app-hash.js"), "export const ready = true;"),
     ]);
     const catalogFetch = async (input: string | URL | Request): Promise<Response> => {
       return String(input).includes("snapshot")
@@ -198,7 +199,18 @@ describe("Forge Web server route", () => {
 
     const page = await fetch(`${baseUrl}/forge/`);
     expect(page.status).toBe(200);
-    expect(await page.text()).toContain("Forge Web fixture");
+    const pageHtml = await page.text();
+    expect(pageHtml).toContain("Forge Web fixture");
+    expect(pageHtml).toContain('<base href="/forge/" />');
+
+    const nestedRoute = await fetch(`${baseUrl}/forge/cards/docs.access-request`);
+    expect(nestedRoute.status).toBe(200);
+    expect(await nestedRoute.text()).toContain('<base href="/forge/" />');
+
+    const chunk = await fetch(`${baseUrl}/forge/assets/app-hash.js`);
+    expect(chunk.status).toBe(200);
+    expect(chunk.headers.get("content-type")).toContain("text/javascript");
+    expect(await chunk.text()).toContain("ready = true");
 
     const snapshotResponse = await fetch(`${baseUrl}/forge/api/catalog-snapshot`);
     expect(snapshotResponse.status).toBe(200);

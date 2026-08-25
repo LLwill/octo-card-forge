@@ -84,6 +84,7 @@
       "path": "apps/forge-web",
       "name": "@mlt-org/octo-card-forge-web",
       "runtimeDependencies": [
+        "card-spec",
         "catalog-snapshot",
         "profile-octo-chat"
       ],

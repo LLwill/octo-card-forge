@@ -1,7 +1,8 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { readText } from "../fs.js";
-import { renderHtml, sendText } from "./http.js";
+import { renderHtml, sendBuffer, sendText } from "./http.js";
 
 interface StaticAssetOptions {
   basePath: string;
@@ -9,11 +10,20 @@ interface StaticAssetOptions {
   webRoot: string;
 }
 
-const FORGE_FILES: Record<string, [string, string]> = {
-  "/forge/": ["index.html", "text/html"],
-  "/forge/app.js": ["app.js", "text/javascript"],
-  "/forge/app.js.map": ["app.js.map", "application/json"],
-  "/forge/styles.css": ["styles.css", "text/css"],
+const CONTENT_TYPES: Record<string, string> = {
+  ".css": "text/css; charset=utf-8",
+  ".html": "text/html; charset=utf-8",
+  ".ico": "image/x-icon",
+  ".jpeg": "image/jpeg",
+  ".jpg": "image/jpeg",
+  ".js": "text/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".map": "application/json; charset=utf-8",
+  ".png": "image/png",
+  ".svg": "image/svg+xml; charset=utf-8",
+  ".webp": "image/webp",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
 };
 
 const LEGACY_FILES: Record<string, [string, string]> = {
@@ -37,11 +47,24 @@ export async function handleStaticAsset(
 ): Promise<boolean> {
   if (req.method !== "GET") return false;
 
-  const forgeFile = FORGE_FILES[routePath];
-  if (forgeFile) {
-    const content = await readText(path.join(options.forgeWebRoot, forgeFile[0]));
-    sendText(res, 200, forgeFile[1], content);
-    return true;
+  if (routePath === "/forge" || routePath.startsWith("/forge/")) {
+    const requestedPath = decodeForgePath(routePath);
+    if (requestedPath === undefined) return false;
+    const asset = await readForgeAsset(options.forgeWebRoot, requestedPath);
+    if (asset) {
+      if (asset.fileName === "index.html") {
+        sendText(res, 200, "text/html", renderHtml(asset.buffer.toString("utf8"), options.basePath, "/forge"));
+      } else {
+        sendBuffer(res, 200, contentTypeFor(asset.fileName), asset.buffer);
+      }
+      return true;
+    }
+
+    if (!requestedPath.startsWith("assets/")) {
+      const index = await readFile(path.join(options.forgeWebRoot, "index.html"));
+      sendText(res, 200, "text/html", renderHtml(index.toString("utf8"), options.basePath, "/forge"));
+      return true;
+    }
   }
 
   const legacyFile = LEGACY_FILES[routePath];
@@ -57,4 +80,33 @@ export async function handleStaticAsset(
   }
 
   return false;
+}
+
+function decodeForgePath(routePath: string): string | undefined {
+  try {
+    const relative = decodeURIComponent(routePath.slice("/forge/".length)) || "index.html";
+    if (relative.split("/").some((segment) => segment === "..")) return undefined;
+    return relative;
+  } catch {
+    return undefined;
+  }
+}
+
+async function readForgeAsset(
+  root: string,
+  relativePath: string,
+): Promise<{ fileName: string; buffer: Buffer } | undefined> {
+  const resolvedRoot = path.resolve(root);
+  const fileName = path.resolve(resolvedRoot, relativePath);
+  if (fileName !== resolvedRoot && !fileName.startsWith(`${resolvedRoot}${path.sep}`)) return undefined;
+  try {
+    return { fileName: relativePath, buffer: await readFile(fileName) };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+    throw error;
+  }
+}
+
+function contentTypeFor(fileName: string): string {
+  return CONTENT_TYPES[path.extname(fileName).toLowerCase()] ?? "application/octet-stream";
 }
