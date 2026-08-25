@@ -57,3 +57,4 @@ fi
 
 test -x "$cli_bin"
 echo "octo-card-bin=$cli_bin" >> "$GITHUB_OUTPUT"
+echo "cli-package-root=$tool_root/node_modules/@mlt-org/octo-card-cli" >> "$GITHUB_OUTPUT"

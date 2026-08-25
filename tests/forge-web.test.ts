@@ -77,6 +77,47 @@ describe("Forge Web catalog client", () => {
       fetch: async () => new Response(canonicalArtifactBytes(artifact)),
     })).rejects.toThrow("digest mismatch");
   });
+
+  it("loads an embedded preview Snapshot and Artifact without network access", async () => {
+    const artifact = await buildCardArtifact("docs.access-request@0.3.0");
+    const digest = artifactSha256(artifact);
+    const snapshot = buildCatalogSnapshot({
+      channel: "preview",
+      revision: "pr-42-head",
+      records: [{
+        card: {
+          id: artifact.card.id,
+          name: artifact.card.name,
+          version: artifact.card.version,
+          contractVersion: artifact.card.contractVersion,
+          renderProfile: artifact.profile.reference,
+          defaultLocale: artifact.card.defaultLocale,
+        },
+        artifact: { url: "./artifacts/card.artifact.json", sha256: digest },
+        source: {
+          repository: "example/catalog",
+          commit: "e".repeat(40),
+          path: "cards/docs/access-request",
+          pullRequestUrl: "https://example.test/pull/42",
+        },
+      }],
+    });
+    let fetchCount = 0;
+    const fetcher = async (): Promise<Response> => {
+      fetchCount += 1;
+      return new Response(null, { status: 500 });
+    };
+
+    const loadedSnapshot = await loadCatalogSnapshot({ snapshot, fetch: fetcher });
+    const loadedArtifact = await loadCardArtifact("docs.access-request@0.3.0", digest, {
+      artifact,
+      fetch: fetcher,
+    });
+
+    expect(loadedSnapshot.channel).toBe("preview");
+    expect(loadedArtifact.card.id).toBe("docs.access-request");
+    expect(fetchCount).toBe(0);
+  });
 });
 
 describe("Forge Web server route", () => {

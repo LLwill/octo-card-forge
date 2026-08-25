@@ -5,9 +5,10 @@ describe("GitHub Delivery Actions", () => {
   it("pins published Forge tools and keeps release publication explicit", async () => {
     const checkAction = await readFile("actions/card-check/action.yml", "utf8");
     const releaseAction = await readFile("actions/card-release/action.yml", "utf8");
+    const checkRun = await readFile("actions/card-check/run.sh", "utf8");
 
     for (const action of [checkAction, releaseAction]) {
-      expect(action).toContain('default: "0.2.2"');
+      expect(action).toContain('default: "0.2.4"');
       expect(action).toContain('default: "1.2.0-rc.4"');
       expect(action).toContain("../_shared/install-tools.sh");
       expect(action).toContain("package-manager-cache: false");
@@ -16,6 +17,12 @@ describe("GitHub Delivery Actions", () => {
     }
 
     expect(checkAction).toContain("actions/upload-artifact@v4");
+    expect(checkAction).toContain("preview-snapshot-sha256");
+    expect(checkRun).toContain("snapshot build");
+    expect(checkRun).toContain("--channel preview");
+    expect(checkRun).toContain("embed-preview.mjs");
+    expect(checkRun).toContain("pull_request?.head?.sha");
+    expect(checkRun).toContain("pull_request?.head?.repo?.full_name");
     expect(releaseAction).toContain("github-token:");
     expect(releaseAction).toContain("inputs.publish == 'true'");
   });

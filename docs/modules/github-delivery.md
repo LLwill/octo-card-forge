@@ -23,6 +23,8 @@
 - 固定安装精确版本的已发布 CLI 与 Render Profile；
 - 对 Card Source 运行 `verify`，版本目录仍由 CLI 强制执行 immutable 约束；
 - 输出每个 sample 的编译结果、verification report、Card Artifact 与 canonical digest；
+- 生成 `channel=preview` 的独立 Catalog Snapshot，并输出内嵌已验证 Snapshot/Artifact 的 `preview/index.html`；
+- Preview bundle 可在下载解压后直接打开，不依赖 Forge server 或 Card 目录扫描；
 - 可选上传 `card-check-<card-id>-<card-version>-<commit-prefix>` workflow artifact；
 - 不创建 tag 或 GitHub Release。
 
@@ -34,7 +36,7 @@
 - tag 固定为 `card/<card-id>/v<version>`，已有 tag 或 Release 时失败；
 - Release Asset 固定为 Artifact JSON、canonical digest、Handoff ZIP、ZIP checksum 和 verification report。
 
-当前默认工具版本为 `@mlt-org/octo-card-cli@0.2.2` 与
+当前默认工具版本为 `@mlt-org/octo-card-cli@0.2.4` 与
 `@mlt-org/octo-card-profile-octo-chat@1.2.0-rc.4`。Catalog Workflow 应同时固定
 Action ref 和这两个输入版本，不使用 `latest`、范围版本或 workspace 源码。
 
