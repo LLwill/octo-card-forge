@@ -5,17 +5,18 @@ import type { CardArtifactV1, CatalogSnapshotV1 } from "@mlt-org/octo-card-catal
 import { useRuntime } from "../../app/runtime.js";
 import { ErrorState, LoadingState } from "../../components/AsyncState.js";
 import { PreviewFrame } from "../../components/PreviewFrame.js";
-import { bootstrap, serverPath } from "../../data/client.js";
+import { bootstrap, loadJson, serverPath } from "../../data/client.js";
 import { deriveProfileResourceUrls, loadCardArtifact, loadCatalogSnapshot } from "../../data.js";
 import { WorkspaceCardsPage } from "./WorkspaceCardsPage.js";
 
 type CatalogCard = CatalogSnapshotV1["cards"][number];
 type CatalogVersion = CatalogCard["versions"][number];
-type DetailTab = "preview" | "contract";
+type DetailTab = "preview" | "contract" | "handoff";
 
 const tabLabels: Record<DetailTab, string> = {
   preview: "预览",
   contract: "数据结构",
+  handoff: "交付内容",
 };
 
 const cardDescriptions: Record<string, string> = {
@@ -29,7 +30,7 @@ function describeCard(card: CatalogCard): string {
 }
 
 function isTab(value: string | null): value is DetailTab {
-  return value === "preview" || value === "contract";
+  return value === "preview" || value === "contract" || value === "handoff";
 }
 
 export function CardsPage() {
@@ -156,7 +157,7 @@ function CardDetail({ card, version, artifact, searchParams, setSearchParams }: 
   setSearchParams: ReturnType<typeof useSearchParams>[1];
 }) {
   const tabValue = searchParams.get("tab");
-  const tab: DetailTab = isTab(tabValue) ? tabValue : "preview";
+  const tab: DetailTab = isTab(tabValue) && (tabValue !== "handoff" || version.handoff) ? tabValue : "preview";
   const requestedView = searchParams.get("view");
   const viewName = requestedView && artifact.views[requestedView] ? requestedView : Object.keys(artifact.views)[0];
   const view = artifact.views[viewName];
@@ -171,10 +172,110 @@ function CardDetail({ card, version, artifact, searchParams, setSearchParams }: 
   return <>
     <Link className="detail-breadcrumb" to="/cards">卡片库</Link>
     <header className="detail-header"><div><div className="identity-line"><h1>{card.name}</h1><code>{card.id}</code></div><p>{describeCard(card)}</p><div className="detail-meta"><span className="status-draft">已发布</span><span>v{version.version}</span><span>{Object.keys(artifact.views).length} 个视图</span></div></div><div className="detail-actions">{card.versions.length > 1 ? <label>版本<select value={version.reference} onChange={(event) => setQuery("version", event.target.value)}>{card.versions.map((candidate) => <option key={candidate.reference} value={candidate.reference}>{candidate.version}</option>)}</select></label> : null}{version.handoff ? <a className="button primary" href={serverPath(`/api/v1/cards/${encodeURIComponent(version.reference)}/handoff`)}><Download size={14} />下载 Server 交付包</a> : null}{version.release ? <SafeExternalLink href={version.release.url}>发行说明</SafeExternalLink> : null}</div></header>
-    <div className="detail-tabs" role="tablist">{Object.entries(tabLabels).map(([key, label]) => <button key={key} type="button" className={tab === key ? "active" : ""} onClick={() => setQuery("tab", key)}>{label}</button>)}</div>
+    <div className="detail-tabs" role="tablist">{Object.entries(tabLabels).filter(([key]) => key !== "handoff" || version.handoff).map(([key, label]) => <button key={key} type="button" className={tab === key ? "active" : ""} onClick={() => setQuery("tab", key)}>{label}</button>)}</div>
     {tab === "preview" ? <PreviewPanel artifact={artifact} version={version} viewName={viewName} sample={sample} setQuery={setQuery} /> : null}
     {tab === "contract" ? <JsonPanel title="卡片需要的数据" value={artifact.dataContract} /> : null}
+    {tab === "handoff" && version.handoff ? <HandoffPanel version={version} /> : null}
   </>;
+}
+
+interface HandoffContents {
+  reference: string;
+  fileName: string;
+  sha256: string;
+  bytes: number;
+  files: Array<{ path: string; group: string; previewable: boolean }>;
+}
+
+const handoffGroupLabels: Record<string, string> = {
+  root: "接入说明与清单",
+  contract: "数据契约",
+  templates: "卡片模板",
+  samples: "样例数据",
+  goldens: "编译结果",
+  reports: "交互报告",
+  "render-profile": "渲染规范",
+};
+
+const handoffGroupOrder = [
+  "root",
+  "contract",
+  "templates",
+  "samples",
+  "goldens",
+  "reports",
+  "render-profile",
+];
+
+function HandoffPanel({ version }: { version: CatalogVersion }) {
+  const [contents, setContents] = useState<HandoffContents>();
+  const [selectedPath, setSelectedPath] = useState<string>();
+  const [fileContent, setFileContent] = useState<string>();
+  const [error, setError] = useState<string>();
+  const [loading, setLoading] = useState(true);
+  const endpoint = serverPath(`/api/v1/cards/${encodeURIComponent(version.reference)}/handoff`);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError(undefined);
+    setContents(undefined);
+    setSelectedPath(undefined);
+    void loadJson<HandoffContents>(`${endpoint}/contents`)
+      .then((value) => {
+        if (!active) return;
+        setContents(value);
+        setSelectedPath(value.files.find((file) => file.path === "README.md")?.path ?? value.files.find((file) => file.previewable)?.path);
+      })
+      .catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : String(reason)); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [endpoint]);
+
+  useEffect(() => {
+    if (!selectedPath) return;
+    let active = true;
+    setFileContent(undefined);
+    setError(undefined);
+    void fetch(`${endpoint}/file?path=${encodeURIComponent(selectedPath)}`, { headers: { accept: "text/plain" } })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Request failed (${response.status} ${response.statusText || "Unknown"})`);
+        return response.text();
+      })
+      .then((value) => { if (active) setFileContent(value); })
+      .catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : String(reason)); });
+    return () => { active = false; };
+  }, [endpoint, selectedPath]);
+
+  const groups = useMemo(() => {
+    const grouped = new Map<string, HandoffContents["files"]>();
+    for (const file of contents?.files ?? []) {
+      const files = grouped.get(file.group) ?? [];
+      files.push(file);
+      grouped.set(file.group, files);
+    }
+    return [...grouped.entries()].sort(([left], [right]) => {
+      const leftIndex = handoffGroupOrder.indexOf(left);
+      const rightIndex = handoffGroupOrder.indexOf(right);
+      if (leftIndex === -1 || rightIndex === -1) {
+        if (leftIndex === rightIndex) return left.localeCompare(right);
+        return leftIndex === -1 ? 1 : -1;
+      }
+      return leftIndex - rightIndex;
+    });
+  }, [contents]);
+
+  if (loading) return <LoadingState label="正在读取交付内容" />;
+  if (error && !contents) return <ErrorState message={error} />;
+  if (!contents) return null;
+
+  return <section className="handoff-panel">
+    <header className="handoff-summary"><div><h3>Server 交付包</h3><p>这里展示 ZIP 中的实际文件。接入前可核对数据契约、模板、样例、编译结果与渲染规范。</p></div><dl><Fact label="文件" value={`${contents.files.length} 个`} /><Fact label="大小" value={`${Math.ceil(contents.bytes / 1024)} KiB`} /><Fact label="SHA-256" value={`${contents.sha256.slice(0, 10)}...${contents.sha256.slice(-8)}`} mono /></dl></header>
+    <div className="handoff-browser">
+      <nav className="handoff-file-list" aria-label="交付包文件">{groups.map(([group, files]) => <section key={group}><h4>{handoffGroupLabels[group] ?? group}</h4>{files.map((file) => <button type="button" key={file.path} className={selectedPath === file.path ? "active" : ""} disabled={!file.previewable} onClick={() => setSelectedPath(file.path)}><code>{file.path.includes("/") ? file.path.slice(file.path.indexOf("/") + 1) : file.path}</code>{!file.previewable ? <span>不可预览</span> : null}</button>)}</section>)}</nav>
+      <div className="handoff-file-preview"><header><span>文件内容</span><code>{selectedPath}</code></header>{error ? <ErrorState message={error} /> : fileContent === undefined ? <LoadingState label="正在读取文件" /> : <pre><code>{fileContent}</code></pre>}</div>
+    </div>
+  </section>;
 }
 
 function PreviewPanel({ artifact, version, viewName, sample, setQuery }: { artifact: CardArtifactV1; version: CatalogVersion; viewName: string; sample: CardArtifactV1["views"][string]["samples"][number]; setQuery(key: string, value: string): void }) {

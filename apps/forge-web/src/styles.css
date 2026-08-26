@@ -163,6 +163,30 @@ select { height: 42px; padding: 0 34px 0 12px; border: 1px solid var(--forge-bor
 .metrics strong { display: block; margin-top: 7px; font-size: 16px; }
 .empty-panel { min-height: 160px; display: grid; place-items: center; color: var(--forge-muted); font-size: 12px; }
 .inline-error { position: absolute; inset: 0; background: rgb(252 251 250 / 94%); }
+.handoff-panel { padding: 28px 30px 48px; }
+.handoff-summary { display: flex; align-items: flex-end; justify-content: space-between; gap: 30px; }
+.handoff-summary h3 { margin: 0; font-size: 17px; }
+.handoff-summary p { max-width: 680px; margin: 8px 0 0; color: var(--forge-muted); font-size: 12px; line-height: 1.6; }
+.handoff-summary dl { margin: 0; display: flex; gap: 28px; }
+.handoff-summary dl > div { min-width: 84px; }
+.handoff-summary dt { color: var(--forge-muted); font-size: 10px; }
+.handoff-summary dd { margin: 5px 0 0; font-size: 11px; }
+.handoff-summary dd code { overflow-wrap: anywhere; }
+.handoff-browser { min-height: 560px; margin-top: 24px; display: grid; grid-template-columns: 260px minmax(0, 1fr); border: 1px solid var(--forge-border); background: #fff; }
+.handoff-file-list { padding: 12px; border-right: 1px solid var(--forge-border); overflow-y: auto; }
+.handoff-file-list section + section { margin-top: 18px; }
+.handoff-file-list h4 { margin: 0 8px 6px; color: #55525d; font-size: 10px; font-weight: 650; }
+.handoff-file-list button { width: 100%; min-height: 34px; padding: 7px 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 0; border-radius: 3px; background: transparent; color: var(--forge-muted); text-align: left; cursor: pointer; }
+.handoff-file-list button:hover:not(:disabled) { background: #f7f6f8; color: var(--forge-text); }
+.handoff-file-list button.active { background: var(--forge-accent-soft); color: var(--forge-accent); }
+.handoff-file-list button:disabled { cursor: default; opacity: .55; }
+.handoff-file-list code { min-width: 0; overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.handoff-file-list button span { flex: 0 0 auto; font-size: 9px; }
+.handoff-file-preview { min-width: 0; display: grid; grid-template-rows: 50px minmax(0, 1fr); background: var(--forge-code); }
+.handoff-file-preview > header { padding: 0 18px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid #35333a; color: #aaa6b0; font-size: 10px; }
+.handoff-file-preview > header code { min-width: 0; overflow: hidden; color: #d8d4df; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.handoff-file-preview pre { max-height: 660px; margin: 0; padding: 20px; overflow: auto; color: #f1eff5; font-size: 11px; line-height: 1.65; }
+.handoff-file-preview .async-state { color: #d8d4df; }
 
 /* Components documentation */
 .spec-page { min-height: calc(100vh - 64px); }
@@ -324,6 +348,13 @@ select { height: 42px; padding: 0 34px 0 12px; border: 1px solid var(--forge-bor
   .detail-ledger > div:nth-child(3) { border-left: 0; }
   .technical-details { margin-inline: 15px; }
   .technical-details-content dl, .metrics { grid-template-columns: 1fr; }
+  .handoff-panel { padding: 22px 15px 40px; }
+  .handoff-summary { display: grid; }
+  .handoff-summary dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .handoff-summary dl > div { min-width: 0; }
+  .handoff-browser { min-height: 0; grid-template-columns: 1fr; }
+  .handoff-file-list { max-height: 290px; border-right: 0; border-bottom: 1px solid var(--forge-border); }
+  .handoff-file-preview { min-height: 440px; }
   .spec-layout { display: block; }
   .spec-sidebar { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--forge-border); }
   .spec-mobile-select { margin-top: 14px; display: grid; gap: 6px; }

@@ -4,6 +4,7 @@ import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import os from "node:os";
 import path from "node:path";
+import JSZip from "jszip";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   artifactSha256,
@@ -151,11 +152,16 @@ describe("Forge Web server route", () => {
   let server: Server;
   let baseUrl: string;
   let temporaryRoot: string;
+  let handoff: Buffer;
 
   beforeAll(async () => {
     const artifact = await buildCardArtifact("docs.access-request@0.3.0");
     const digest = artifactSha256(artifact);
-    const handoff = Buffer.from("verified backend handoff");
+    const handoffZip = new JSZip();
+    handoffZip.file("docs.access-request@0.3.0/README.md", "# Backend handoff\n");
+    handoffZip.file("docs.access-request@0.3.0/manifest.json", JSON.stringify(artifact.card));
+    handoffZip.file("docs.access-request@0.3.0/contract/data.schema.json", JSON.stringify(artifact.dataContract));
+    handoff = await handoffZip.generateAsync({ type: "nodebuffer" });
     const snapshot = buildCatalogSnapshot({
       channel: "release",
       revision: "c".repeat(40),
@@ -271,9 +277,26 @@ describe("Forge Web server route", () => {
     expect(handoffResponse.headers.get("content-disposition")).toContain(
       'filename="docs.access-request@0.3.0.handoff.zip"',
     );
-    expect(Buffer.from(await handoffResponse.arrayBuffer()).toString()).toBe(
-      "verified backend handoff",
+    expect(Buffer.from(await handoffResponse.arrayBuffer())).toEqual(handoff);
+
+    const contentsResponse = await fetch(
+      `${baseUrl}/api/v1/cards/docs.access-request%400.3.0/handoff/contents`,
     );
+    expect(contentsResponse.status).toBe(200);
+    await expect(contentsResponse.json()).resolves.toMatchObject({
+      reference: "docs.access-request@0.3.0",
+      files: expect.arrayContaining([
+        { path: "README.md", group: "root", previewable: true },
+        { path: "contract/data.schema.json", group: "contract", previewable: true },
+      ]),
+    });
+
+    const handoffFileResponse = await fetch(
+      `${baseUrl}/api/v1/cards/docs.access-request%400.3.0/handoff/file?path=${encodeURIComponent("README.md")}`,
+    );
+    expect(handoffFileResponse.status).toBe(200);
+    expect(handoffFileResponse.headers.get("content-type")).toContain("text/plain");
+    expect(await handoffFileResponse.text()).toBe("# Backend handoff\n");
   });
 
   it("rejects an artifact whose verified content has the wrong identity", async () => {

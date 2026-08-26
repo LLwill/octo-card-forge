@@ -1,11 +1,12 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createHash } from "node:crypto";
 import { verifyCardArtifact } from "@mlt-org/octo-card-artifact";
+import JSZip from "jszip";
 import {
   parseCatalogSnapshot,
   type CatalogSnapshotV1,
 } from "@mlt-org/octo-card-catalog-snapshot";
-import { sendBinaryDownload, sendJson } from "./http.js";
+import { sendBinaryDownload, sendJson, sendText } from "./http.js";
 import type { PublishedCatalogContext } from "./types.js";
 
 export const DEFAULT_CATALOG_SNAPSHOT_URL =
@@ -20,6 +21,69 @@ class PublishedCatalogError extends Error {
     super(message);
     this.name = "PublishedCatalogError";
   }
+}
+
+const MAX_HANDOFF_BYTES = 25 * 1024 * 1024;
+const MAX_HANDOFF_FILE_BYTES = 2 * 1024 * 1024;
+
+async function loadPublishedHandoff(
+  context: PublishedCatalogContext,
+  reference: string,
+): Promise<{ buffer: Buffer; sha256: string }> {
+  const snapshot = await loadPublishedCatalogSnapshot(context);
+  const version = snapshot.cards
+    .flatMap((card) => card.versions)
+    .find((candidate) => candidate.reference === reference);
+  if (!version?.handoff) {
+    throw new PublishedCatalogError(
+      404,
+      "catalog.handoff_not_found",
+      `Backend handoff ${reference} is not present in the active snapshot`,
+    );
+  }
+  const response = await context.fetch(version.handoff.url, {
+    headers: { accept: "application/zip" },
+  });
+  if (!response.ok) {
+    throw new PublishedCatalogError(
+      502,
+      "catalog.handoff_unavailable",
+      `Backend handoff request failed (${response.status})`,
+    );
+  }
+  const contentLength = Number(response.headers.get("content-length") ?? "0");
+  if (contentLength > MAX_HANDOFF_BYTES) {
+    throw new PublishedCatalogError(502, "catalog.handoff_too_large", "Backend handoff exceeds the size limit");
+  }
+  const buffer = Buffer.from(await response.arrayBuffer());
+  if (buffer.byteLength > MAX_HANDOFF_BYTES) {
+    throw new PublishedCatalogError(502, "catalog.handoff_too_large", "Backend handoff exceeds the size limit");
+  }
+  const actualSha256 = createHash("sha256").update(buffer).digest("hex");
+  if (actualSha256 !== version.handoff.sha256) {
+    throw new PublishedCatalogError(
+      502,
+      "catalog.handoff_digest_mismatch",
+      `Backend handoff digest mismatch for ${reference}`,
+    );
+  }
+  return { buffer, sha256: actualSha256 };
+}
+
+function handoffRelativePath(reference: string, archivePath: string): string {
+  const root = `${reference}/`;
+  if (!archivePath.startsWith(root)) {
+    throw new PublishedCatalogError(502, "catalog.handoff_invalid", "Backend handoff contains an unexpected root directory");
+  }
+  const relativePath = archivePath.slice(root.length);
+  if (!relativePath || relativePath.startsWith("/") || relativePath.split("/").some((part) => part === "..")) {
+    throw new PublishedCatalogError(502, "catalog.handoff_invalid", "Backend handoff contains an invalid file path");
+  }
+  return relativePath;
+}
+
+function previewableHandoffFile(path: string): boolean {
+  return /\.(?:css|json|md|txt)$/i.test(path);
 }
 
 async function loadPublishedCatalogSnapshot(
@@ -118,37 +182,58 @@ export async function handlePublishedCatalogApi(
     const handoffMatch = url.pathname.match(/^\/forge\/api\/handoffs\/([^/]+)$/);
     if (req.method === "GET" && handoffMatch) {
       const reference = decodeURIComponent(handoffMatch[1]);
-      const snapshot = await loadPublishedCatalogSnapshot(context);
-      const version = snapshot.cards
-        .flatMap((card) => card.versions)
-        .find((candidate) => candidate.reference === reference);
-      if (!version?.handoff) {
-        throw new PublishedCatalogError(
-          404,
-          "catalog.handoff_not_found",
-          `Backend handoff ${reference} is not present in the active snapshot`,
-        );
-      }
-      const response = await context.fetch(version.handoff.url, {
-        headers: { accept: "application/zip" },
-      });
-      if (!response.ok) {
-        throw new PublishedCatalogError(
-          502,
-          "catalog.handoff_unavailable",
-          `Backend handoff request failed (${response.status})`,
-        );
-      }
-      const buffer = Buffer.from(await response.arrayBuffer());
-      const actualSha256 = createHash("sha256").update(buffer).digest("hex");
-      if (actualSha256 !== version.handoff.sha256) {
-        throw new PublishedCatalogError(
-          502,
-          "catalog.handoff_digest_mismatch",
-          `Backend handoff digest mismatch for ${reference}`,
-        );
-      }
+      const { buffer } = await loadPublishedHandoff(context, reference);
       sendBinaryDownload(res, `${reference}.handoff.zip`, "application/zip", buffer);
+      return true;
+    }
+
+    const handoffContentsMatch = url.pathname.match(/^\/forge\/api\/handoffs\/([^/]+)\/contents$/);
+    if (req.method === "GET" && handoffContentsMatch) {
+      const reference = decodeURIComponent(handoffContentsMatch[1]);
+      const { buffer, sha256 } = await loadPublishedHandoff(context, reference);
+      const zip = await JSZip.loadAsync(buffer);
+      const files = Object.values(zip.files)
+        .filter((entry) => !entry.dir)
+        .map((entry) => {
+          const path = handoffRelativePath(reference, entry.name);
+          return {
+            path,
+            group: path.includes("/") ? path.split("/", 1)[0] : "root",
+            previewable: previewableHandoffFile(path),
+          };
+        })
+        .sort((left, right) => left.path.localeCompare(right.path));
+      sendJson(res, 200, {
+        reference,
+        fileName: `${reference}.handoff.zip`,
+        sha256,
+        bytes: buffer.byteLength,
+        files,
+      });
+      return true;
+    }
+
+    const handoffFileMatch = url.pathname.match(/^\/forge\/api\/handoffs\/([^/]+)\/file$/);
+    if (req.method === "GET" && handoffFileMatch) {
+      const reference = decodeURIComponent(handoffFileMatch[1]);
+      const requestedPath = url.searchParams.get("path") ?? "";
+      if (!requestedPath || requestedPath.startsWith("/") || requestedPath.split("/").some((part) => part === "..")) {
+        throw new PublishedCatalogError(400, "catalog.handoff_file_invalid", "A valid handoff file path is required");
+      }
+      if (!previewableHandoffFile(requestedPath)) {
+        throw new PublishedCatalogError(415, "catalog.handoff_file_unsupported", "This handoff file cannot be previewed as text");
+      }
+      const { buffer } = await loadPublishedHandoff(context, reference);
+      const zip = await JSZip.loadAsync(buffer);
+      const entry = zip.file(`${reference}/${requestedPath}`);
+      if (!entry) {
+        throw new PublishedCatalogError(404, "catalog.handoff_file_not_found", `Handoff file ${requestedPath} was not found`);
+      }
+      const content = await entry.async("nodebuffer");
+      if (content.byteLength > MAX_HANDOFF_FILE_BYTES) {
+        throw new PublishedCatalogError(413, "catalog.handoff_file_too_large", "Handoff file exceeds the preview size limit");
+      }
+      sendText(res, 200, "text/plain", content.toString("utf8"));
       return true;
     }
 

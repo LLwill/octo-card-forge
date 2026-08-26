@@ -52,6 +52,26 @@ export async function handleV1Api(
     );
   }
 
+  const publishedHandoffContentsMatch = url.pathname.match(/^\/api\/v1\/cards\/([^/]+)\/handoff\/contents$/);
+  if (publishedHandoffContentsMatch && context.mode === "published") {
+    return handlePublishedCatalogApi(
+      req,
+      res,
+      withPath(url, `/forge/api/handoffs/${publishedHandoffContentsMatch[1]}/contents`),
+      publishedCatalog,
+    );
+  }
+
+  const publishedHandoffFileMatch = url.pathname.match(/^\/api\/v1\/cards\/([^/]+)\/handoff\/file$/);
+  if (publishedHandoffFileMatch && context.mode === "published") {
+    return handlePublishedCatalogApi(
+      req,
+      res,
+      withPath(url, `/forge/api/handoffs/${publishedHandoffFileMatch[1]}/file`),
+      publishedCatalog,
+    );
+  }
+
   const workspaceCardMatch = url.pathname.match(/^\/api\/v1\/cards\/([^/]+)\/(context|contract|handoff)$/);
   if (workspaceCardMatch && context.mode === "workspace") {
     return handleLegacyApi(
