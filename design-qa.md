@@ -59,6 +59,9 @@ These regions were checked separately because their controls, JSON, rendered car
 8. Information hierarchy: the playground mixed raw Card JSON rendering with template data, Card selection, View selection, sample selection, contract fields, and Server compilation.
    Fix: reduced the route to one purpose and renamed it Card Previewer. It now accepts only a complete Adaptive Card JSON document, with format, copy, render, and canvas-width controls. Template data and sample workflows remain on Card detail pages.
    Verification: default rendering, invalid JSON feedback, `390 x 844` responsive layout, and zero horizontal overflow.
+9. Information hierarchy: CLI, Render Profile, and Portable Skill were presented as three equivalent installation choices even though they serve different layers and audiences.
+   Fix: made CLI plus Render Profile the single standard project path. Render Profile-only and Agent Skill setup now appear as collapsed advanced integrations, and the summary lists only what standard installation includes.
+   Verification: advanced sections expand independently, command copy controls stay aligned with wrapped labels, and the `390 x 844` layout has no horizontal overflow.
 
 ## Interactions Verified
 
@@ -68,7 +71,7 @@ These regions were checked separately because their controls, JSON, rendered car
 - View, sample, and width controls
 - Component category and item selection plus Preview/JSON switching
 - Card Previewer JSON validation, width selection, format, copy, and render
-- Install method switching and command copy
+- Standard installation steps, advanced integration expansion, and command copy
 - Root-route redirect and scroll-free iframe resizing
 - Component-first navigation, simplified directory groups, and non-preview foundation entries
 - Desktop and mobile overflow checks
