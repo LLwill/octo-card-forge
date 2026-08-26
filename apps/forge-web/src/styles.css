@@ -246,8 +246,9 @@ select { height: 42px; padding: 0 34px 0 12px; border: 1px solid var(--forge-bor
 .install-section-header > span, .install-advanced > header > span { color: var(--forge-accent); font-size: 10px; font-weight: 650; }
 .install-section-header h2, .install-advanced h2 { margin: 6px 0 0; font-size: 23px; }
 .install-section-header p, .install-advanced header p { max-width: 700px; margin: 8px 0 0; color: var(--forge-muted); font-size: 12px; line-height: 1.65; }
-.install-steps { padding-top: 12px; display: grid; gap: 10px; }
-.install-step { position: relative; min-height: 104px; padding: 18px 46px 14px 56px; display: grid; grid-template-columns: 1fr; gap: 10px; }
+.install-steps { margin-top: 18px; display: grid; overflow: hidden; border: 1px solid var(--forge-border); border-radius: 6px; background: #fff; }
+.install-step { position: relative; min-height: 104px; padding: 18px 46px 14px 56px; display: grid; grid-template-columns: 1fr; gap: 10px; border-bottom: 1px solid #e8e6ea; }
+.install-step:last-child { border-bottom: 0; }
 .install-step-copy { display: contents; }
 .install-step-copy > span { position: absolute; top: 23px; left: 0; color: var(--forge-accent); font: 520 18px "SFMono-Regular", Consolas, monospace; }
 .install-step-copy div { display: flex; align-items: baseline; gap: 14px; }
@@ -259,7 +260,7 @@ select { height: 42px; padding: 0 34px 0 12px; border: 1px solid var(--forge-bor
 .install-copy { flex: 0 0 auto; color: #b7b3bf !important; }
 .install-success { display: inline-flex; align-items: center; gap: 7px; color: var(--forge-success); font-size: 11px; }
 .install-success svg { width: 14px; }
-.install-summary { align-self: start; margin-top: 20px; padding: 24px; border-radius: 4px; background: #f7f6f8; }
+.install-summary { align-self: start; margin-top: 20px; padding: 24px; border: 1px solid var(--forge-border); border-radius: 6px; background: #faf9fb; }
 .install-summary h2 { margin: 0 0 10px; font-size: 15px; }
 .install-version-row { padding: 10px 0; display: grid; grid-template-columns: 1fr auto; gap: 6px 18px; }
 .install-version-row span { font-size: 12px; }
@@ -270,8 +271,11 @@ select { height: 42px; padding: 0 34px 0 12px; border: 1px solid var(--forge-bor
 .install-summary-note { margin: 18px 0 0; color: var(--forge-muted); font-size: 11px; line-height: 1.65; }
 .install-advanced { margin-top: 46px; }
 .install-advanced > header { padding: 28px 0 20px; }
-.install-option { margin-bottom: 8px; border-radius: 4px; background: #f7f6f8; }
+.install-advanced-options { overflow: hidden; border: 1px solid var(--forge-border); border-radius: 6px; background: #fff; }
+.install-option { background: #fff; }
+.install-option + .install-option { border-top: 1px solid #e8e6ea; }
 .install-option summary { min-height: 78px; padding: 0 16px; display: grid; grid-template-columns: 34px minmax(0, 1fr) 20px; gap: 14px; align-items: center; cursor: pointer; list-style: none; }
+.install-option summary:hover { background: #faf9fb; }
 .install-option summary::-webkit-details-marker { display: none; }
 .install-option-icon { width: 32px; height: 32px; display: grid; place-items: center; color: var(--forge-accent); }
 .install-option-icon svg { width: 18px; }
@@ -281,7 +285,8 @@ select { height: 42px; padding: 0 34px 0 12px; border: 1px solid var(--forge-bor
 .install-option-chevron { width: 16px; color: var(--forge-muted); transition: transform 160ms ease; }
 .install-option[open] .install-option-chevron { transform: rotate(180deg); }
 .install-option-steps { padding: 0 16px 18px 48px; }
-.install-details { margin-top: 30px; }
+.install-option-steps .install-step:first-child { border-top: 1px solid #e8e6ea; }
+.install-details { margin-top: 30px; border-top: 1px solid var(--forge-border); }
 
 .async-state { min-height: 60vh; padding: 30px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px; color: var(--forge-muted); text-align: center; }
 .async-state strong { color: var(--forge-text); font-size: 14px; }

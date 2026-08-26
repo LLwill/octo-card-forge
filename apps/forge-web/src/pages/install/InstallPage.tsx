@@ -87,13 +87,15 @@ export function InstallPage() {
                 <h2 id="advanced-install-title">只在特定场景下使用</h2>
                 <p>下面的能力不是标准接入的替代方案，只有在自定义宿主或 Agent 环境中才需要单独配置。</p>
               </header>
-              {advancedIntegrations.map((integration) => {
-                const Icon = integration.icon;
-                return <details className="install-option" key={integration.id}>
-                  <summary><span className="install-option-icon"><Icon /></span><span className="install-option-copy"><strong>{integration.title}</strong><small>{integration.description}</small></span><ChevronDown className="install-option-chevron" /></summary>
-                  <div className="install-option-steps">{integration.steps.map((step, index) => <InstallStep key={step.label} number={String(index + 1).padStart(2, "0")} {...step} />)}</div>
-                </details>;
-              })}
+              <div className="install-advanced-options">
+                {advancedIntegrations.map((integration) => {
+                  const Icon = integration.icon;
+                  return <details className="install-option" key={integration.id}>
+                    <summary><span className="install-option-icon"><Icon /></span><span className="install-option-copy"><strong>{integration.title}</strong><small>{integration.description}</small></span><ChevronDown className="install-option-chevron" /></summary>
+                    <div className="install-option-steps">{integration.steps.map((step, index) => <InstallStep key={step.label} number={String(index + 1).padStart(2, "0")} {...step} />)}</div>
+                  </details>;
+                })}
+              </div>
             </section>
           </section>
 
