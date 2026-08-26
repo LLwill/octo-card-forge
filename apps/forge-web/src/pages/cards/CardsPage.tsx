@@ -19,6 +19,16 @@ const tabLabels: Record<DetailTab, string> = {
   validation: "检查结果",
 };
 
+const cardDescriptions: Record<string, string> = {
+  "ai.decision-action": "呈现候选行动、确认步骤与提交结果，帮助用户清楚地完成一次决策。",
+  "ai.reasoning-process": "呈现推理进度、阶段状态与最终结果，让复杂过程保持可读。",
+  "docs.access-request": "用于请求访问或协作文档，并清晰呈现审批状态与结果。",
+};
+
+function describeCard(card: CatalogCard): string {
+  return cardDescriptions[card.id] ?? "展示业务交互、数据契约与可验证渲染结果。";
+}
+
 function isTab(value: string | null): value is DetailTab {
   return value === "preview" || value === "contract" || value === "validation";
 }
@@ -51,10 +61,17 @@ export function CardsPage() {
     return () => { active = false; };
   }, [runtime, catalogRevision]);
 
+  const cards = useMemo(() => {
+    const query = filter.trim().toLocaleLowerCase();
+    return (snapshot?.cards ?? []).filter((card) =>
+      !query || [card.id, card.name, card.namespace, card.key].some((value) => value?.toLocaleLowerCase().includes(query)),
+    );
+  }, [filter, snapshot]);
   const selectedCard = useMemo(() => {
     if (!snapshot) return undefined;
+    if (!reference) return cards[0];
     return snapshot.cards.find((card) => card.id === reference || card.versions.some((version) => version.reference === reference)) ?? snapshot.cards[0];
-  }, [snapshot, reference]);
+  }, [cards, snapshot, reference]);
   const requestedVersion = searchParams.get("version");
   const selectedVersion = selectedCard?.versions.find((version) => version.reference === requestedVersion || version.version === requestedVersion)
     ?? selectedCard?.versions.find((version) => version.version === selectedCard.latest)
@@ -81,11 +98,6 @@ export function CardsPage() {
   if (runtimeError) return <ErrorState message={runtimeError} retry={reloadRuntime} />;
   if (runtime?.mode === "workspace") return <WorkspaceCardsPage />;
   if (error && !snapshot) return <ErrorState message={error} retry={() => setCatalogRevision((value) => value + 1)} />;
-
-  const cards = (snapshot?.cards ?? []).filter((card) => {
-    const query = filter.trim().toLocaleLowerCase();
-    return !query || [card.id, card.name, card.namespace, card.key].some((value) => value?.toLocaleLowerCase().includes(query));
-  });
 
   return (
     <main className={reference ? "card-detail-page" : "catalog-page"}>
@@ -126,13 +138,13 @@ function CatalogFeature({ card, version, artifact, cards, navigate }: {
       <div className="catalog-feature-copy">
         <h2>{card.name}</h2>
         <code>{card.id}</code>
-        <p>用于展示业务交互、数据契约与可验证渲染结果的 Card Package。</p>
-        <div className="catalog-meta"><span className="status-draft">草稿</span><span>{Object.keys(artifact.views).length} 个视图</span><span className="status-valid">检查通过</span></div>
+        <p>{describeCard(card)}</p>
+        <div className="catalog-meta"><span className="status-draft">已发布</span><span>{Object.keys(artifact.views).length} 个视图</span><span className="status-valid">检查通过</span></div>
         <button type="button" className="text-action primary-text-action" onClick={() => navigate(`/cards/${encodeURIComponent(card.id)}`)}>查看详情<ArrowRight /></button>
         <button type="button" className="text-action" onClick={() => navigate(`/cards/${encodeURIComponent(card.id)}?tab=contract`)}>数据契约<ArrowRight /></button>
       </div>
     </div>
-    <div className="catalog-index">{cards.slice(1).map((item) => <button type="button" key={item.id} onClick={() => navigate(`/cards/${encodeURIComponent(item.id)}`)}><span className="catalog-thumb"><span /></span><strong>{item.name}</strong><code>{item.id}</code><small>v{item.latest}</small><ArrowRight /></button>)}</div>
+    <div className="catalog-index">{cards.filter((item) => item.id !== card.id).map((item) => <button type="button" key={item.id} onClick={() => navigate(`/cards/${encodeURIComponent(item.id)}`)}><span className="catalog-thumb"><span /></span><strong>{item.name}</strong><code>{item.id}</code><small>v{item.latest}</small><ArrowRight /></button>)}</div>
   </>;
 }
 
@@ -158,7 +170,7 @@ function CardDetail({ card, version, artifact, searchParams, setSearchParams }: 
   };
   return <>
     <Link className="detail-breadcrumb" to="/cards">卡片库</Link>
-    <header className="detail-header"><div><div className="identity-line"><h1>{card.name}</h1><code>{card.id}</code></div><p>用于请求访问或协作文档的审批卡片。</p><div className="detail-meta"><span className="status-draft">草稿</span><span>v{version.version}</span><span>{Object.keys(artifact.views).length} 个视图</span><span className="status-valid">检查通过</span></div></div><div className="detail-actions">{card.versions.length > 1 ? <label>版本<select value={version.reference} onChange={(event) => setQuery("version", event.target.value)}>{card.versions.map((candidate) => <option key={candidate.reference} value={candidate.reference}>{candidate.version}</option>)}</select></label> : <span className="version-label">v{version.version}</span>}<SafeExternalLink href={version.release?.url ?? version.artifact.url}>发行说明</SafeExternalLink></div></header>
+    <header className="detail-header"><div><div className="identity-line"><h1>{card.name}</h1><code>{card.id}</code></div><p>{describeCard(card)}</p><div className="detail-meta"><span className="status-draft">已发布</span><span>v{version.version}</span><span>{Object.keys(artifact.views).length} 个视图</span><span className="status-valid">检查通过</span></div></div><div className="detail-actions">{card.versions.length > 1 ? <label>版本<select value={version.reference} onChange={(event) => setQuery("version", event.target.value)}>{card.versions.map((candidate) => <option key={candidate.reference} value={candidate.reference}>{candidate.version}</option>)}</select></label> : <span className="version-label">v{version.version}</span>}<SafeExternalLink href={version.release?.url ?? version.artifact.url}>发行说明</SafeExternalLink></div></header>
     <div className="detail-tabs" role="tablist">{Object.entries(tabLabels).map(([key, label]) => <button key={key} type="button" className={tab === key ? "active" : ""} onClick={() => setQuery("tab", key)}>{label}</button>)}</div>
     {tab === "preview" ? <PreviewPanel artifact={artifact} version={version} viewName={viewName} sample={sample} setQuery={setQuery} /> : null}
     {tab === "contract" ? <JsonPanel title="卡片需要的数据" value={artifact.dataContract} /> : null}
