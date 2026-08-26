@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
@@ -154,6 +155,7 @@ describe("Forge Web server route", () => {
   beforeAll(async () => {
     const artifact = await buildCardArtifact("docs.access-request@0.3.0");
     const digest = artifactSha256(artifact);
+    const handoff = Buffer.from("verified backend handoff");
     const snapshot = buildCatalogSnapshot({
       channel: "release",
       revision: "c".repeat(40),
@@ -167,6 +169,10 @@ describe("Forge Web server route", () => {
           defaultLocale: artifact.card.defaultLocale,
         },
         artifact: { url: "https://example.test/card.artifact.json", sha256: digest },
+        handoff: {
+          url: "https://example.test/card.handoff.zip",
+          sha256: createHash("sha256").update(handoff).digest("hex"),
+        },
         source: { repository: "example/catalog", commit: "d".repeat(40), path: "cards/docs/access-request" },
         release: { tag: "card/docs.access-request/v0.3.0", url: "https://example.test/releases/0.3.0" },
       }],
@@ -181,8 +187,12 @@ describe("Forge Web server route", () => {
       writeFile(path.join(temporaryRoot, "assets", "app-hash.js"), "export const ready = true;"),
     ]);
     const catalogFetch = async (input: string | URL | Request): Promise<Response> => {
-      return String(input).includes("snapshot")
-        ? new Response(canonicalCatalogSnapshotBytes(snapshot))
+      const url = String(input);
+      if (url.includes("snapshot")) {
+        return new Response(canonicalCatalogSnapshotBytes(snapshot));
+      }
+      return url.endsWith(".zip")
+        ? new Response(handoff)
         : new Response(JSON.stringify(artifact, null, 2));
     };
     server = await createForgeServer({
@@ -252,6 +262,18 @@ describe("Forge Web server route", () => {
     await expect(v1ArtifactResponse.json()).resolves.toMatchObject({
       card: { id: "docs.access-request", version: "0.3.0" },
     });
+
+    const handoffResponse = await fetch(
+      `${baseUrl}/api/v1/cards/docs.access-request%400.3.0/handoff`,
+    );
+    expect(handoffResponse.status).toBe(200);
+    expect(handoffResponse.headers.get("content-type")).toBe("application/zip");
+    expect(handoffResponse.headers.get("content-disposition")).toContain(
+      'filename="docs.access-request@0.3.0.handoff.zip"',
+    );
+    expect(Buffer.from(await handoffResponse.arrayBuffer()).toString()).toBe(
+      "verified backend handoff",
+    );
   });
 
   it("rejects an artifact whose verified content has the wrong identity", async () => {
@@ -307,6 +329,67 @@ describe("Forge Web server route", () => {
     } finally {
       await new Promise<void>((resolve, reject) => {
         identityServer.close((error) => error ? reject(error) : resolve());
+      });
+    }
+  });
+
+  it("rejects a backend handoff whose digest does not match the Snapshot", async () => {
+    const artifact = await buildCardArtifact("docs.access-request@0.3.0");
+    const snapshot = buildCatalogSnapshot({
+      channel: "release",
+      revision: "h".repeat(40),
+      records: [{
+        card: {
+          id: artifact.card.id,
+          name: artifact.card.name,
+          version: artifact.card.version,
+          contractVersion: artifact.card.contractVersion,
+          renderProfile: artifact.profile.reference,
+          defaultLocale: artifact.card.defaultLocale,
+        },
+        artifact: {
+          url: "https://example.test/card.artifact.json",
+          sha256: artifactSha256(artifact),
+        },
+        handoff: {
+          url: "https://example.test/card.handoff.zip",
+          sha256: "0".repeat(64),
+        },
+        source: {
+          repository: "example/catalog",
+          commit: "i".repeat(40),
+          path: "cards/docs/access-request",
+        },
+        release: {
+          tag: "card/docs.access-request/v0.3.0",
+          url: "https://example.test/releases/0.3.0",
+        },
+      }],
+    });
+    const handoffServer = await createForgeServer({
+      catalogSnapshotUrl: "https://example.test/snapshot",
+      catalogFetch: async (input) => String(input).includes("snapshot")
+        ? new Response(canonicalCatalogSnapshotBytes(snapshot))
+        : new Response(Buffer.from("corrupt handoff")),
+      forgeWebRoot: temporaryRoot,
+    });
+    await new Promise<void>((resolve, reject) => {
+      handoffServer.once("error", reject);
+      handoffServer.listen(0, "127.0.0.1", resolve);
+    });
+
+    try {
+      const address = handoffServer.address() as AddressInfo;
+      const response = await fetch(
+        `http://127.0.0.1:${address.port}/api/v1/cards/docs.access-request%400.3.0/handoff`,
+      );
+      expect(response.status).toBe(502);
+      await expect(response.json()).resolves.toMatchObject({
+        code: "catalog.handoff_digest_mismatch",
+      });
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        handoffServer.close((error) => error ? reject(error) : resolve());
       });
     }
   });

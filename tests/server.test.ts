@@ -82,7 +82,7 @@ describe("catalog HTTP API", () => {
         componentCatalog: true,
         templateDataPreview: false,
         rawCardPreview: true,
-        handoffDownload: false,
+        handoffDownload: true,
       },
     });
   });

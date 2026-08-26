@@ -1,10 +1,11 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { createHash } from "node:crypto";
 import { verifyCardArtifact } from "@mlt-org/octo-card-artifact";
 import {
   parseCatalogSnapshot,
   type CatalogSnapshotV1,
 } from "@mlt-org/octo-card-catalog-snapshot";
-import { sendJson } from "./http.js";
+import { sendBinaryDownload, sendJson } from "./http.js";
 import type { PublishedCatalogContext } from "./types.js";
 
 export const DEFAULT_CATALOG_SNAPSHOT_URL =
@@ -111,6 +112,43 @@ export async function handlePublishedCatalogApi(
         );
       }
       sendJson(res, 200, verification.artifact);
+      return true;
+    }
+
+    const handoffMatch = url.pathname.match(/^\/forge\/api\/handoffs\/([^/]+)$/);
+    if (req.method === "GET" && handoffMatch) {
+      const reference = decodeURIComponent(handoffMatch[1]);
+      const snapshot = await loadPublishedCatalogSnapshot(context);
+      const version = snapshot.cards
+        .flatMap((card) => card.versions)
+        .find((candidate) => candidate.reference === reference);
+      if (!version?.handoff) {
+        throw new PublishedCatalogError(
+          404,
+          "catalog.handoff_not_found",
+          `Backend handoff ${reference} is not present in the active snapshot`,
+        );
+      }
+      const response = await context.fetch(version.handoff.url, {
+        headers: { accept: "application/zip" },
+      });
+      if (!response.ok) {
+        throw new PublishedCatalogError(
+          502,
+          "catalog.handoff_unavailable",
+          `Backend handoff request failed (${response.status})`,
+        );
+      }
+      const buffer = Buffer.from(await response.arrayBuffer());
+      const actualSha256 = createHash("sha256").update(buffer).digest("hex");
+      if (actualSha256 !== version.handoff.sha256) {
+        throw new PublishedCatalogError(
+          502,
+          "catalog.handoff_digest_mismatch",
+          `Backend handoff digest mismatch for ${reference}`,
+        );
+      }
+      sendBinaryDownload(res, `${reference}.handoff.zip`, "application/zip", buffer);
       return true;
     }
 

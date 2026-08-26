@@ -36,7 +36,7 @@ export async function handleRuntimeApi(
           componentCatalog: Boolean(context.profile?.componentCatalog),
           templateDataPreview: false,
           rawCardPreview: Boolean(context.profile),
-          handoffDownload: false,
+          handoffDownload: true,
         },
   };
   sendJson(res, 200, descriptor);

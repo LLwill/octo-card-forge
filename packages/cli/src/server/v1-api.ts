@@ -42,6 +42,16 @@ export async function handleV1Api(
     );
   }
 
+  const publishedHandoffMatch = url.pathname.match(/^\/api\/v1\/cards\/([^/]+)\/handoff$/);
+  if (publishedHandoffMatch && context.mode === "published") {
+    return handlePublishedCatalogApi(
+      req,
+      res,
+      withPath(url, `/forge/api/handoffs/${publishedHandoffMatch[1]}`),
+      publishedCatalog,
+    );
+  }
+
   const workspaceCardMatch = url.pathname.match(/^\/api\/v1\/cards\/([^/]+)\/(context|contract|handoff)$/);
   if (workspaceCardMatch && context.mode === "workspace") {
     return handleLegacyApi(
