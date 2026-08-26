@@ -1,6 +1,5 @@
 import { Boxes } from "lucide-react";
 import { Link, NavLink, Outlet } from "react-router-dom";
-import { useRuntime } from "../app/runtime.js";
 import { cn } from "../lib/utils.js";
 
 const navigation = [
@@ -11,9 +10,6 @@ const navigation = [
 ];
 
 export function AppShell() {
-  const { runtime } = useRuntime();
-  const modeLabel = runtime?.mode === "published" ? "已发布目录" : "本地工作区";
-
   return (
     <div className="forge-app-shell">
       <header className="forge-topbar">
@@ -36,7 +32,6 @@ export function AppShell() {
             </NavLink>
           ))}
         </nav>
-        <div className="forge-runtime"><i aria-hidden="true" /><span>{modeLabel}</span><small>已连接</small></div>
       </header>
 
       <div className="forge-app-content"><Outlet /></div>
