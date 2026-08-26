@@ -198,7 +198,10 @@ select { height: 42px; padding: 0 34px 0 12px; border: 1px solid var(--forge-bor
 .handoff-file-list button span { flex: 0 0 auto; font-size: 9px; }
 .handoff-file-preview { min-width: 0; display: grid; grid-template-rows: 50px minmax(0, 1fr); background: var(--forge-code); }
 .handoff-file-preview > header { padding: 0 18px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid #35333a; color: #aaa6b0; font-size: 10px; }
+.handoff-file-preview > header > div { min-width: 0; display: flex; align-items: center; gap: 8px; }
 .handoff-file-preview > header code { min-width: 0; overflow: hidden; color: #d8d4df; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.handoff-copy { flex: 0 0 auto; color: #aaa6b0 !important; border-radius: 3px !important; }
+.handoff-copy:hover:not(:disabled) { background: #302e35 !important; color: #fff !important; }
 .handoff-file-preview pre { max-height: 660px; margin: 0; padding: 20px; overflow: auto; color: #f1eff5; font-size: 11px; line-height: 1.65; }
 .handoff-file-preview .async-state { color: #d8d4df; }
 

@@ -1,10 +1,11 @@
-import { ArrowRight, Download, ExternalLink, LayoutTemplate, Search } from "lucide-react";
+import { ArrowRight, Check, Clipboard, Download, ExternalLink, LayoutTemplate, Search } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import type { CardArtifactV1, CatalogSnapshotV1 } from "@mlt-org/octo-card-catalog-snapshot";
 import { useRuntime } from "../../app/runtime.js";
 import { ErrorState, LoadingState } from "../../components/AsyncState.js";
 import { PreviewFrame } from "../../components/PreviewFrame.js";
+import { Button } from "../../components/ui/button.js";
 import { bootstrap, loadJson, serverPath } from "../../data/client.js";
 import { deriveProfileResourceUrls, loadCardArtifact, loadCatalogSnapshot } from "../../data.js";
 import { WorkspaceCardsPage } from "./WorkspaceCardsPage.js";
@@ -211,6 +212,7 @@ function HandoffPanel({ version }: { version: CatalogVersion }) {
   const [contents, setContents] = useState<HandoffContents>();
   const [selectedPath, setSelectedPath] = useState<string>();
   const [fileContent, setFileContent] = useState<string>();
+  const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string>();
   const [loading, setLoading] = useState(true);
   const endpoint = serverPath(`/api/v1/cards/${encodeURIComponent(version.reference)}/handoff`);
@@ -235,6 +237,7 @@ function HandoffPanel({ version }: { version: CatalogVersion }) {
   useEffect(() => {
     if (!selectedPath) return;
     let active = true;
+    setCopied(false);
     setFileContent(undefined);
     setError(undefined);
     void fetch(`${endpoint}/file?path=${encodeURIComponent(selectedPath)}`, { headers: { accept: "text/plain" } })
@@ -246,6 +249,18 @@ function HandoffPanel({ version }: { version: CatalogVersion }) {
       .catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : String(reason)); });
     return () => { active = false; };
   }, [endpoint, selectedPath]);
+
+  useEffect(() => {
+    if (!copied) return;
+    const timer = window.setTimeout(() => setCopied(false), 1600);
+    return () => window.clearTimeout(timer);
+  }, [copied]);
+
+  const copyFile = async () => {
+    if (fileContent === undefined) return;
+    await navigator.clipboard.writeText(fileContent);
+    setCopied(true);
+  };
 
   const groups = useMemo(() => {
     const grouped = new Map<string, HandoffContents["files"]>();
@@ -273,7 +288,7 @@ function HandoffPanel({ version }: { version: CatalogVersion }) {
     <header className="handoff-summary"><div><h3>Server 交付包</h3><p>这里展示 ZIP 中的实际文件。接入前可核对数据契约、模板、样例、编译结果与渲染规范。</p></div><dl><Fact label="文件" value={`${contents.files.length} 个`} /><Fact label="大小" value={`${Math.ceil(contents.bytes / 1024)} KiB`} /><Fact label="SHA-256" value={`${contents.sha256.slice(0, 10)}...${contents.sha256.slice(-8)}`} mono /></dl></header>
     <div className="handoff-browser">
       <nav className="handoff-file-list" aria-label="交付包文件">{groups.map(([group, files]) => <section key={group}><h4>{handoffGroupLabels[group] ?? group}</h4>{files.map((file) => <button type="button" key={file.path} className={selectedPath === file.path ? "active" : ""} disabled={!file.previewable} onClick={() => setSelectedPath(file.path)}><code>{file.path.includes("/") ? file.path.slice(file.path.indexOf("/") + 1) : file.path}</code>{!file.previewable ? <span>不可预览</span> : null}</button>)}</section>)}</nav>
-      <div className="handoff-file-preview"><header><span>文件内容</span><code>{selectedPath}</code></header>{error ? <ErrorState message={error} /> : fileContent === undefined ? <LoadingState label="正在读取文件" /> : <pre><code>{fileContent}</code></pre>}</div>
+      <div className="handoff-file-preview"><header><span>文件内容</span><div><code>{selectedPath}</code><Button className="handoff-copy" type="button" variant="ghost" size="icon-sm" disabled={fileContent === undefined} title={copied ? "已复制" : "复制文件内容"} aria-label={copied ? "文件内容已复制" : "复制文件内容"} onClick={() => void copyFile()}>{copied ? <Check /> : <Clipboard />}</Button></div></header>{error ? <ErrorState message={error} /> : fileContent === undefined ? <LoadingState label="正在读取文件" /> : <pre><code>{fileContent}</code></pre>}</div>
     </div>
   </section>;
 }
