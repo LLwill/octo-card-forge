@@ -3,7 +3,10 @@ import {
   CheckCircle2,
   Code2,
   Copy,
+  Monitor,
   Play,
+  Smartphone,
+  Tablet,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { JsonObject, RenderProfileManifestV1 } from "@mlt-org/octo-card-spec";
@@ -32,7 +35,11 @@ const starterCard: JsonObject = {
   actions: [{ type: "Action.Submit", title: "确认", data: { action: "preview" } }],
 };
 
-const previewWidths = [320, 480, 640] as const;
+const previewWidths = [
+  { value: 320, label: "手机", Icon: Smartphone },
+  { value: 480, label: "标准", Icon: Tablet },
+  { value: 640, label: "宽屏", Icon: Monitor },
+] as const;
 
 export function PlaygroundPage() {
   const { loading: runtimeLoading, error: runtimeError } = useRuntime();
@@ -40,7 +47,7 @@ export function PlaygroundPage() {
   const [input, setInput] = useState(JSON.stringify(starterCard, null, 2));
   const [preview, setPreview] = useState<JsonObject>(starterCard);
   const [error, setError] = useState<string>();
-  const [width, setWidth] = useState<(typeof previewWidths)[number]>(480);
+  const [width, setWidth] = useState<(typeof previewWidths)[number]["value"]>(480);
 
   useEffect(() => {
     let active = true;
@@ -88,21 +95,21 @@ export function PlaygroundPage() {
             <p className="mt-2 text-sm leading-6 text-muted-foreground">粘贴或编辑完整的 Adaptive Card JSON，快速检查不同宽度下的渲染效果。</p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-xs text-muted-foreground">画布宽度</span>
-            <div className="inline-flex rounded-lg border bg-muted/60 p-1" aria-label="画布宽度">
-              {previewWidths.map((value) => (
-                <Button
+          <div className="playground-width-control">
+            <span>预览宽度</span>
+            <div className="playground-width-switch" role="group" aria-label="画布宽度">
+              {previewWidths.map(({ value, label, Icon }) => (
+                <button
                   key={value}
                   type="button"
-                  size="sm"
-                  variant={width === value ? "outline" : "ghost"}
+                  className={width === value ? "active" : ""}
                   aria-pressed={width === value}
-                  className={cn("h-9 min-w-12", width === value && "bg-background text-primary shadow-sm")}
                   onClick={() => setWidth(value)}
                 >
-                  {value}
-                </Button>
+                  <Icon aria-hidden="true" />
+                  <span>{label}</span>
+                  <small>{value}</small>
+                </button>
               ))}
             </div>
           </div>
