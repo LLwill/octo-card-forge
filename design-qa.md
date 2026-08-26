@@ -68,6 +68,9 @@ These regions were checked separately because their controls, JSON, rendered car
 11. P3: after boundary consolidation, the page still had loose vertical rhythm and mobile step descriptions competed horizontally with their titles.
     Fix: tightened the hero and section spacing while stacking step titles and explanations on narrow screens. The three module boundaries remain unchanged.
     Evidence: `forge-install-style-audit/03-refined-desktop.png` and `forge-install-style-audit/04-refined-mobile.png`.
+12. P2: numbered installation steps used absolute positioning, placing the numbers directly against the workflow outline and making the frame look misaligned.
+    Fix: rebuilt each step as a two-column grid with an internal number column and a shared content column for title, command, and status.
+    Evidence: `forge-install-style-audit/05-step-grid-fixed.png` and `forge-install-style-audit/06-step-grid-fixed-mobile.png`.
 
 ## Interactions Verified
 
