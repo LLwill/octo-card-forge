@@ -62,6 +62,9 @@ These regions were checked separately because their controls, JSON, rendered car
 9. Information hierarchy: CLI, Render Profile, and Portable Skill were presented as three equivalent installation choices even though they serve different layers and audiences.
    Fix: made CLI plus Render Profile the single standard project path. Render Profile-only and Agent Skill setup now appear as collapsed advanced integrations, and the summary lists only what standard installation includes.
    Verification: advanced sections expand independently, command copy controls stay aligned with wrapped labels, and the `390 x 844` layout has no horizontal overflow.
+10. P3: the installation page used borders on nearly every heading, step, option, and metadata row, fragmenting the reading flow.
+    Fix: replaced step dividers with whitespace, grouped advanced integrations with quiet neutral surfaces, and reserved separation for the global structure and technical disclosure.
+    Verification: desktop hierarchy remains clear without stacked rules; mobile layout retains aligned commands and zero horizontal overflow.
 
 ## Interactions Verified
 
