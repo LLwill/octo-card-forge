@@ -11,12 +11,11 @@ import { WorkspaceCardsPage } from "./WorkspaceCardsPage.js";
 
 type CatalogCard = CatalogSnapshotV1["cards"][number];
 type CatalogVersion = CatalogCard["versions"][number];
-type DetailTab = "preview" | "contract" | "validation";
+type DetailTab = "preview" | "contract";
 
 const tabLabels: Record<DetailTab, string> = {
   preview: "预览",
   contract: "数据结构",
-  validation: "检查结果",
 };
 
 const cardDescriptions: Record<string, string> = {
@@ -30,7 +29,7 @@ function describeCard(card: CatalogCard): string {
 }
 
 function isTab(value: string | null): value is DetailTab {
-  return value === "preview" || value === "contract" || value === "validation";
+  return value === "preview" || value === "contract";
 }
 
 export function CardsPage() {
@@ -171,11 +170,10 @@ function CardDetail({ card, version, artifact, searchParams, setSearchParams }: 
   };
   return <>
     <Link className="detail-breadcrumb" to="/cards">卡片库</Link>
-    <header className="detail-header"><div><div className="identity-line"><h1>{card.name}</h1><code>{card.id}</code></div><p>{describeCard(card)}</p><div className="detail-meta"><span className="status-draft">已发布</span><span>v{version.version}</span><span>{Object.keys(artifact.views).length} 个视图</span><span className="status-valid">检查通过</span></div></div><div className="detail-actions">{card.versions.length > 1 ? <label>版本<select value={version.reference} onChange={(event) => setQuery("version", event.target.value)}>{card.versions.map((candidate) => <option key={candidate.reference} value={candidate.reference}>{candidate.version}</option>)}</select></label> : null}{version.handoff ? <a className="button primary" href={serverPath(`/api/v1/cards/${encodeURIComponent(version.reference)}/handoff`)}><Download size={14} />下载 Server 交付包</a> : null}{version.release ? <SafeExternalLink href={version.release.url}>发行说明</SafeExternalLink> : null}</div></header>
+    <header className="detail-header"><div><div className="identity-line"><h1>{card.name}</h1><code>{card.id}</code></div><p>{describeCard(card)}</p><div className="detail-meta"><span className="status-draft">已发布</span><span>v{version.version}</span><span>{Object.keys(artifact.views).length} 个视图</span></div></div><div className="detail-actions">{card.versions.length > 1 ? <label>版本<select value={version.reference} onChange={(event) => setQuery("version", event.target.value)}>{card.versions.map((candidate) => <option key={candidate.reference} value={candidate.reference}>{candidate.version}</option>)}</select></label> : null}{version.handoff ? <a className="button primary" href={serverPath(`/api/v1/cards/${encodeURIComponent(version.reference)}/handoff`)}><Download size={14} />下载 Server 交付包</a> : null}{version.release ? <SafeExternalLink href={version.release.url}>发行说明</SafeExternalLink> : null}</div></header>
     <div className="detail-tabs" role="tablist">{Object.entries(tabLabels).map(([key, label]) => <button key={key} type="button" className={tab === key ? "active" : ""} onClick={() => setQuery("tab", key)}>{label}</button>)}</div>
     {tab === "preview" ? <PreviewPanel artifact={artifact} version={version} viewName={viewName} sample={sample} setQuery={setQuery} /> : null}
     {tab === "contract" ? <JsonPanel title="卡片需要的数据" value={artifact.dataContract} /> : null}
-    {tab === "validation" ? <ValidationPanel artifact={artifact} /> : null}
   </>;
 }
 
@@ -183,18 +181,11 @@ function PreviewPanel({ artifact, version, viewName, sample, setQuery }: { artif
   const view = artifact.views[viewName];
   const resources = deriveProfileResourceUrls(artifact);
   const [width, setWidth] = useState(480);
-  return <div className="preview-stack"><div className="preview-toolbar"><label>视图<select value={viewName} onChange={(event) => setQuery("view", event.target.value)}>{Object.keys(artifact.views).map((name) => <option key={name}>{name}</option>)}</select></label><label>样例<select value={sample.name} onChange={(event) => setQuery("sample", event.target.value)}>{view.samples.map((candidate) => <option key={candidate.name}>{candidate.name}</option>)}</select></label><div className="width-switch" aria-label="预览宽度">{[320, 480, 640].map((value) => <button key={value} type="button" className={width === value ? "active" : ""} onClick={() => setWidth(value)}>{value}</button>)}</div></div><section className="preview-surface"><div className="detail-preview-frame" style={{ width: `min(100%, ${width}px)` }}><PreviewFrame artifact={artifact} sample={sample} title={`${artifact.card.name} ${viewName} 预览`} /></div></section><div className="detail-ledger"><Fact label="数据契约" value={`${Object.keys(artifact.dataContract.properties ?? {}).length} 个字段`} /><Fact label="交互检查" value={`${sample.inspection.actions.length} 个动作`} /><Fact label="渲染规范" value={artifact.profile.reference} mono /><Fact label="源文件" value={version.source.path} mono /></div><details className="technical-details"><summary>更多技术信息</summary><div className="technical-details-content"><dl><Fact label="产物摘要" value={`${version.artifact.sha256.slice(0, 10)}...${version.artifact.sha256.slice(-8)}`} mono /><Fact label="渲染 SDK" value={artifact.profile.manifest.adaptiveCardsSdkVersion} /><Fact label="数据协议" value={view.wireProfile} mono /><Fact label="来源提交" value={version.source.commit.slice(0, 12)} mono /></dl><div className="resource-links"><SafeExternalLink href={resources.hostConfig}>主机配置</SafeExternalLink><SafeExternalLink href={resources.stylesheet}>样式文件</SafeExternalLink></div></div></details></div>;
+  return <div className="preview-stack"><div className="preview-toolbar"><label>视图<select value={viewName} onChange={(event) => setQuery("view", event.target.value)}>{Object.keys(artifact.views).map((name) => <option key={name}>{name}</option>)}</select></label><label>样例<select value={sample.name} onChange={(event) => setQuery("sample", event.target.value)}>{view.samples.map((candidate) => <option key={candidate.name}>{candidate.name}</option>)}</select></label><div className="width-switch" aria-label="预览宽度">{[320, 480, 640].map((value) => <button key={value} type="button" className={width === value ? "active" : ""} onClick={() => setWidth(value)}>{value}</button>)}</div></div><section className="preview-surface"><div className="detail-preview-frame" style={{ width: `min(100%, ${width}px)` }}><PreviewFrame artifact={artifact} sample={sample} title={`${artifact.card.name} ${viewName} 预览`} /></div></section><div className="detail-ledger"><Fact label="数据契约" value={`${Object.keys(artifact.dataContract.properties ?? {}).length} 个字段`} /><Fact label="交互动作" value={`${sample.inspection.actions.length} 个`} /><Fact label="渲染规范" value={artifact.profile.reference} mono /><Fact label="源文件" value={version.source.path} mono /></div><details className="technical-details"><summary>更多技术信息</summary><div className="technical-details-content"><dl><Fact label="产物摘要" value={`${version.artifact.sha256.slice(0, 10)}...${version.artifact.sha256.slice(-8)}`} mono /><Fact label="渲染 SDK" value={artifact.profile.manifest.adaptiveCardsSdkVersion} /><Fact label="数据协议" value={view.wireProfile} mono /><Fact label="来源提交" value={version.source.commit.slice(0, 12)} mono /></dl><div className="resource-links"><SafeExternalLink href={resources.hostConfig}>主机配置</SafeExternalLink><SafeExternalLink href={resources.stylesheet}>样式文件</SafeExternalLink></div></div></details></div>;
 }
 
 function Fact({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) { return <div><dt>{label}</dt><dd>{mono ? <code>{value}</code> : value}</dd></div>; }
 function JsonPanel({ title, value }: { title: string; value: unknown }) { return <section className="panel code-panel"><h3>{title}</h3><pre><code>{JSON.stringify(value, null, 2)}</code></pre></section>; }
-function Metric({ label, value }: { label: string; value: string | number }) { return <div><span>{label}</span><strong>{value}</strong></div>; }
-
-function ValidationPanel({ artifact }: { artifact: CardArtifactV1 }) {
-  const samples = Object.values(artifact.views).reduce((sum, view) => sum + view.samples.length, 0);
-  return <section className="panel validation-panel"><div className="validation-summary"><strong>{artifact.validation.issues.length ? "发现需要关注的问题" : "全部检查通过"}</strong><span>已检查 {Object.keys(artifact.views).length} 个状态和 {samples} 个示例</span></div>{artifact.validation.issues.length ? <div className="issue-list">{artifact.validation.issues.map((issue, index) => <div key={`${issue.code}-${index}`}><code>{issue.code}</code><strong>{issue.message}</strong><span>{issue.path}</span></div>)}</div> : <p className="empty-panel">当前版本没有发现问题。</p>}<details className="technical-details"><summary>技术限制</summary><div className="metrics"><Metric label="卡片版本上限" value={artifact.profile.capabilities.maxAdaptiveCardVersion} /><Metric label="节点上限" value={artifact.profile.capabilities.maxNodes} /><Metric label="层级上限" value={artifact.profile.capabilities.maxDepth} /><Metric label="数据大小上限" value={`${Math.round(artifact.profile.capabilities.maxPayloadBytes / 1024)} KiB`} /></div></details></section>;
-}
-
 function SafeExternalLink({ href, children }: { href: string; children: ReactNode }) {
   let safe: string | undefined;
   try {
