@@ -255,12 +255,6 @@ select { height: 42px; padding: 0 34px 0 12px; border: 1px solid var(--forge-bor
 .playground-header p { color: var(--forge-muted); }
 .playground-width-control { display: grid; justify-items: end; gap: 7px; }
 .playground-width-control > span { color: var(--forge-muted); font-size: 10px; font-weight: 600; }
-.playground-width-switch { height: 42px; padding: 3px; display: inline-grid; grid-template-columns: repeat(3, 92px); gap: 2px; border: 1px solid #e4e1e7; border-radius: 6px; background: #f4f3f5; }
-.playground-width-switch button { min-width: 0; padding: 0 10px; display: grid; grid-template-columns: 16px 1fr auto; align-items: center; gap: 6px; border: 0; border-radius: 3px; background: transparent; color: #716e77; font-size: 11px; text-align: left; transition: color 140ms ease, background 140ms ease, box-shadow 140ms ease; }
-.playground-width-switch button:hover { color: var(--forge-text); background: rgb(255 255 255 / 72%); }
-.playground-width-switch button.active { background: var(--forge-accent); color: #fff; box-shadow: 0 1px 2px rgb(48 42 84 / 16%); }
-.playground-width-switch svg { width: 14px; height: 14px; stroke-width: 1.8; }
-.playground-width-switch small { color: inherit; font: 500 9px "SFMono-Regular", Consolas, monospace; opacity: .72; }
 .playground-workbench { display: grid; grid-template-columns: minmax(440px, .94fr) minmax(500px, 1.06fr); }
 .workbench-pane { min-width: 0; border-radius: 0 !important; border: 0 !important; border-right: 1px solid var(--forge-border) !important; background: #fff; box-shadow: none !important; overflow: hidden; }
 .workbench-pane:last-child { border-right: 0 !important; }
@@ -399,7 +393,6 @@ select { height: 42px; padding: 0 34px 0 12px; border: 1px solid var(--forge-bor
   .matrix-table span, .token-list small { grid-column: 1 / -1; }
   .playground-header { align-items: flex-start; display: grid; }
   .playground-width-control { width: 100%; justify-items: stretch; }
-  .playground-width-switch { width: 100%; grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .playground-workbench { grid-template-columns: 1fr; }
   .workbench-pane > div:first-child > div:first-child { flex: 1 0 100%; }
   .editor-pane textarea, .workbench-pane textarea { height: 460px !important; min-height: 460px !important; }

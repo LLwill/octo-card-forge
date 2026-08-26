@@ -3,10 +3,7 @@ import {
   CheckCircle2,
   Code2,
   Copy,
-  Monitor,
   Play,
-  Smartphone,
-  Tablet,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { JsonObject, RenderProfileManifestV1 } from "@mlt-org/octo-card-spec";
@@ -35,11 +32,7 @@ const starterCard: JsonObject = {
   actions: [{ type: "Action.Submit", title: "确认", data: { action: "preview" } }],
 };
 
-const previewWidths = [
-  { value: 320, label: "手机", Icon: Smartphone },
-  { value: 480, label: "标准", Icon: Tablet },
-  { value: 640, label: "宽屏", Icon: Monitor },
-] as const;
+const previewWidths = [320, 480, 640] as const;
 
 export function PlaygroundPage() {
   const { loading: runtimeLoading, error: runtimeError } = useRuntime();
@@ -47,7 +40,7 @@ export function PlaygroundPage() {
   const [input, setInput] = useState(JSON.stringify(starterCard, null, 2));
   const [preview, setPreview] = useState<JsonObject>(starterCard);
   const [error, setError] = useState<string>();
-  const [width, setWidth] = useState<(typeof previewWidths)[number]["value"]>(480);
+  const [width, setWidth] = useState<(typeof previewWidths)[number]>(480);
 
   useEffect(() => {
     let active = true;
@@ -97,20 +90,8 @@ export function PlaygroundPage() {
 
           <div className="playground-width-control">
             <span>预览宽度</span>
-            <div className="playground-width-switch" role="group" aria-label="画布宽度">
-              {previewWidths.map(({ value, label, Icon }) => (
-                <button
-                  key={value}
-                  type="button"
-                  className={width === value ? "active" : ""}
-                  aria-pressed={width === value}
-                  onClick={() => setWidth(value)}
-                >
-                  <Icon aria-hidden="true" />
-                  <span>{label}</span>
-                  <small>{value}</small>
-                </button>
-              ))}
+            <div className="width-switch" role="group" aria-label="预览宽度">
+              {previewWidths.map((value) => <button key={value} type="button" className={width === value ? "active" : ""} aria-pressed={width === value} onClick={() => setWidth(value)}>{value}</button>)}
             </div>
           </div>
         </header>
