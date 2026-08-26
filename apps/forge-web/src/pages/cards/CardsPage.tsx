@@ -1,4 +1,4 @@
-import { ArrowRight, Braces, ExternalLink, Search } from "lucide-react";
+import { ArrowRight, ExternalLink, Search } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import type { CardArtifactV1, CatalogSnapshotV1 } from "@mlt-org/octo-card-catalog-snapshot";
@@ -158,7 +158,7 @@ function CardDetail({ card, version, artifact, searchParams, setSearchParams }: 
   };
   return <>
     <Link className="detail-breadcrumb" to="/cards">卡片库</Link>
-    <header className="detail-header"><div><div className="identity-line"><h1>{card.name}</h1><code>{card.id}</code></div><p>用于请求访问或协作文档的审批卡片。</p><div className="detail-meta"><span className="status-draft">草稿</span><span>v{version.version}</span><span>{Object.keys(artifact.views).length} 个视图</span><span className="status-valid">检查通过</span></div></div><div className="detail-actions">{card.versions.length > 1 ? <label>版本<select value={version.reference} onChange={(event) => setQuery("version", event.target.value)}>{card.versions.map((candidate) => <option key={candidate.reference} value={candidate.reference}>{candidate.version}</option>)}</select></label> : <span className="version-label">v{version.version}</span>}<Link className="button secondary" to="/playground"><Braces size={14} />用数据预览</Link><SafeExternalLink href={version.release?.url ?? version.artifact.url}>发行说明</SafeExternalLink></div></header>
+    <header className="detail-header"><div><div className="identity-line"><h1>{card.name}</h1><code>{card.id}</code></div><p>用于请求访问或协作文档的审批卡片。</p><div className="detail-meta"><span className="status-draft">草稿</span><span>v{version.version}</span><span>{Object.keys(artifact.views).length} 个视图</span><span className="status-valid">检查通过</span></div></div><div className="detail-actions">{card.versions.length > 1 ? <label>版本<select value={version.reference} onChange={(event) => setQuery("version", event.target.value)}>{card.versions.map((candidate) => <option key={candidate.reference} value={candidate.reference}>{candidate.version}</option>)}</select></label> : <span className="version-label">v{version.version}</span>}<SafeExternalLink href={version.release?.url ?? version.artifact.url}>发行说明</SafeExternalLink></div></header>
     <div className="detail-tabs" role="tablist">{Object.entries(tabLabels).map(([key, label]) => <button key={key} type="button" className={tab === key ? "active" : ""} onClick={() => setQuery("tab", key)}>{label}</button>)}</div>
     {tab === "preview" ? <PreviewPanel artifact={artifact} version={version} viewName={viewName} sample={sample} setQuery={setQuery} /> : null}
     {tab === "contract" ? <JsonPanel title="卡片需要的数据" value={artifact.dataContract} /> : null}

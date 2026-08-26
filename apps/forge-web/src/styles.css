@@ -218,12 +218,8 @@ select { height: 42px; padding: 0 34px 0 12px; border: 1px solid var(--forge-bor
 .playground-header { min-height: 112px; padding: 24px 22px; display: flex; align-items: center; justify-content: space-between; gap: 30px; border-bottom: 1px solid var(--forge-border); }
 .playground-header h1 { margin: 0; font-size: 32px; }
 .playground-header p { color: var(--forge-muted); }
-.playground-header [aria-label="预览宽度"] { border-radius: 4px !important; background: #fff !important; }
-.playground-header [aria-label="预览宽度"] button { min-width: 62px; border-radius: 3px !important; }
-.playground-mode { min-height: 60px; padding: 10px 22px; display: flex; align-items: center; border-bottom: 1px solid var(--forge-border); }
-.playground-mode > div { padding: 0 !important; border: 0 !important; border-radius: 0 !important; background: transparent !important; }
-.playground-mode button { height: 38px; border-radius: 4px !important; }
-.playground-mode button[aria-pressed="true"] { border-color: var(--forge-accent) !important; background: var(--forge-accent) !important; color: #fff !important; }
+.playground-header [aria-label="画布宽度"] { border-radius: 4px !important; background: #fff !important; }
+.playground-header [aria-label="画布宽度"] button { min-width: 62px; border-radius: 3px !important; }
 .playground-workbench { display: grid; grid-template-columns: minmax(440px, .94fr) minmax(500px, 1.06fr); }
 .workbench-pane { min-width: 0; border-radius: 0 !important; border: 0 !important; border-right: 1px solid var(--forge-border) !important; background: #fff; box-shadow: none !important; overflow: hidden; }
 .workbench-pane:last-child { border-right: 0 !important; }
@@ -232,8 +228,8 @@ select { height: 42px; padding: 0 34px 0 12px; border: 1px solid var(--forge-bor
 .workbench-pane textarea { background: var(--forge-code) !important; color: #f2eff6 !important; }
 .workbench-preview { display: grid; grid-template-rows: auto minmax(0, 1fr); }
 .playground-stage { min-height: 560px; padding: 38px; display: grid; place-items: start center; background: var(--forge-stage); }
-.playground-canvas { max-width: 100%; min-height: 430px; overflow: hidden; background: #fff; box-shadow: 0 14px 36px rgb(34 31 43 / 10%); }
-.playground-canvas .card-preview { width: 100%; min-height: 430px; border: 0; }
+.playground-canvas { max-width: 100%; overflow: hidden; background: #fff; box-shadow: 0 14px 36px rgb(34 31 43 / 10%); }
+.playground-canvas .card-preview { width: 100%; min-height: 160px; border: 0; }
 
 /* Install */
 .install-showcase { min-height: calc(100vh - 64px); padding: 0 clamp(28px, 5vw, 76px) 64px; }
@@ -343,9 +339,10 @@ select { height: 42px; padding: 0 34px 0 12px; border: 1px solid var(--forge-bor
   .matrix-table span, .token-list small { grid-column: 1 / -1; }
   .playground-header { align-items: flex-start; display: grid; }
   .playground-workbench { grid-template-columns: 1fr; }
+  .workbench-pane > div:first-child > div:first-child { flex: 1 0 100%; }
   .editor-pane textarea, .workbench-pane textarea { height: 460px !important; min-height: 460px !important; }
-  .playground-stage { min-height: 450px; padding: 18px; }
-  .playground-canvas, .playground-canvas .card-preview { min-height: 400px; }
+  .playground-stage { min-height: 240px; padding: 18px; }
+  .playground-canvas .card-preview { min-height: 160px; }
   .install-showcase { padding: 0 15px 50px; }
   .install-hero-inner { min-height: 170px; }
   .install-path-tabs { gap: 22px; overflow-x: auto; }

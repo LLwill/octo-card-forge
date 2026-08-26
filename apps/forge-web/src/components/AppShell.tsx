@@ -6,7 +6,7 @@ import { cn } from "../lib/utils.js";
 const navigation = [
   { to: "/components", label: "组件规范" },
   { to: "/cards", label: "卡片库" },
-  { to: "/playground", label: "预览调试" },
+  { to: "/playground", label: "卡片预览器" },
   { to: "/install", label: "安装接入" },
 ];
 

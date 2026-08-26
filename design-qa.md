@@ -56,6 +56,9 @@ These regions were checked separately because their controls, JSON, rendered car
 7. P2: non-renderable foundation entries displayed preview controls and an empty preview stage.
    Fix: preview width, Preview/JSON tabs, and the stage now render only when the selected item has Card JSON. Foundation entries go directly from the header to their property table.
    Post-fix evidence: `forge-implementation-qa-final/components-rule-no-preview.png`.
+8. Information hierarchy: the playground mixed raw Card JSON rendering with template data, Card selection, View selection, sample selection, contract fields, and Server compilation.
+   Fix: reduced the route to one purpose and renamed it Card Previewer. It now accepts only a complete Adaptive Card JSON document, with format, copy, render, and canvas-width controls. Template data and sample workflows remain on Card detail pages.
+   Verification: default rendering, invalid JSON feedback, `390 x 844` responsive layout, and zero horizontal overflow.
 
 ## Interactions Verified
 
@@ -64,7 +67,7 @@ These regions were checked separately because their controls, JSON, rendered car
 - Card Preview, Data Structure, and Validation tabs
 - View, sample, and width controls
 - Component category and item selection plus Preview/JSON switching
-- Playground Card JSON/ViewModel modes, width selection, format, copy, and render
+- Card Previewer JSON validation, width selection, format, copy, and render
 - Install method switching and command copy
 - Root-route redirect and scroll-free iframe resizing
 - Component-first navigation, simplified directory groups, and non-preview foundation entries
