@@ -10,13 +10,13 @@ function routes() {
     path: "/",
     element: <AppShell />,
     children: [
-      { index: true, element: <Navigate to="cards" replace /> },
+      { index: true, element: <Navigate to="components" replace /> },
       { path: "cards", element: <CardsPage /> },
       { path: "cards/:reference", element: <CardsPage /> },
       { path: "components", element: <ComponentsPage /> },
       { path: "playground", element: <PlaygroundPage /> },
       { path: "install", element: <InstallPage /> },
-      { path: "*", element: <Navigate to="cards" replace /> },
+      { path: "*", element: <Navigate to="components" replace /> },
     ],
   }];
 }

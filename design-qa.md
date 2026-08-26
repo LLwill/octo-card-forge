@@ -5,7 +5,7 @@
 - Source visual truth: `/Users/will/.codex/visualizations/2026/08/25/01a037b3-80bc-7a50-88a8-2af8d4a716fb/forge-7171ee-system/`
 - Implementation captures: `/Users/will/.codex/visualizations/2026/08/25/01a037b3-80bc-7a50-88a8-2af8d4a716fb/forge-implementation-qa-final/`
 - Card library capture after removing the overview: `/Users/will/.codex/visualizations/2026/08/25/01a037b3-80bc-7a50-88a8-2af8d4a716fb/forge-implementation-qa-final/card-library-no-home.png`
-- Routes: card library, card detail, component specification, playground, and install. `/forge` redirects to `/forge/cards`.
+- Routes: component specification, card library, card detail, playground, and install. `/forge` redirects to `/forge/components`.
 - State: Workspace mode with the repository's real `docs.access-request` Card Package and current install manifest
 - Desktop viewport: `1440 x 810` CSS pixels, implementation capture `1440 x 810` pixels at 1x density
 - Source images: `2048 x 1152` pixels, normalized to `1440 x 810` before comparison
@@ -50,6 +50,12 @@ These regions were checked separately because their controls, JSON, rendered car
 5. P2: fixed-height preview iframes could expose nested scrollbars when the rendered Card exceeded the viewport.
    Fix: the preview document now reports its content height through `postMessage`; the host iframe resizes and disables internal scrolling.
    Post-fix evidence: card library iframe measured `356px` for `356px` of content with both document overflows hidden.
+6. Information hierarchy: component specifications needed to be the primary entry, while the source catalog's technical group names and duplicated category filters added avoidable complexity.
+   Fix: moved Component Specifications to the first navigation position and default route; replaced the filter hierarchy with four plain-language directory groups: Card Components, Extensions, Composition Examples, and Foundations.
+   Post-fix evidence: `forge-implementation-qa-final/components-simplified.png` and `forge-implementation-qa-final/mobile-components-select.png`.
+7. P2: non-renderable foundation entries displayed preview controls and an empty preview stage.
+   Fix: preview width, Preview/JSON tabs, and the stage now render only when the selected item has Card JSON. Foundation entries go directly from the header to their property table.
+   Post-fix evidence: `forge-implementation-qa-final/components-rule-no-preview.png`.
 
 ## Interactions Verified
 
@@ -61,6 +67,7 @@ These regions were checked separately because their controls, JSON, rendered car
 - Playground Card JSON/ViewModel modes, width selection, format, copy, and render
 - Install method switching and command copy
 - Root-route redirect and scroll-free iframe resizing
+- Component-first navigation, simplified directory groups, and non-preview foundation entries
 - Desktop and mobile overflow checks
 
 ## Follow-up Polish

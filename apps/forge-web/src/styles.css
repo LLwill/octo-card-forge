@@ -176,17 +176,17 @@ select { height: 42px; padding: 0 34px 0 12px; border: 1px solid var(--forge-bor
 .spec-sidebar-heading h1 { margin: 8px 0 0; font-size: 24px; }
 .spec-sidebar-heading p { margin: 6px 0 0; color: var(--forge-muted); font-size: 12px; }
 .spec-sidebar > label { border-radius: 4px !important; }
-.spec-sidebar-nav { margin-top: 18px; display: grid; }
-.spec-sidebar-nav button { min-height: 38px; padding: 0 10px; display: flex; align-items: center; justify-content: space-between; border: 0; border-left: 2px solid transparent; background: transparent; color: #4e4c54; font-size: 12px; text-align: left; }
-.spec-sidebar-nav button small { color: #918d97; }
-.spec-sidebar-nav button:hover { background: #f7f6f8; }
-.spec-sidebar-nav button.active { border-left-color: var(--forge-accent); background: var(--forge-accent-soft); color: var(--forge-accent); }
-.spec-section-list { margin: 18px 8px 0; padding-top: 16px; display: grid; gap: 2px; border-top: 1px solid var(--forge-border); }
+.spec-mobile-select { display: none; }
+.spec-section-list { margin: 18px 8px 0; padding-top: 16px; display: grid; gap: 22px; border-top: 1px solid var(--forge-border); }
+.spec-section-list section { display: grid; gap: 2px; }
+.spec-section-list h2 { margin: 0 0 5px; padding: 0 10px; display: flex; align-items: center; justify-content: space-between; color: #45424b; font-size: 11px; font-weight: 650; }
+.spec-section-list h2 small { color: #9a96a0; font: 500 9px "SFMono-Regular", Consolas, monospace; }
 .spec-section-list button { min-height: 34px; padding: 7px 10px; border: 0; border-radius: 3px; background: transparent; color: var(--forge-muted); font-size: 11px; line-height: 1.35; text-align: left; }
 .spec-section-list button:hover { color: var(--forge-text); background: #f7f6f8; }
 .spec-section-list button.active { color: var(--forge-accent); background: var(--forge-accent-soft); font-weight: 620; }
 .spec-content { min-width: 0; padding: 0 44px 72px; }
 .component-detail-header { min-height: 238px; padding: 42px 0 34px; display: flex; align-items: flex-end; justify-content: space-between; gap: 36px; border-bottom: 1px solid var(--forge-border); }
+.component-detail-header.no-preview { min-height: 205px; }
 .component-detail-header > div:first-child { min-width: 0; }
 .component-breadcrumb { color: var(--forge-accent); font: 500 10px "SFMono-Regular", Consolas, monospace; }
 .component-detail-header h1 { margin: 15px 0 0; font-size: clamp(36px, 4vw, 54px); line-height: 1.04; }
@@ -204,7 +204,6 @@ select { height: 42px; padding: 0 34px 0 12px; border: 1px solid var(--forge-bor
 .component-detail-preview { max-width: 100%; min-height: 350px; overflow: hidden; background: #fff; box-shadow: 0 14px 36px rgb(34 31 43 / 9%); transition: width 180ms ease; }
 .component-detail-preview .card-preview { width: 100%; min-height: 350px; border: 0; }
 .component-detail-stage pre { width: 100%; min-height: 346px; margin: 0; padding: 24px; overflow: auto; border-radius: 4px; background: var(--forge-code); color: #f2eff6; font-size: 11px; line-height: 1.65; }
-.component-no-preview { align-self: center; max-width: 420px; color: var(--forge-muted); font-size: 12px; line-height: 1.7; text-align: center; }
 .component-reference { padding: 36px 0 8px; }
 .component-reference h2, .component-guidance h2 { margin: 0 0 16px; font-size: 17px; }
 .matrix-table, .token-list { border-top: 1px solid var(--forge-border); }
@@ -329,10 +328,10 @@ select { height: 42px; padding: 0 34px 0 12px; border: 1px solid var(--forge-bor
   .technical-details-content dl, .metrics { grid-template-columns: 1fr; }
   .spec-layout { display: block; }
   .spec-sidebar { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--forge-border); }
-  .spec-sidebar-nav { display: flex; overflow-x: auto; }
-  .spec-sidebar-nav button { min-width: max-content; border-left: 0; border-bottom: 2px solid transparent; }
-  .spec-sidebar-nav button.active { border-bottom-color: var(--forge-accent); }
-  .spec-section-list { grid-template-columns: repeat(2, minmax(150px, 1fr)); max-height: 164px; overflow-y: auto; }
+  .spec-mobile-select { margin-top: 14px; display: grid; gap: 6px; }
+  .spec-mobile-select span { color: var(--forge-muted); font-size: 10px; }
+  .spec-mobile-select select { width: 100%; }
+  .spec-section-list { display: none; }
   .spec-content { padding: 0 15px 60px; }
   .component-detail-header { min-height: 0; padding: 30px 0 24px; display: grid; }
   .component-detail-header h1 { font-size: 38px; }

@@ -4,8 +4,8 @@ import { useRuntime } from "../app/runtime.js";
 import { cn } from "../lib/utils.js";
 
 const navigation = [
-  { to: "/cards", label: "卡片库" },
   { to: "/components", label: "组件规范" },
+  { to: "/cards", label: "卡片库" },
   { to: "/playground", label: "预览调试" },
   { to: "/install", label: "安装接入" },
 ];
@@ -17,7 +17,7 @@ export function AppShell() {
   return (
     <div className="forge-app-shell">
       <header className="forge-topbar">
-        <Link className="forge-brand" to="/cards" aria-label="Octo Card Forge 卡片库">
+        <Link className="forge-brand" to="/components" aria-label="Octo Card Forge 组件规范">
           <span className="forge-brand-mark"><Boxes aria-hidden="true" /></span>
           <strong>Octo Card Forge</strong>
         </Link>
