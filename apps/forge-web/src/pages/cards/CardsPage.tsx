@@ -15,7 +15,7 @@ type DetailTab = "preview" | "contract" | "handoff";
 
 const tabLabels: Record<DetailTab, string> = {
   preview: "预览",
-  contract: "数据结构",
+  contract: "所需数据",
   handoff: "交付内容",
 };
 
@@ -174,7 +174,7 @@ function CardDetail({ card, version, artifact, searchParams, setSearchParams }: 
     <header className="detail-header"><div><div className="identity-line"><h1>{card.name}</h1><code>{card.id}</code></div><p>{describeCard(card)}</p><div className="detail-meta"><span className="status-draft">已发布</span><span>v{version.version}</span><span>{Object.keys(artifact.views).length} 个视图</span></div></div><div className="detail-actions">{card.versions.length > 1 ? <label>版本<select value={version.reference} onChange={(event) => setQuery("version", event.target.value)}>{card.versions.map((candidate) => <option key={candidate.reference} value={candidate.reference}>{candidate.version}</option>)}</select></label> : null}{version.handoff ? <a className="button primary" href={serverPath(`/api/v1/cards/${encodeURIComponent(version.reference)}/handoff`)}><Download size={14} />下载 Server 交付包</a> : null}{version.release ? <SafeExternalLink href={version.release.url}>发行说明</SafeExternalLink> : null}</div></header>
     <div className="detail-tabs" role="tablist">{Object.entries(tabLabels).filter(([key]) => key !== "handoff" || version.handoff).map(([key, label]) => <button key={key} type="button" className={tab === key ? "active" : ""} onClick={() => setQuery("tab", key)}>{label}</button>)}</div>
     {tab === "preview" ? <PreviewPanel artifact={artifact} version={version} viewName={viewName} sample={sample} setQuery={setQuery} /> : null}
-    {tab === "contract" ? <JsonPanel title="卡片需要的数据" value={artifact.dataContract} /> : null}
+    {tab === "contract" ? <DataContractPanel contract={artifact.dataContract} /> : null}
     {tab === "handoff" && version.handoff ? <HandoffPanel version={version} /> : null}
   </>;
 }
@@ -285,8 +285,134 @@ function PreviewPanel({ artifact, version, viewName, sample, setQuery }: { artif
   return <div className="preview-stack"><div className="preview-toolbar"><label>视图<select value={viewName} onChange={(event) => setQuery("view", event.target.value)}>{Object.keys(artifact.views).map((name) => <option key={name}>{name}</option>)}</select></label><label>样例<select value={sample.name} onChange={(event) => setQuery("sample", event.target.value)}>{view.samples.map((candidate) => <option key={candidate.name}>{candidate.name}</option>)}</select></label><div className="width-switch" aria-label="预览宽度">{[320, 480, 640].map((value) => <button key={value} type="button" className={width === value ? "active" : ""} onClick={() => setWidth(value)}>{value}</button>)}</div></div><section className="preview-surface"><div className="detail-preview-frame" style={{ width: `min(100%, ${width}px)` }}><PreviewFrame artifact={artifact} sample={sample} title={`${artifact.card.name} ${viewName} 预览`} /></div></section><div className="detail-ledger"><Fact label="数据契约" value={`${Object.keys(artifact.dataContract.properties ?? {}).length} 个字段`} /><Fact label="交互动作" value={`${sample.inspection.actions.length} 个`} /><Fact label="渲染规范" value={artifact.profile.reference} mono /><Fact label="源文件" value={version.source.path} mono /></div><details className="technical-details"><summary>更多技术信息</summary><div className="technical-details-content"><dl><Fact label="产物摘要" value={`${version.artifact.sha256.slice(0, 10)}...${version.artifact.sha256.slice(-8)}`} mono /><Fact label="渲染 SDK" value={artifact.profile.manifest.adaptiveCardsSdkVersion} /><Fact label="数据协议" value={view.wireProfile} mono /><Fact label="来源提交" value={version.source.commit.slice(0, 12)} mono /></dl><div className="resource-links"><SafeExternalLink href={resources.hostConfig}>主机配置</SafeExternalLink><SafeExternalLink href={resources.stylesheet}>样式文件</SafeExternalLink></div></div></details></div>;
 }
 
+interface DataFieldRow {
+  path: string;
+  type: string;
+  requirement: string;
+  description: string;
+}
+
+function recordValue(value: unknown): Record<string, unknown> | undefined {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : undefined;
+}
+
+function stringValues(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function conditionLabel(schema: Record<string, unknown>): string | undefined {
+  const properties = recordValue(recordValue(schema.if)?.properties);
+  if (!properties) return undefined;
+  for (const [field, value] of Object.entries(properties)) {
+    const rule = recordValue(value);
+    if (!rule) continue;
+    if (rule.const !== undefined) return `${field}=${String(rule.const)}`;
+    const values = Array.isArray(rule.enum) ? rule.enum.map(String) : [];
+    if (values.length) return `${field}=${values.join("/")}`;
+  }
+  return undefined;
+}
+
+function conditionalRequirements(schema: Record<string, unknown>): Map<string, string> {
+  const requirements = new Map<string, string>();
+  const rules = Array.isArray(schema.allOf) ? schema.allOf : [];
+  for (const value of rules) {
+    const rule = recordValue(value);
+    if (!rule) continue;
+    const label = conditionLabel(rule);
+    const thenSchema = recordValue(rule.then);
+    if (!label || !thenSchema) continue;
+    for (const field of stringValues(thenSchema.required)) requirements.set(field, label);
+    const properties = recordValue(thenSchema.properties);
+    if (!properties) continue;
+    for (const [parent, propertyValue] of Object.entries(properties)) {
+      const property = recordValue(propertyValue);
+      for (const field of stringValues(property?.required)) requirements.set(`${parent}.${field}`, label);
+    }
+  }
+  return requirements;
+}
+
+function fieldType(schema: Record<string, unknown>): string {
+  const type = typeof schema.type === "string" ? schema.type : "unknown";
+  if (type !== "array") return type;
+  const itemType = recordValue(schema.items)?.type;
+  return `${typeof itemType === "string" ? itemType : "unknown"}[]`;
+}
+
+function fieldDescription(schema: Record<string, unknown>): string {
+  if (typeof schema.description === "string" && schema.description.trim()) return schema.description;
+  const details: string[] = [];
+  if (Array.isArray(schema.enum)) details.push(`可选值：${schema.enum.map(String).join("、")}`);
+  if (schema.format === "uri") details.push("URL 地址");
+  if (schema.minLength === 1) details.push("不可为空");
+  if (typeof schema.minItems === "number") details.push(`至少 ${schema.minItems} 项`);
+  const properties = recordValue(schema.properties) ?? recordValue(recordValue(schema.items)?.properties);
+  if (properties) details.push(`包含 ${Object.keys(properties).length} 个子字段`);
+  return details.join("；") || "—";
+}
+
+function dataContractRows(contract: Record<string, unknown>): DataFieldRow[] {
+  const conditions = conditionalRequirements(contract);
+  const rows: DataFieldRow[] = [];
+
+  const visit = (
+    properties: Record<string, unknown>,
+    requiredFields: Set<string>,
+    prefix = "",
+    parentCondition?: string,
+    parentOptional = false,
+  ) => {
+    for (const [name, value] of Object.entries(properties)) {
+      const schema = recordValue(value);
+      if (!schema) continue;
+      const path = prefix ? `${prefix}.${name}` : name;
+      const directCondition = conditions.get(path);
+      const required = requiredFields.has(name);
+      const requirement = directCondition
+        ? `${directCondition} 时必填`
+        : required && parentCondition
+          ? `${parentCondition} 时必填`
+          : required && parentOptional
+            ? `随 ${prefix} 提供`
+            : required
+              ? "必填"
+              : "选填";
+      rows.push({ path, type: fieldType(schema), requirement, description: fieldDescription(schema) });
+
+      const nestedProperties = recordValue(schema.properties) ?? recordValue(recordValue(schema.items)?.properties);
+      if (!nestedProperties) continue;
+      const nestedRequired = new Set(stringValues(schema.required ?? recordValue(schema.items)?.required));
+      visit(
+        nestedProperties,
+        nestedRequired,
+        schema.type === "array" ? `${path}[]` : path,
+        directCondition ?? parentCondition,
+        !required && !directCondition || parentOptional,
+      );
+    }
+  };
+
+  visit(recordValue(contract.properties) ?? {}, new Set(stringValues(contract.required)));
+  return rows;
+}
+
+function DataContractPanel({ contract }: { contract: Record<string, unknown> }) {
+  const rows = useMemo(() => dataContractRows(contract), [contract]);
+  return <section className="contract-panel">
+    <header><div><h3>卡片所需数据</h3><p>业务系统需要提供的 JSON 字段，以及对应的类型和必填条件。</p></div><span>{rows.length} 个字段</span></header>
+    <div className="contract-table" role="table" aria-label="卡片所需数据">
+      <div className="contract-table-head" role="row"><span>字段</span><span>类型</span><span>要求</span><span>说明</span></div>
+      {rows.map((row) => <div className="contract-table-row" role="row" key={row.path}>
+        <code>{row.path}</code><span>{row.type}</span><strong className={row.requirement === "选填" ? "optional" : "required"}>{row.requirement}</strong><span>{row.description}</span>
+      </div>)}
+    </div>
+  </section>;
+}
+
 function Fact({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) { return <div><dt>{label}</dt><dd>{mono ? <code>{value}</code> : value}</dd></div>; }
-function JsonPanel({ title, value }: { title: string; value: unknown }) { return <section className="panel code-panel"><h3>{title}</h3><pre><code>{JSON.stringify(value, null, 2)}</code></pre></section>; }
 function SafeExternalLink({ href, children }: { href: string; children: ReactNode }) {
   let safe: string | undefined;
   try {
