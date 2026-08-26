@@ -234,7 +234,7 @@ select { height: 42px; padding: 0 34px 0 12px; border: 1px solid var(--forge-bor
 /* Install */
 .install-showcase { min-height: calc(100vh - 64px); padding: 0 clamp(28px, 5vw, 76px) 64px; }
 .install-hero { max-width: 1280px; margin: 0 auto; }
-.install-hero-inner { min-height: 190px; padding: 42px 0 28px; }
+.install-hero-inner { min-height: 164px; padding: 36px 0 20px; }
 .install-hero h1 { margin: 0; font-size: 38px; }
 .install-hero p { margin: 12px 0 0; color: var(--forge-muted); font-size: 14px; }
 .install-release { display: block; margin-top: 12px; color: var(--forge-muted); font-size: 12px; }
@@ -242,12 +242,12 @@ select { height: 42px; padding: 0 34px 0 12px; border: 1px solid var(--forge-bor
 .install-body { max-width: 1280px; margin: 0 auto; }
 .install-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 64px; }
 .install-quickstart { min-width: 0; }
-.install-section-header { padding: 20px 0 14px; }
+.install-section-header { padding: 12px 0 14px; }
 .install-section-header > span, .install-advanced > header > span { color: var(--forge-accent); font-size: 10px; font-weight: 650; }
 .install-section-header h2, .install-advanced h2 { margin: 6px 0 0; font-size: 23px; }
 .install-section-header p, .install-advanced header p { max-width: 700px; margin: 8px 0 0; color: var(--forge-muted); font-size: 12px; line-height: 1.65; }
-.install-steps { margin-top: 18px; display: grid; overflow: hidden; border: 1px solid var(--forge-border); border-radius: 6px; background: #fff; }
-.install-step { position: relative; min-height: 104px; padding: 18px 46px 14px 56px; display: grid; grid-template-columns: 1fr; gap: 10px; border-bottom: 1px solid #e8e6ea; }
+.install-steps { margin-top: 16px; display: grid; overflow: hidden; border: 1px solid var(--forge-border); border-radius: 6px; background: #fff; }
+.install-step { position: relative; min-height: 104px; padding: 18px 24px 14px 56px; display: grid; grid-template-columns: 1fr; gap: 10px; border-bottom: 1px solid #e8e6ea; }
 .install-step:last-child { border-bottom: 0; }
 .install-step-copy { display: contents; }
 .install-step-copy > span { position: absolute; top: 23px; left: 0; color: var(--forge-accent); font: 520 18px "SFMono-Regular", Consolas, monospace; }
@@ -269,8 +269,8 @@ select { height: 42px; padding: 0 34px 0 12px; border: 1px solid var(--forge-bor
 .install-summary > a { margin-top: 20px; display: inline-flex; align-items: center; gap: 6px; color: var(--forge-accent); font-size: 12px; text-decoration: none; }
 .install-summary > a svg { width: 14px; }
 .install-summary-note { margin: 18px 0 0; color: var(--forge-muted); font-size: 11px; line-height: 1.65; }
-.install-advanced { margin-top: 46px; }
-.install-advanced > header { padding: 28px 0 20px; }
+.install-advanced { margin-top: 30px; }
+.install-advanced > header { padding: 22px 0 16px; }
 .install-advanced-options { overflow: hidden; border: 1px solid var(--forge-border); border-radius: 6px; background: #fff; }
 .install-option { background: #fff; }
 .install-option + .install-option { border-top: 1px solid #e8e6ea; }
@@ -356,10 +356,12 @@ select { height: 42px; padding: 0 34px 0 12px; border: 1px solid var(--forge-bor
   .playground-stage { min-height: 240px; padding: 18px; }
   .playground-canvas .card-preview { min-height: 160px; }
   .install-showcase { padding: 0 15px 50px; }
-  .install-hero-inner { min-height: 170px; }
+  .install-hero-inner { min-height: 150px; padding: 32px 0 18px; }
   .install-layout { grid-template-columns: 1fr; }
   .install-summary { margin-top: 28px; padding: 20px; }
   .install-step { padding-right: 0; }
+  .install-step-copy div { display: grid; gap: 4px; }
+  .install-step-copy small { line-height: 1.5; }
   .install-option-steps { padding-left: 0; }
 }
 

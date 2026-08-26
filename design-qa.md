@@ -65,6 +65,9 @@ These regions were checked separately because their controls, JSON, rendered car
 10. P3: the installation page used borders on nearly every heading, step, option, and metadata row, fragmenting the reading flow.
     Fix: consolidated boundaries around three meaningful modules: the standard workflow, advanced integrations, and installation summary. Each group uses one restrained outline and only the minimum internal dividers needed for scanning.
     Verification: desktop hierarchy remains clear without stacked rules; mobile layout retains aligned commands and zero horizontal overflow.
+11. P3: after boundary consolidation, the page still had loose vertical rhythm and mobile step descriptions competed horizontally with their titles.
+    Fix: tightened the hero and section spacing while stacking step titles and explanations on narrow screens. The three module boundaries remain unchanged.
+    Evidence: `forge-install-style-audit/03-refined-desktop.png` and `forge-install-style-audit/04-refined-mobile.png`.
 
 ## Interactions Verified
 
