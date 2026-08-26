@@ -1,4 +1,4 @@
-import { ArrowRight, Download, Search } from "lucide-react";
+import { ArrowRight, Download, LayoutTemplate, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import type { JsonObject, RenderProfileManifestV1 } from "@mlt-org/octo-card-spec";
@@ -65,7 +65,7 @@ export function WorkspaceCardsPage() {
   const tab = searchParams.get("tab") ?? "preview";
 
   useEffect(() => {
-    if (!selected) return;
+    if (!reference || !selected) return;
     let active = true;
     setError(undefined);
     const encoded = encodeURIComponent(selected.reference);
@@ -80,30 +80,34 @@ export function WorkspaceCardsPage() {
       setSession(nextSession);
     }).catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : String(reason)); });
     return () => { active = false; };
-  }, [selected]);
+  }, [reference, selected]);
 
   useEffect(() => {
-    if (!selected || !view || !sample) return;
+    if (!reference || !selected || !view || !sample) return;
     let active = true;
     const url = serverPath(`/api/v1/cards/${encodeURIComponent(selected.reference)}/samples/${encodeURIComponent(sample)}?view=${encodeURIComponent(view)}`);
     void loadJson<CompileResponse>(url)
       .then((value) => { if (active) setCompiled(value); })
       .catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : String(reason)); });
     return () => { active = false; };
-  }, [selected, view, sample]);
+  }, [reference, selected, view, sample]);
 
   if (error) return <ErrorState message={error} />;
-  if (!cards || !selected || !context || !contract || !session || !compiled) return <LoadingState label="正在加载卡片" />;
+  if (!cards) return <LoadingState label="正在加载卡片库" />;
   const query = filter.trim().toLocaleLowerCase();
-  const visible = cards.filter((card) => !query || `${card.id} ${card.name}`.toLocaleLowerCase().includes(query));
+  const namespace = searchParams.get("namespace") ?? "all";
+  const namespaces = [...new Set(cards.map((card) => card.id.split(".")[0]))].sort();
+  const visible = cards.filter((card) => (namespace === "all" || card.id.startsWith(`${namespace}.`)) && (!query || `${card.id} ${card.name}`.toLocaleLowerCase().includes(query)));
   const setQuery = (key: string, value: string) => { const next = new URLSearchParams(searchParams); next.set(key, value); if (key === "view") next.delete("sample"); setSearchParams(next, { replace: true }); };
+
+  if (!reference) return <main className="catalog-page"><section className="catalog-overview"><header className="catalog-page-header"><div><h1>卡片库</h1><p>查找当前工作区中的 Card Package，并进入详情进行预览与检查。</p><span>{visible.length} 个卡片包</span></div><div className="catalog-tools"><label className="search-box"><Search size={16} /><span className="sr-only">搜索卡片</span><input value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="搜索名称或 Card ID" /></label><select aria-label="命名空间" value={namespace} onChange={(event) => { const next = new URLSearchParams(searchParams); event.target.value === "all" ? next.delete("namespace") : next.set("namespace", event.target.value); setSearchParams(next, { replace: true }); }}><option value="all">全部命名空间</option>{namespaces.map((item) => <option key={item} value={item}>{item}</option>)}</select></div></header>{visible.length ? <div className="catalog-grid">{visible.map((card) => <button type="button" className="catalog-card" key={card.reference} onClick={() => navigate(`/cards/${encodeURIComponent(card.reference)}`)}><span className="catalog-card-icon"><LayoutTemplate size={20} aria-hidden="true" /></span><span className="catalog-card-version">v{card.version}</span><strong>{card.name}</strong><code>{card.id}</code><span className="catalog-card-description">当前工作区中的可编辑 Card Package，包含 {Object.keys(card.samples).length} 个视图。</span><span className="catalog-card-footer"><span><i />{card.mutable ? "草稿" : "已发布"}</span><span>查看详情 <ArrowRight size={15} /></span></span></button>)}</div> : <div className="catalog-empty"><Search size={20} /><strong>没有找到卡片</strong><span>换一个名称、Card ID 或命名空间试试。</span></div>}</section></main>;
+
+  if (!selected || !context || !contract || !session || !compiled) return <LoadingState label="正在加载卡片" />;
   const resources = {
     hostConfig: context.hostConfig,
     stylesheetUrls: [context.stylesheetUrl],
     adaptiveCardsSdkUrl: `https://cdn.jsdelivr.net/npm/adaptivecards@${context.renderProfile.adaptiveCardsSdkVersion}/dist/adaptivecards.min.js`,
   };
-
-  if (!reference) return <main className="catalog-page"><section className="catalog-overview"><header className="catalog-page-header"><div><h1>卡片库</h1><p>浏览、比较并检查当前工作区中的 Card Package。</p><span>{visible.length} 个卡片包</span></div><div className="catalog-tools"><label className="search-box"><Search size={16} /><span className="sr-only">搜索卡片</span><input value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="搜索名称或 Card ID" /></label><select aria-label="命名空间"><option>全部命名空间</option></select></div></header><div className="catalog-feature"><div className="catalog-feature-stage"><div className="catalog-feature-card"><RawPreviewFrame card={compiled.payload} resources={resources} title={`${selected.name} 预览`} /></div></div><div className="catalog-feature-copy"><h2>{selected.name}</h2><code>{selected.id}</code><p>当前工作区中的可编辑 Card Package，可检查视图、数据契约与验证结果。</p><div className="catalog-meta"><span className="status-draft">草稿</span><span>{Object.keys(selected.samples).length} 个视图</span><span className="status-valid">{compiled.issues.length ? `${compiled.issues.length} 个问题` : "检查通过"}</span></div><button type="button" className="text-action primary-text-action" onClick={() => navigate(`/cards/${encodeURIComponent(selected.reference)}`)}>查看详情<ArrowRight /></button><button type="button" className="text-action" onClick={() => navigate(`/cards/${encodeURIComponent(selected.reference)}?tab=contract`)}>数据契约<ArrowRight /></button></div></div><div className="catalog-index">{visible.slice(1).map((card) => <button type="button" key={card.reference} onClick={() => navigate(`/cards/${encodeURIComponent(card.reference)}`)}><span className="catalog-thumb"><span /></span><strong>{card.name}</strong><code>{card.id}</code><small>{Object.keys(card.samples).length} 个视图</small><ArrowRight /></button>)}</div></section></main>;
 
   return <main className="card-detail-page"><section className="card-detail"><div className="card-detail-inner"><Link className="detail-breadcrumb" to="/cards">卡片库</Link><header className="detail-header"><div><div className="identity-line"><h1>{selected.name}</h1><code>{selected.id}</code></div><p>查看卡片效果、所需数据和检查结果。</p><div className="detail-meta"><span className="status-draft">{selected.mutable ? "草稿" : `v${selected.version}`}</span><span>{Object.keys(selected.samples).length} 个视图</span><span className="status-valid">{compiled.issues.length ? `${compiled.issues.length} 个问题` : "检查通过"}</span></div></div><div className="detail-actions"><a className="button primary" href={serverPath(`/api/v1/cards/${encodeURIComponent(selected.reference)}/handoff`)}><Download size={14} />下载交付包</a></div></header><div className="detail-tabs" role="tablist">{[["preview", "预览"], ["contract", "数据结构"], ["validation", "检查结果"]].map(([key, label]) => <button key={key} type="button" className={tab === key ? "active" : ""} onClick={() => setQuery("tab", key)}>{label}</button>)}</div>
       {tab === "preview" ? <div className="preview-stack"><div className="preview-toolbar"><label>视图<select value={view} onChange={(event) => setQuery("view", event.target.value)}>{Object.keys(selected.samples).map((name) => <option key={name}>{name}</option>)}</select></label><label>样例<select value={sample} onChange={(event) => setQuery("sample", event.target.value)}>{selected.samples[view].map((name) => <option key={name}>{name}</option>)}</select></label><div className="width-switch" aria-label="预览宽度">{[320, 480, 640].map((value) => <button key={value} type="button" className={width === value ? "active" : ""} onClick={() => setWidth(value)}>{value}</button>)}</div><span className="valid-dot">{compiled.issues.length ? `${compiled.issues.length} 个问题` : "检查通过"}</span></div><section className="preview-surface"><div className="detail-preview-frame" style={{ width: `min(100%, ${width}px)` }}><RawPreviewFrame card={compiled.payload} resources={resources} title={`${selected.name} 预览`} /></div></section><div className="detail-ledger"><div><dt>数据契约</dt><dd>{Object.keys(contract.schema).length} 个顶层字段</dd></div><div><dt>交互检查</dt><dd>{contract.interactionReports.length} 个组合</dd></div><div><dt>渲染规范</dt><dd><code>{session.renderProfile.reference}</code></dd></div><div><dt>当前视图</dt><dd><code>{view}</code></dd></div></div><details className="technical-details"><summary>更多技术信息</summary><div className="technical-details-content"><dl><div><dt>数据修订</dt><dd><code>{session.revision.slice(0, 20)}...</code></dd></div><div><dt>配置来源</dt><dd>{context.renderProfileSource}</dd></div></dl></div></details></div> : null}

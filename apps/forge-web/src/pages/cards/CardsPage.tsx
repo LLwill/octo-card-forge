@@ -1,4 +1,4 @@
-import { ArrowRight, ExternalLink, Search } from "lucide-react";
+import { ArrowRight, ExternalLink, LayoutTemplate, Search } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import type { CardArtifactV1, CatalogSnapshotV1 } from "@mlt-org/octo-card-catalog-snapshot";
@@ -40,7 +40,8 @@ export function CardsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [snapshot, setSnapshot] = useState<CatalogSnapshotV1>();
   const [artifact, setArtifact] = useState<CardArtifactV1>();
-  const [loading, setLoading] = useState(true);
+  const [snapshotLoading, setSnapshotLoading] = useState(true);
+  const [artifactLoading, setArtifactLoading] = useState(false);
   const [error, setError] = useState<string>();
   const [filter, setFilter] = useState(searchParams.get("q") ?? "");
   const [catalogRevision, setCatalogRevision] = useState(0);
@@ -48,7 +49,7 @@ export function CardsPage() {
   useEffect(() => {
     if (!runtime || runtime.mode !== "published") return;
     let active = true;
-    setLoading(true);
+    setSnapshotLoading(true);
     setError(undefined);
     const embedded = bootstrap();
     void loadCatalogSnapshot({
@@ -57,31 +58,37 @@ export function CardsPage() {
     })
       .then((value) => { if (active) setSnapshot(value); })
       .catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : String(reason)); })
-      .finally(() => { if (active) setLoading(false); });
+      .finally(() => { if (active) setSnapshotLoading(false); });
     return () => { active = false; };
   }, [runtime, catalogRevision]);
 
+  const namespace = searchParams.get("namespace") ?? "all";
+  const namespaces = useMemo(() => [...new Set((snapshot?.cards ?? []).map((card) => card.namespace))].sort(), [snapshot]);
   const cards = useMemo(() => {
     const query = filter.trim().toLocaleLowerCase();
     return (snapshot?.cards ?? []).filter((card) =>
-      !query || [card.id, card.name, card.namespace, card.key].some((value) => value?.toLocaleLowerCase().includes(query)),
+      (namespace === "all" || card.namespace === namespace)
+      && (!query || [card.id, card.name, card.namespace, card.key].some((value) => value?.toLocaleLowerCase().includes(query))),
     );
-  }, [filter, snapshot]);
+  }, [filter, namespace, snapshot]);
   const selectedCard = useMemo(() => {
     if (!snapshot) return undefined;
-    if (!reference) return cards[0];
     return snapshot.cards.find((card) => card.id === reference || card.versions.some((version) => version.reference === reference)) ?? snapshot.cards[0];
-  }, [cards, snapshot, reference]);
+  }, [snapshot, reference]);
   const requestedVersion = searchParams.get("version");
   const selectedVersion = selectedCard?.versions.find((version) => version.reference === requestedVersion || version.version === requestedVersion)
     ?? selectedCard?.versions.find((version) => version.version === selectedCard.latest)
     ?? selectedCard?.versions[0];
 
   useEffect(() => {
-    if (!selectedVersion) return;
+    if (!reference || !selectedVersion) {
+      setArtifact(undefined);
+      setArtifactLoading(false);
+      return;
+    }
     let active = true;
     setArtifact(undefined);
-    setLoading(true);
+    setArtifactLoading(true);
     setError(undefined);
     const embedded = bootstrap();
     void loadCardArtifact(selectedVersion.reference, selectedVersion.artifact.sha256, {
@@ -90,9 +97,9 @@ export function CardsPage() {
     })
       .then((value) => { if (active) setArtifact(value); })
       .catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : String(reason)); })
-      .finally(() => { if (active) setLoading(false); });
+      .finally(() => { if (active) setArtifactLoading(false); });
     return () => { active = false; };
-  }, [selectedVersion]);
+  }, [reference, selectedVersion]);
 
   if (runtimeLoading) return <LoadingState label="正在准备卡片库" />;
   if (runtimeError) return <ErrorState message={runtimeError} retry={reloadRuntime} />;
@@ -103,19 +110,23 @@ export function CardsPage() {
     <main className={reference ? "card-detail-page" : "catalog-page"}>
       {!reference ? <section className="catalog-overview">
         <header className="catalog-page-header">
-          <div><h1>卡片库</h1><p>浏览、比较并检查当前目录中的 Card Package。</p><span>{cards.length} 个卡片包</span></div>
+          <div><h1>卡片库</h1><p>查找可复用的 Card Package，并进入详情查看预览与数据契约。</p><span>{cards.length} 个卡片包</span></div>
           <div className="catalog-tools"><label className="search-box"><Search size={16} aria-hidden="true" /><span className="sr-only">搜索卡片</span><input value={filter} onChange={(event) => {
           const value = event.target.value;
           setFilter(value);
           const next = new URLSearchParams(searchParams);
           value ? next.set("q", value) : next.delete("q");
           setSearchParams(next, { replace: true });
-        }} placeholder="搜索名称或 Card ID" /></label><select aria-label="命名空间"><option>全部命名空间</option></select></div>
+        }} placeholder="搜索名称或 Card ID" /></label><select aria-label="命名空间" value={namespace} onChange={(event) => {
+          const next = new URLSearchParams(searchParams);
+          event.target.value === "all" ? next.delete("namespace") : next.set("namespace", event.target.value);
+          setSearchParams(next, { replace: true });
+        }}><option value="all">全部命名空间</option>{namespaces.map((item) => <option key={item} value={item}>{item}</option>)}</select></div>
         </header>
-        {loading || !selectedCard || !selectedVersion || !artifact ? <LoadingState label="正在加载卡片库" /> : <CatalogFeature card={selectedCard} version={selectedVersion} artifact={artifact} cards={cards} navigate={navigate} />}
+        {snapshotLoading ? <LoadingState label="正在加载卡片库" /> : <CatalogGrid cards={cards} navigate={navigate} />}
       </section> : <section className="card-detail">
         <div className="card-detail-inner">
-          {loading || !selectedCard || !selectedVersion || !artifact ? <LoadingState label="正在加载卡片" /> : <CardDetail card={selectedCard} version={selectedVersion} artifact={artifact} searchParams={searchParams} setSearchParams={setSearchParams} />}
+          {artifactLoading || !selectedCard || !selectedVersion || !artifact ? <LoadingState label="正在加载卡片" /> : <CardDetail card={selectedCard} version={selectedVersion} artifact={artifact} searchParams={searchParams} setSearchParams={setSearchParams} />}
           {error && snapshot ? <div className="inline-error"><ErrorState message={error} /></div> : null}
         </div>
       </section>}
@@ -123,29 +134,19 @@ export function CardsPage() {
   );
 }
 
-function CatalogFeature({ card, version, artifact, cards, navigate }: {
-  card: CatalogCard;
-  version: CatalogVersion;
-  artifact: CardArtifactV1;
+function CatalogGrid({ cards, navigate }: {
   cards: CatalogCard[];
   navigate: ReturnType<typeof useNavigate>;
 }) {
-  const view = Object.values(artifact.views)[0];
-  const sample = view?.samples[0];
-  return <>
-    <div className="catalog-feature">
-      <div className="catalog-feature-stage">{sample ? <div className="catalog-feature-card"><PreviewFrame artifact={artifact} sample={sample} title={`${card.name} 预览`} /></div> : null}</div>
-      <div className="catalog-feature-copy">
-        <h2>{card.name}</h2>
-        <code>{card.id}</code>
-        <p>{describeCard(card)}</p>
-        <div className="catalog-meta"><span className="status-draft">已发布</span><span>{Object.keys(artifact.views).length} 个视图</span><span className="status-valid">检查通过</span></div>
-        <button type="button" className="text-action primary-text-action" onClick={() => navigate(`/cards/${encodeURIComponent(card.id)}`)}>查看详情<ArrowRight /></button>
-        <button type="button" className="text-action" onClick={() => navigate(`/cards/${encodeURIComponent(card.id)}?tab=contract`)}>数据契约<ArrowRight /></button>
-      </div>
-    </div>
-    <div className="catalog-index">{cards.filter((item) => item.id !== card.id).map((item) => <button type="button" key={item.id} onClick={() => navigate(`/cards/${encodeURIComponent(item.id)}`)}><span className="catalog-thumb"><span /></span><strong>{item.name}</strong><code>{item.id}</code><small>v{item.latest}</small><ArrowRight /></button>)}</div>
-  </>;
+  if (!cards.length) return <div className="catalog-empty"><Search size={20} /><strong>没有找到卡片</strong><span>换一个名称、Card ID 或命名空间试试。</span></div>;
+  return <div className="catalog-grid">{cards.map((card) => <button type="button" className="catalog-card" key={card.id} onClick={() => navigate(`/cards/${encodeURIComponent(card.id)}`)}>
+    <span className="catalog-card-icon"><LayoutTemplate size={20} aria-hidden="true" /></span>
+    <span className="catalog-card-version">v{card.latest}</span>
+    <strong>{card.name}</strong>
+    <code>{card.id}</code>
+    <span className="catalog-card-description">{describeCard(card)}</span>
+    <span className="catalog-card-footer"><span><i />已发布</span><span>查看详情 <ArrowRight size={15} /></span></span>
+  </button>)}</div>;
 }
 
 function CardDetail({ card, version, artifact, searchParams, setSearchParams }: {
