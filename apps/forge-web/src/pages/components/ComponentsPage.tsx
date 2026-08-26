@@ -93,7 +93,7 @@ export function ComponentsPage() {
 
   return <main className="spec-page"><div className="spec-layout">
     <aside className="spec-sidebar">
-      <div className="spec-sidebar-heading"><span className="showcase-kicker">Render Profile</span><h1>组件规范</h1><p>组件、Token 与组合模式</p></div>
+      <div className="spec-sidebar-heading"><span className="spec-kicker">Render Profile</span><h1>组件规范</h1><p>组件、Token 与组合模式</p></div>
       <label className="flex h-10 items-center gap-2 rounded-md border bg-card px-3 text-muted-foreground focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/10"><Search className="size-4" /><span className="sr-only">搜索组件</span><input className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索组件" /></label>
       <nav className="spec-sidebar-nav" aria-label="组件分类">
         <button type="button" className={group === "all" ? "active" : ""} onClick={() => setGroup("all")}><span>全部</span><small>{sections.length}</small></button>

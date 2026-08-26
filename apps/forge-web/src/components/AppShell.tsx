@@ -17,7 +17,7 @@ export function AppShell() {
   return (
     <div className="forge-app-shell">
       <header className="forge-topbar">
-        <Link className="forge-brand" to="/" aria-label="Octo Card Forge 首页">
+        <Link className="forge-brand" to="/cards" aria-label="Octo Card Forge 卡片库">
           <span className="forge-brand-mark"><Boxes aria-hidden="true" /></span>
           <strong>Octo Card Forge</strong>
         </Link>

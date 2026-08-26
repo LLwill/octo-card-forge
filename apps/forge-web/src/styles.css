@@ -68,39 +68,6 @@ code { font-family: "SFMono-Regular", Consolas, monospace; letter-spacing: 0; }
 .forge-runtime small::before { content: "·"; margin-right: 7px; color: #aaa6ae; }
 .forge-app-content { min-width: 0; }
 
-/* Overview */
-.showcase-page { min-height: calc(100vh - 64px); padding: 0 clamp(28px, 5vw, 76px) 52px; }
-.showcase-hero { min-height: 620px; padding: 66px 0 34px; display: grid; grid-template-columns: minmax(400px, 1fr) minmax(520px, 1.2fr); gap: clamp(42px, 5.5vw, 88px); align-items: start; border-bottom: 1px solid var(--forge-border); }
-.showcase-hero-copy { max-width: 600px; }
-.showcase-kicker { color: var(--forge-muted); font-size: 14px; font-weight: 520; letter-spacing: 0; }
-.showcase-hero h1 { margin: 20px 0 0; font-family: "Songti SC", "STSong", serif; font-size: clamp(40px, 2.9vw, 50px); line-height: 1.18; font-weight: 650; letter-spacing: 0; }
-.showcase-lead { max-width: 520px; margin: 24px 0 0; color: var(--forge-muted); font-size: 16px; line-height: 1.75; }
-.showcase-actions { margin-top: 30px; display: flex; align-items: center; gap: 26px; }
-.showcase-primary-action { height: 46px; padding-inline: 24px !important; border-radius: 4px !important; background: var(--forge-accent) !important; color: #fff !important; }
-.showcase-primary-action:hover { background: var(--forge-accent-hover) !important; }
-.showcase-secondary-action { display: inline-flex; align-items: center; gap: 6px; color: var(--forge-accent); font-size: 14px; font-weight: 620; text-decoration: none; }
-.showcase-secondary-action svg { width: 16px; }
-.showcase-product { min-width: 0; }
-.showcase-stage { min-height: 430px; padding: 36px; display: grid; place-items: center; background: var(--forge-stage); }
-.showcase-preview { width: min(100%, 610px); height: 350px; overflow: hidden; background: #fff; box-shadow: 0 18px 44px rgb(34 31 43 / 13%); }
-.showcase-preview .card-preview { width: 100%; height: 350px; min-height: 350px; border: 0; }
-.showcase-stage-footer { min-height: 42px; padding: 13px 4px 0; display: flex; align-items: center; justify-content: space-between; color: var(--forge-muted); font-size: 11px; font-family: "SFMono-Regular", Consolas, monospace; }
-.showcase-live { display: inline-flex; align-items: center; gap: 7px; color: var(--forge-success); font-family: "Geist Variable", sans-serif; font-weight: 620; }
-.showcase-live i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-.showcase-flow { padding: 34px 0; display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 28px; border-bottom: 1px solid var(--forge-border); }
-.showcase-flow h2, .showcase-index h2 { margin: 0; font-size: 15px; font-weight: 650; }
-.showcase-flow-list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.showcase-flow-list article { min-width: 0; display: grid; grid-template-columns: 36px minmax(0, 1fr) 24px; gap: 12px; align-items: center; }
-.showcase-flow-list article > span { color: #85818d; font: 500 18px/1 "SFMono-Regular", Consolas, monospace; }
-.showcase-flow-list strong { display: block; overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
-.showcase-flow-list small { display: block; margin-top: 5px; color: var(--forge-muted); font-size: 10px; }
-.showcase-flow-list svg { width: 16px; color: #bbb7c0; }
-.showcase-index { padding: 30px 0 0; display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 28px; }
-.showcase-next-links { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.showcase-next-links a { min-height: 32px; display: flex; align-items: center; gap: 10px; color: var(--forge-accent); font-size: 14px; font-weight: 560; text-decoration: none; }
-.showcase-next-links a + a { padding-left: 28px; border-left: 1px solid var(--forge-border); }
-.showcase-next-links svg { width: 15px; }
-
 /* Catalog */
 .catalog-page, .card-detail-page { min-height: calc(100vh - 64px); background: var(--forge-surface); }
 .catalog-overview { padding: 30px clamp(28px, 4vw, 58px) 52px; }
@@ -115,8 +82,8 @@ code { font-family: "SFMono-Regular", Consolas, monospace; letter-spacing: 0; }
 select { height: 42px; padding: 0 34px 0 12px; border: 1px solid var(--forge-border); border-radius: 5px; background: #fff; color: var(--forge-text); }
 .catalog-feature { min-height: 470px; display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(300px, .85fr); gap: 64px; align-items: center; }
 .catalog-feature-stage { min-height: 460px; display: grid; place-items: center; background: var(--forge-stage); }
-.catalog-feature-card { width: min(100% - 80px, 610px); height: 350px; overflow: hidden; background: #fff; box-shadow: 0 16px 40px rgb(34 31 43 / 12%); }
-.catalog-feature-card .card-preview { width: 100%; height: 350px; min-height: 350px; border: 0; }
+.catalog-feature-card { width: min(100% - 80px, 610px); min-height: 350px; overflow: hidden; background: #fff; box-shadow: 0 16px 40px rgb(34 31 43 / 12%); }
+.catalog-feature-card .card-preview { width: 100%; min-height: 350px; border: 0; }
 .catalog-feature-copy { max-width: 380px; }
 .catalog-feature-copy h2 { margin: 0; font-size: 34px; line-height: 1.15; }
 .catalog-feature-copy > code { display: block; margin-top: 9px; color: var(--forge-muted); font-size: 13px; }
@@ -171,8 +138,8 @@ select { height: 42px; padding: 0 34px 0 12px; border: 1px solid var(--forge-bor
 .valid-dot { margin-left: auto; display: inline-flex; align-items: center; gap: 7px; color: var(--forge-success); font-size: 11px; }
 .valid-dot::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .preview-surface { min-height: 500px; padding: 34px; display: grid; place-items: center; background: var(--forge-stage); }
-.detail-preview-frame { width: min(100%, 600px); height: 390px; overflow: hidden; background: #fff; box-shadow: 0 15px 38px rgb(34 31 43 / 12%); }
-.detail-preview-frame .card-preview { width: 100%; height: 390px; min-height: 390px; border: 0; }
+.detail-preview-frame { width: min(100%, 600px); min-height: 390px; overflow: hidden; background: #fff; box-shadow: 0 15px 38px rgb(34 31 43 / 12%); }
+.detail-preview-frame .card-preview { width: 100%; min-height: 390px; border: 0; }
 .detail-ledger { min-height: 88px; padding: 0 30px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--forge-border); border-bottom: 1px solid var(--forge-border); }
 .detail-ledger > div { padding: 20px 22px; border-left: 1px solid var(--forge-border); }
 .detail-ledger > div:first-child { padding-left: 0; border-left: 0; }
@@ -205,7 +172,7 @@ select { height: 42px; padding: 0 34px 0 12px; border: 1px solid var(--forge-bor
 .spec-layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); }
 .spec-sidebar { position: sticky; top: 64px; height: calc(100vh - 64px); padding: 28px 16px; border-right: 1px solid var(--forge-border); overflow-y: auto; }
 .spec-sidebar-heading { padding: 0 8px 22px; }
-.spec-sidebar-heading .showcase-kicker { color: var(--forge-accent); font: 500 10px "SFMono-Regular", Consolas, monospace; }
+.spec-sidebar-heading .spec-kicker { color: var(--forge-accent); font: 500 10px "SFMono-Regular", Consolas, monospace; }
 .spec-sidebar-heading h1 { margin: 8px 0 0; font-size: 24px; }
 .spec-sidebar-heading p { margin: 6px 0 0; color: var(--forge-muted); font-size: 12px; }
 .spec-sidebar > label { border-radius: 4px !important; }
@@ -234,8 +201,8 @@ select { height: 42px; padding: 0 34px 0 12px; border: 1px solid var(--forge-bor
 .component-detail-tabs > button:not(:last-child).active { border-bottom-color: var(--forge-accent); color: var(--forge-accent); }
 .component-detail-tabs > button:last-child { width: 34px; height: 34px; margin: auto 0 auto auto; }
 .component-detail-stage { min-height: 430px; padding: 42px; display: grid; place-items: start center; overflow: auto; background: var(--forge-stage); }
-.component-detail-preview { max-width: 100%; height: 350px; background: #fff; box-shadow: 0 14px 36px rgb(34 31 43 / 9%); transition: width 180ms ease; }
-.component-detail-preview .card-preview { width: 100%; height: 350px; min-height: 350px; border: 0; }
+.component-detail-preview { max-width: 100%; min-height: 350px; overflow: hidden; background: #fff; box-shadow: 0 14px 36px rgb(34 31 43 / 9%); transition: width 180ms ease; }
+.component-detail-preview .card-preview { width: 100%; min-height: 350px; border: 0; }
 .component-detail-stage pre { width: 100%; min-height: 346px; margin: 0; padding: 24px; overflow: auto; border-radius: 4px; background: var(--forge-code); color: #f2eff6; font-size: 11px; line-height: 1.65; }
 .component-no-preview { align-self: center; max-width: 420px; color: var(--forge-muted); font-size: 12px; line-height: 1.7; text-align: center; }
 .component-reference { padding: 36px 0 8px; }
@@ -266,8 +233,8 @@ select { height: 42px; padding: 0 34px 0 12px; border: 1px solid var(--forge-bor
 .workbench-pane textarea { background: var(--forge-code) !important; color: #f2eff6 !important; }
 .workbench-preview { display: grid; grid-template-rows: auto minmax(0, 1fr); }
 .playground-stage { min-height: 560px; padding: 38px; display: grid; place-items: start center; background: var(--forge-stage); }
-.playground-canvas { max-width: 100%; height: 430px; overflow: hidden; background: #fff; box-shadow: 0 14px 36px rgb(34 31 43 / 10%); }
-.playground-canvas .card-preview { width: 100%; height: 430px; min-height: 430px; border: 0; }
+.playground-canvas { max-width: 100%; min-height: 430px; overflow: hidden; background: #fff; box-shadow: 0 14px 36px rgb(34 31 43 / 10%); }
+.playground-canvas .card-preview { width: 100%; min-height: 430px; border: 0; }
 
 /* Install */
 .install-showcase { min-height: calc(100vh - 64px); padding: 0 clamp(28px, 5vw, 76px) 64px; }
@@ -323,10 +290,6 @@ select { height: 42px; padding: 0 34px 0 12px; border: 1px solid var(--forge-bor
 @media (max-width: 1080px) {
   .forge-topbar { grid-template-columns: 210px minmax(0, 1fr) 170px; }
   .forge-global-nav { gap: 24px; }
-  .showcase-hero { grid-template-columns: 1fr; gap: 38px; }
-  .showcase-hero-copy { max-width: 760px; }
-  .showcase-product { max-width: 850px; }
-  .showcase-flow, .showcase-index { grid-template-columns: 1fr; }
   .catalog-feature { grid-template-columns: minmax(0, 1.4fr) minmax(280px, .75fr); gap: 36px; }
   .playground-workbench { grid-template-columns: 1fr; }
   .workbench-pane { border-right: 0 !important; border-bottom: 1px solid var(--forge-border) !important; }
@@ -338,22 +301,14 @@ select { height: 42px; padding: 0 34px 0 12px; border: 1px solid var(--forge-bor
   .forge-brand strong { font-size: 13px; }
   .forge-runtime small { display: none; }
   .forge-global-nav { grid-row: 2; grid-column: 1 / -1; height: 48px; justify-content: flex-start; gap: 26px; overflow-x: auto; }
-  .showcase-page { padding: 0 15px 50px; }
-  .showcase-hero { min-height: 0; padding: 38px 0 26px; }
-  .showcase-hero h1 { font-size: 42px; }
-  .showcase-stage { min-height: 300px; padding: 18px; }
-  .showcase-preview, .showcase-preview .card-preview { height: 260px; min-height: 260px; }
-  .showcase-flow-list, .showcase-next-links { grid-template-columns: 1fr; }
-  .showcase-flow-list article { min-height: 64px; }
-  .showcase-next-links a + a { padding-left: 0; border-left: 0; }
   .catalog-overview { padding: 28px 15px 50px; }
   .catalog-page-header { display: grid; }
   .catalog-tools { padding-top: 0; display: grid; }
   .search-box { width: 100%; }
   .catalog-feature { grid-template-columns: 1fr; gap: 28px; }
   .catalog-feature-stage { min-height: 320px; }
-  .catalog-feature-card { width: calc(100% - 28px); height: 280px; }
-  .catalog-feature-card .card-preview { height: 280px; min-height: 280px; }
+  .catalog-feature-card { width: calc(100% - 28px); min-height: 280px; }
+  .catalog-feature-card .card-preview { min-height: 280px; }
   .catalog-index button { grid-template-columns: 86px minmax(0, 1fr) 22px; }
   .catalog-index code, .catalog-index small { grid-column: 2; }
   .catalog-thumb { width: 74px; }
@@ -367,7 +322,7 @@ select { height: 42px; padding: 0 34px 0 12px; border: 1px solid var(--forge-bor
   .width-switch { width: 100%; }
   .width-switch button { flex: 1; }
   .preview-surface { min-height: 420px; padding: 16px; }
-  .detail-preview-frame, .detail-preview-frame .card-preview { height: 360px; min-height: 360px; }
+  .detail-preview-frame, .detail-preview-frame .card-preview { min-height: 360px; }
   .detail-ledger { padding: 0 15px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .detail-ledger > div:nth-child(3) { border-left: 0; }
   .technical-details { margin-inline: 15px; }
@@ -384,14 +339,14 @@ select { height: 42px; padding: 0 34px 0 12px; border: 1px solid var(--forge-bor
   .component-detail-header .width-switch { width: 100%; }
   .component-detail-header .width-switch button { flex: 1; }
   .component-detail-stage { min-height: 390px; padding: 18px; }
-  .component-detail-preview, .component-detail-preview .card-preview { height: 340px; min-height: 340px; }
+  .component-detail-preview, .component-detail-preview .card-preview { min-height: 340px; }
   .matrix-table > div, .token-list > div { grid-template-columns: minmax(110px, .8fr) 1fr; }
   .matrix-table span, .token-list small { grid-column: 1 / -1; }
   .playground-header { align-items: flex-start; display: grid; }
   .playground-workbench { grid-template-columns: 1fr; }
   .editor-pane textarea, .workbench-pane textarea { height: 460px !important; min-height: 460px !important; }
   .playground-stage { min-height: 450px; padding: 18px; }
-  .playground-canvas, .playground-canvas .card-preview { height: 400px; min-height: 400px; }
+  .playground-canvas, .playground-canvas .card-preview { min-height: 400px; }
   .install-showcase { padding: 0 15px 50px; }
   .install-hero-inner { min-height: 170px; }
   .install-path-tabs { gap: 22px; overflow-x: auto; }
