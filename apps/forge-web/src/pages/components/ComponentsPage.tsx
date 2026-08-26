@@ -5,7 +5,6 @@ import { ErrorState, LoadingState } from "../../components/AsyncState.js";
 import { RawPreviewFrame } from "../../components/PreviewFrame.js";
 import { Button } from "../../components/ui/button.js";
 import { loadJson, serverPath } from "../../data/client.js";
-import { cn } from "../../lib/utils.js";
 
 interface ComponentResponse {
   reference: string;
@@ -15,10 +14,12 @@ interface ComponentResponse {
   catalog: ComponentCatalogV1;
 }
 
+type CatalogSection = ComponentCatalogV1["groups"][number]["sections"][number];
+
 const groupNames: Record<string, string> = {
-  foundation: "基础规范",
-  "adaptive-card-components": "基础组件",
-  "octo-utility-tokens": "样式工具",
+  foundation: "基础样式",
+  "adaptive-card-components": "内容组件",
+  "octo-utility-tokens": "状态与工具",
   "composition-patterns": "组合模式",
 };
 
@@ -49,8 +50,7 @@ function groupName(id: string, fallback: string) {
 }
 
 function sectionName(id: string, fallback: string) {
-  if (sectionNames[id]) return sectionNames[id];
-  return fallback;
+  return sectionNames[id] ?? fallback;
 }
 
 export function ComponentsPage() {
@@ -59,6 +59,7 @@ export function ComponentsPage() {
   const [revision, setRevision] = useState(0);
   const [query, setQuery] = useState("");
   const [group, setGroup] = useState("all");
+  const [selectedId, setSelectedId] = useState<string>();
   const [width, setWidth] = useState(480);
 
   useEffect(() => {
@@ -72,52 +73,51 @@ export function ComponentsPage() {
 
   const sections = useMemo(() => (data?.catalog.groups ?? []).flatMap((entry) =>
     entry.sections.map((section) => ({ group: entry, section }))), [data]);
-  const matches = ({ group: entry, section }: (typeof sections)[number]) => {
+  const visible = sections.filter(({ group: entry, section }) => {
     const text = `${section.id} ${section.title} ${section.description}`.toLocaleLowerCase();
     return (group === "all" || entry.id === group) && (!query.trim() || text.includes(query.trim().toLocaleLowerCase()));
-  };
-  const filtered = sections.filter(matches);
-  const filteredGroups = (data?.catalog.groups ?? []).map((entry) => ({
-    ...entry,
-    sections: entry.sections.filter((section) => matches({ group: entry, section })),
-  })).filter((entry) => entry.sections.length > 0);
+  });
+  const visualDefault = group === "all"
+    ? visible.find(({ section }) => section.id === "utility-badge") ?? visible.find(({ section }) => section.card || section.utilityTokens?.some((token) => token.card))
+    : undefined;
+  const selected = visible.find(({ section }) => section.id === selectedId) ?? visualDefault ?? visible[0] ?? sections[0];
 
   if (error) return <ErrorState message={error} retry={() => setRevision((value) => value + 1)} />;
-  if (!data) return <LoadingState label="正在加载组件规范" />;
+  if (!data || !selected) return <LoadingState label="正在加载组件规范" />;
 
   const resources = {
     hostConfig: data.hostConfig,
     stylesheetUrls: [data.stylesheetUrl],
     adaptiveCardsSdkUrl: `https://cdn.jsdelivr.net/npm/adaptivecards@${data.renderProfile.adaptiveCardsSdkVersion}/dist/adaptivecards.min.js`,
   };
-  return <main className="spec-page">
-    <div className="spec-layout">
-      <aside className="spec-sidebar">
-        <div className="spec-sidebar-heading"><span className="showcase-kicker">系统</span><h1>设计规范</h1><p>组件、样式与组合方式</p></div>
-        <label className="flex h-10 items-center gap-2 rounded-md border bg-card px-3 text-muted-foreground focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/10"><Search className="size-4" /><span className="sr-only">搜索组件</span><input className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索组件" /></label>
-        <nav className="spec-sidebar-nav" aria-label="组件分类"><button type="button" className={group === "all" ? "active" : ""} onClick={() => setGroup("all")}><span>全部</span><small>{sections.length}</small></button>{data.catalog.groups.map((entry) => <button key={entry.id} type="button" className={group === entry.id ? "active" : ""} onClick={() => setGroup(entry.id)}><span>{groupName(entry.id, entry.title)}</span><small>{entry.sections.length}</small></button>)}</nav>
-        <div className="spec-width"><span>预览宽度</span><div>{[320, 480, 640].map((value) => <Button key={value} type="button" size="sm" variant="ghost" className={cn(width === value && "active")} onClick={() => setWidth(value)}>{value}</Button>)}</div></div>
-      </aside>
-      <div className="spec-content">
-        <header className="spec-hero">
-          <span className="showcase-kicker">组件规范</span>
-          <h2>设计一次，稳定复用。</h2>
-          <p>这里收录卡片的基础样式、可用组件与组合方式。每一项都配有可运行示例和对应 JSON。</p>
-          <dl className="spec-summary"><div><dt>{data.catalog.groups.length}</dt><dd>分类</dd></div><div><dt>{sections.length}</dt><dd>规范与示例</dd></div><div><dt>{width}px</dt><dd>当前预览宽度</dd></div></dl>
-        </header>
-        <div className="spec-groups">{filteredGroups.map((entry, groupIndex) => <section className="spec-group" key={entry.id}><header className="spec-group-heading"><span>0{groupIndex + 1}</span><div><p>{groupName(entry.id, entry.title)}</p><strong>{entry.sections.length} 项</strong></div></header><div className={cn("spec-grid", entry.id === "foundation" && "spec-grid-foundation")}>{entry.sections.map((section) => <ComponentSection key={section.id} category={groupName(entry.id, entry.title)} section={section} width={width} resources={resources} compact={entry.id === "foundation"} />)}</div></section>)}{filtered.length === 0 ? <div className="empty-panel"><strong>没有找到匹配的组件</strong><span>可以尝试其他名称或分类。</span></div> : null}</div>
-      </div>
-    </div>
-  </main>;
+
+  return <main className="spec-page"><div className="spec-layout">
+    <aside className="spec-sidebar">
+      <div className="spec-sidebar-heading"><span className="showcase-kicker">Render Profile</span><h1>组件规范</h1><p>组件、Token 与组合模式</p></div>
+      <label className="flex h-10 items-center gap-2 rounded-md border bg-card px-3 text-muted-foreground focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/10"><Search className="size-4" /><span className="sr-only">搜索组件</span><input className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索组件" /></label>
+      <nav className="spec-sidebar-nav" aria-label="组件分类">
+        <button type="button" className={group === "all" ? "active" : ""} onClick={() => setGroup("all")}><span>全部</span><small>{sections.length}</small></button>
+        {data.catalog.groups.map((entry) => <button key={entry.id} type="button" className={group === entry.id ? "active" : ""} onClick={() => { setGroup(entry.id); setSelectedId(entry.sections[0]?.id); }}><span>{groupName(entry.id, entry.title)}</span><small>{entry.sections.length}</small></button>)}
+      </nav>
+      <div className="spec-section-list">{visible.map(({ section }) => <button type="button" key={section.id} className={selected.section.id === section.id ? "active" : ""} onClick={() => setSelectedId(section.id)}>{sectionName(section.id, section.title)}</button>)}</div>
+    </aside>
+
+    <section className="spec-content">
+      <header className="component-detail-header">
+        <div><span className="component-breadcrumb">组件规范 / {groupName(selected.group.id, selected.group.title)}</span><h1>{sectionName(selected.section.id, selected.section.title)}</h1><p>{selected.section.description}</p><div className="component-meta"><span>组件 ID</span><code>{selected.section.id}</code><span>Render Profile</span><code>{data.reference}</code></div></div>
+        <div className="width-switch" aria-label="预览宽度">{[320, 480, 640].map((value) => <button key={value} type="button" className={width === value ? "active" : ""} onClick={() => setWidth(value)}>{value}</button>)}</div>
+      </header>
+      <ComponentDetail section={selected.section} width={width} resources={resources} />
+    </section>
+  </div></main>;
 }
 
-function ComponentSection({ category, section, width, resources, compact }: {
-  category: string;
-  section: ComponentCatalogV1["groups"][number]["sections"][number];
+function ComponentDetail({ section, width, resources }: {
+  section: CatalogSection;
   width: number;
   resources: Parameters<typeof RawPreviewFrame>[0]["resources"];
-  compact?: boolean;
 }) {
+  const [mode, setMode] = useState<"preview" | "json">("preview");
   const [copied, setCopied] = useState(false);
   const json = section.card ?? section.utilityTokens?.[0]?.card;
   const copy = async () => {
@@ -126,11 +126,12 @@ function ComponentSection({ category, section, width, resources, compact }: {
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1200);
   };
-  const title = sectionName(section.id, section.title);
-  return <article className={cn("component-section", compact && "component-section-compact")}><header><div className="min-w-0 flex-1"><span className="component-category">{category}</span><h2>{title}</h2><p>{section.description}</p></div>{json ? <Button variant="outline" size="icon" type="button" title="复制 JSON" aria-label="复制 JSON" onClick={() => void copy()}>{copied ? <Check /> : <Clipboard />}</Button> : null}</header>
-    {json ? <div className="component-preview" style={{ width: `min(100%, ${width}px)` }}><RawPreviewFrame card={json as JsonObject} resources={resources} title={`${title}预览`} /></div> : null}
-    {section.rows ? <div className="matrix-table">{section.rows.map((row) => <div key={row.name}><code>{row.name}</code><strong>{row.value}</strong><span>{row.description}</span></div>)}</div> : null}
-    {section.utilityTokens ? <div className="token-list">{section.utilityTokens.map((token) => <div key={token.token}><code>{token.token}</code><span>{token.description}</span><small>{token.appliesTo.join(" · ")}</small></div>)}</div> : null}
-    {json ? <details className="technical-details"><summary>查看 JSON</summary><pre><code>{JSON.stringify(json, null, 2)}</code></pre></details> : null}
-  </article>;
+
+  return <div className="component-detail">
+    <div className="component-detail-tabs"><button type="button" className={mode === "preview" ? "active" : ""} onClick={() => setMode("preview")}>预览</button><button type="button" className={mode === "json" ? "active" : ""} onClick={() => setMode("json")} disabled={!json}>JSON</button><Button variant="ghost" size="icon" type="button" title="复制 JSON" aria-label="复制 JSON" onClick={() => void copy()} disabled={!json}>{copied ? <Check /> : <Clipboard />}</Button></div>
+    <section className="component-detail-stage">{json && mode === "preview" ? <div className="component-detail-preview" style={{ width: `min(100%, ${width}px)` }}><RawPreviewFrame card={json as JsonObject} resources={resources} title={`${sectionName(section.id, section.title)}预览`} /></div> : null}{json && mode === "json" ? <pre><code>{JSON.stringify(json, null, 2)}</code></pre> : null}{!json ? <div className="component-no-preview">该规范项以属性表呈现，不包含独立卡片示例。</div> : null}</section>
+    {section.rows ? <section className="component-reference"><h2>属性</h2><div className="matrix-table">{section.rows.map((row) => <div key={row.name}><code>{row.name}</code><strong>{row.value}</strong><span>{row.description}</span></div>)}</div></section> : null}
+    {section.utilityTokens ? <section className="component-reference"><h2>Token</h2><div className="token-list">{section.utilityTokens.map((token) => <div key={token.token}><code>{token.token}</code><span>{token.description}</span><small>{token.appliesTo.join(" · ")}</small></div>)}</div></section> : null}
+    <section className="component-guidance"><h2>使用建议</h2><p>优先使用规范中的语义组件和 Token，避免在单个 Card 中重复定义视觉规则。</p></section>
+  </div>;
 }

@@ -3,8 +3,8 @@ import {
   Braces,
   CheckCircle2,
   Code2,
+  Copy,
   Play,
-  WandSparkles,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { PreviewRenderResponse, PreviewSession } from "@mlt-org/octo-card-preview-kit";
@@ -146,10 +146,9 @@ export function PlaygroundPage() {
       <div className="playground-shell">
         <header className="playground-header">
           <div className="max-w-2xl">
-            <span className="showcase-kicker">数据实验室</span>
             <h1>预览调试</h1>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              编辑卡片 JSON，立即检查不同宽度下的实际效果。
+              输入标准 Adaptive Card JSON，或为现有模板提供 ViewModel 数据。
             </p>
           </div>
 
@@ -192,7 +191,6 @@ export function PlaygroundPage() {
               className={cn("h-9", mode === "template-data" && "bg-background text-primary shadow-sm")}
               onClick={() => activateMode("template-data")}
             >
-              <WandSparkles data-icon="inline-start" />
               模板数据
             </Button>
           </div>
@@ -224,6 +222,10 @@ export function PlaygroundPage() {
               <Button type="button" variant="ghost" className="h-9" onClick={format}>
                 <Code2 data-icon="inline-start" />
                 格式化
+              </Button>
+              <Button type="button" variant="ghost" className="h-9" onClick={() => void navigator.clipboard.writeText(input)}>
+                <Copy data-icon="inline-start" />
+                复制
               </Button>
               <Button type="button" className="h-9 px-4" onClick={() => void render()}>
                 <Play data-icon="inline-start" />

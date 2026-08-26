@@ -1,17 +1,9 @@
-import {
-  Check,
-  Clipboard,
-  Download,
-  ExternalLink,
-  PackageCheck,
-  Terminal,
-} from "lucide-react";
+import { Check, Clipboard, ExternalLink, Terminal } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ErrorState, LoadingState } from "../../components/AsyncState.js";
-import { Button, buttonVariants } from "../../components/ui/button.js";
+import { Button } from "../../components/ui/button.js";
 import { Separator } from "../../components/ui/separator.js";
 import { loadJson, serverPath } from "../../data/client.js";
-import { cn } from "../../lib/utils.js";
 
 interface InstallManifest {
   cli: { package: string; version: string; compatibleRange: string; npmUrl: string; installCommand: string; initCommand: string };
@@ -19,10 +11,13 @@ interface InstallManifest {
   renderProfile: { id: string; version: string; source: string; package: string; compatibleRange?: string };
 }
 
+type InstallPath = "cli" | "profile" | "skill";
+
 export function InstallPage() {
   const [data, setData] = useState<InstallManifest>();
   const [error, setError] = useState<string>();
   const [revision, setRevision] = useState(0);
+  const [path, setPath] = useState<InstallPath>("cli");
 
   useEffect(() => {
     let active = true;
@@ -36,62 +31,54 @@ export function InstallPage() {
   if (error) return <ErrorState message={error} retry={() => setRevision((value) => value + 1)} />;
   if (!data) return <LoadingState label="正在准备安装信息" />;
 
+  const skillArchive = `${data.skill.name}-${data.skill.version}.tgz`;
+  const pathContent = {
+    cli: {
+      title: "CLI 快速开始",
+      steps: [
+        { label: "安装工具", description: "安装与当前版本匹配的命令行工具。", value: data.cli.installCommand },
+        { label: "初始化项目", description: "生成项目所需配置并绑定 Render Profile。", value: data.cli.initCommand },
+        { label: "验证安装", description: "检查配置、契约与 Render Profile 是否就绪。", value: "pnpm octo-card-forge check", success: "配置有效 · Render Profile 已就绪" },
+      ],
+    },
+    profile: {
+      title: "Render Profile 接入",
+      steps: [
+        { label: "安装渲染包", description: "将统一的 Host Config 与样式加入宿主项目。", value: `npm install --save-dev ${data.renderProfile.package}@${data.renderProfile.version}` },
+        { label: "绑定配置", description: "初始化项目并写入当前 Render Profile。", value: data.cli.initCommand },
+        { label: "验证渲染", description: "确认宿主、契约与组件规范版本匹配。", value: "pnpm octo-card-forge check", success: `${data.renderProfile.id}@${data.renderProfile.version} 已就绪` },
+      ],
+    },
+    skill: {
+      title: "Portable Skill 接入",
+      steps: [
+        { label: "下载 Skill", description: "获取可移植的完整 Skill 压缩包。", value: `curl -L \"${data.skill.bundleUrl}\" -o \"${skillArchive}\"` },
+        { label: "校验文件", description: "核对压缩包是否完整且未被修改。", value: `echo \"${data.skill.sha256}  ${skillArchive}\" | shasum -a 256 -c -` },
+        { label: "查看入口", description: "导入前确认 Skill 的入口文件。", value: `tar -xOf \"${skillArchive}\" \"${data.skill.entry}\"`, success: `${data.skill.entry} 可读取` },
+      ],
+    },
+  } satisfies Record<InstallPath, { title: string; steps: Array<{ label: string; description: string; value: string; success?: string }> }>;
+  const currentPath = pathContent[path];
+
   return (
     <main className="install-showcase">
       <header className="install-hero">
         <div className="install-hero-inner">
           <div>
-            <span className="install-edition-label">快速开始</span>
-            <h1>安装 Octo Card Forge</h1>
-            <p>在现有项目中安装工具，然后生成所需配置。</p>
-          </div>
-          <div className="install-version">
-            <PackageCheck />
-            <span>稳定版</span>
-            <strong>v{data.cli.version}</strong>
+            <h1>安装接入</h1>
+            <p>在项目中安装 CLI 与 Render Profile，或下载可移植 Skill 包。</p>
+            <span className="install-release">当前稳定版 <strong>v{data.cli.version}</strong> · 兼容范围 <strong>{data.cli.compatibleRange}</strong></span>
           </div>
         </div>
       </header>
 
       <div className="install-body">
-        <section className="install-quickstart" aria-labelledby="workspace-install-title">
-          <div className="install-section-heading">
-            <span>01</span>
-            <div>
-              <h2 id="workspace-install-title">两条命令完成初始化</h2>
-              <p>命令中已经固定互相兼容的版本，可以直接运行。</p>
-            </div>
-          </div>
-
-          <div className="install-steps">
-            <InstallStep number="01" label="安装工具" description="安装与当前版本匹配的命令行工具和卡片样式。" value={data.cli.installCommand} />
-            <InstallStep number="02" label="初始化项目" description="创建项目所需文件，并检查安装是否正确。" value={data.cli.initCommand} />
-          </div>
-        </section>
-
-        <section className="install-secondary" aria-labelledby="portable-skill-title">
-          <div>
-            <span className="install-section-number">02</span>
-            <h2 id="portable-skill-title">直接使用 Skill 包</h2>
-            <p>适合已经支持导入 Skill，但没有 Node.js 运行环境的平台。</p>
-            <div className="install-download-actions">
-              <a className={cn(buttonVariants({ size: "lg" }), "h-10 px-4")} href={data.skill.bundleUrl}>
-                <Download data-icon="inline-start" />
-                下载 Skill
-              </a>
-              <a className={cn(buttonVariants({ variant: "outline", size: "lg" }), "h-10 px-4")} href={data.skill.releaseUrl} target="_blank" rel="noreferrer">
-                发行说明
-                <ExternalLink data-icon="inline-end" />
-              </a>
-            </div>
-          </div>
-
-          <div className="install-skill-note">
-            <span>Skill 版本</span>
-            <strong>v{data.skill.version}</strong>
-            <p>下载后可直接导入支持 Skill 的环境。</p>
-          </div>
-        </section>
+        <div className="install-path-tabs" role="tablist" aria-label="接入方式">
+          <button className={path === "cli" ? "active" : ""} type="button" role="tab" aria-selected={path === "cli"} onClick={() => setPath("cli")}>CLI（推荐）</button>
+          <button className={path === "profile" ? "active" : ""} type="button" role="tab" aria-selected={path === "profile"} onClick={() => setPath("profile")}>Render Profile</button>
+          <button className={path === "skill" ? "active" : ""} type="button" role="tab" aria-selected={path === "skill"} onClick={() => setPath("skill")}>Portable Skill</button>
+        </div>
+        <div className="install-layout"><section className="install-quickstart" aria-labelledby="workspace-install-title"><h2 id="workspace-install-title" className="sr-only">{currentPath.title}</h2><div className="install-steps">{currentPath.steps.map((step, index) => <InstallStep key={step.label} number={String(index + 1).padStart(2, "0")} {...step} />)}</div><section className="install-alternatives"><h2>其他接入方式</h2><button type="button" onClick={() => setPath("profile")}><span>Render Profile</span><small>用于自定义渲染宿主</small><strong>查看 Render Profile →</strong></button><button type="button" onClick={() => setPath("skill")}><span>Portable Skill</span><small>用于支持 Skill 导入的平台</small><strong>查看 Portable Skill →</strong></button></section></section><aside className="install-summary"><h2>本次安装</h2><VersionRow label="CLI" value={data.cli.package} note={data.cli.version} /><VersionRow label="Render Profile" value={data.renderProfile.id} note={data.renderProfile.version} /><VersionRow label="Portable Skill" value={data.skill.name} note={data.skill.version} /><a href={data.skill.releaseUrl} target="_blank" rel="noreferrer">查看发行说明 <ExternalLink /></a></aside></div>
 
         <details className="install-details">
           <summary className="cursor-pointer px-5 py-4 text-sm font-medium">技术信息</summary>
@@ -117,7 +104,7 @@ export function InstallPage() {
   );
 }
 
-function InstallStep({ number, label, description, value }: { number: string; label: string; description: string; value: string }) {
+function InstallStep({ number, label, description, value, success }: { number: string; label: string; description: string; value: string; success?: string }) {
   const [copied, setCopied] = useState(false);
   const copy = () => {
     void navigator.clipboard.writeText(value).then(() => {
@@ -139,16 +126,17 @@ function InstallStep({ number, label, description, value }: { number: string; la
       <Button className="install-copy" type="button" variant="ghost" size="icon-lg" aria-label={`复制${label}命令`} title="复制命令" onClick={copy}>
         {copied ? <Check /> : <Clipboard />}
       </Button>
+      {success ? <span className="install-success"><Check />{success}</span> : null}
     </div>
   );
 }
 
 function VersionRow({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
-    <div className="grid gap-2 px-5 py-4 sm:grid-cols-[150px_minmax(0,1fr)_180px] sm:items-center sm:px-6">
-      <span className="text-sm font-medium text-muted-foreground">{label}</span>
-      <strong className="min-w-0 break-all font-mono text-sm font-medium">{value}</strong>
-      <span className="text-xs text-muted-foreground sm:text-right">{note}</span>
+    <div className="install-version-row">
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <small>{note}</small>
     </div>
   );
 }
