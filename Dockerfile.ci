@@ -36,7 +36,6 @@ RUN pnpm install --frozen-lockfile --prod --registry="${NPM_REGISTRY}"
 
 FROM ${NODE_IMAGE} AS runner
 
-ARG PNPM_VERSION
 ARG GIT_COMMIT=unknown
 ARG GIT_BRANCH=unknown
 ARG GIT_TAG=unknown
@@ -48,8 +47,7 @@ LABEL org.opencontainers.image.title="octo-card-forge" \
       org.opencontainers.image.version="${GIT_TAG}" \
       org.opencontainers.image.created="${BUILD_DATE}"
 
-RUN npm install -g "pnpm@${PNPM_VERSION}" --force \
-  && addgroup -S octo \
+RUN addgroup -S octo \
   && adduser -S -u 10001 -G octo octo
 
 WORKDIR /app
