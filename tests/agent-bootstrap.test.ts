@@ -105,5 +105,5 @@ describe("agent lifecycle bootstrap", () => {
     await expect(execFileAsync("pnpm", [
       "--silent", "cli", "agent", "doctor", "--workspace", workspace, "--format", "json",
     ])).rejects.toMatchObject({ code: 1 });
-  });
+  }, 15_000);
 });

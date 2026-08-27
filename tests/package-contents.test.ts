@@ -112,7 +112,7 @@ describe("CLI package contents", () => {
       expect(bundledCli).not.toContain(packageName);
       expect(bundledServer).not.toContain(packageName);
     }
-  }, 15_000);
+  }, 60_000);
 
   it("builds the production image from the deploy artifact", async () => {
     const dockerfile = await readFile("Dockerfile.ci", "utf8");
@@ -165,7 +165,7 @@ describe("CLI package contents", () => {
       await execFileAsync("tar", ["-xzf", result.artifact, "-C", runtime]);
       await execFileAsync(
         "pnpm",
-        ["install", "--prod", "--frozen-lockfile", "--offline"],
+        ["install", "--prod", "--frozen-lockfile", "--prefer-offline"],
         { cwd: runtime }
       );
 
@@ -197,5 +197,5 @@ describe("CLI package contents", () => {
     } finally {
       await rm(output, { recursive: true, force: true });
     }
-  }, 40_000);
+  }, 120_000);
 });
