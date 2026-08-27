@@ -78,6 +78,7 @@ Pod 启动时执行 `git clone` 和编译看似直接，但会引入以下问题
 - Card 编译、校验、检查和 Handoff 构建工具；
 - Forge Web 与 Server；
 - Catalog bundle 的读取、索引和展示；
+- Forge GitLab 中的 Catalog bundle 构建、数据镜像构建和 TCR 推送任务；
 - GitHub Delivery Actions；
 - 与当前生产 Catalog bundle 的兼容测试。
 
@@ -94,7 +95,8 @@ Pod 启动时执行 `git clone` 和编译看似直接，但会引入以下问题
 - 当前集中管理的 Card Source、Schema、Template、Sample 和 Golden；
 - Namespace 的 CODEOWNERS 和 Required Review；
 - PR Preview、Card Release 和 Catalog Release；
-- 不可变 Artifact、Handoff、Snapshot 和 Catalog 数据镜像；
+- 不可变 Artifact、Handoff 和 Card Release；
+- 合并或发布后，以完整 Catalog commit SHA 触发 Forge GitLab 的 Catalog bundle Pipeline；
 - 少量发布策略，例如弃用和隐藏。
 
 ### 4.3 `deploy-files`
@@ -233,16 +235,30 @@ strategy:
 
 发布顺序：
 
-1. Catalog GitLab CI 推送新数据镜像并获得 digest。
-2. Catalog CI 向 `deploy-files` 创建只修改 Catalog digest 的 MR。
-3. MR 校验 Forge/Catalog 兼容范围和镜像可拉取性。
-4. MR 获批并合并。
-5. 保持当前人工 `argocd_sync` 任务同步 Deployment，不在第一阶段改变该审批边界。
-6. Kubernetes 创建新 ReplicaSet。
-7. 新 Pod 的 `initContainer` 准备 Catalog 数据。
-8. Forge 启动并验证 `release.json`、Snapshot 摘要和兼容版本。
-9. `/readyz` 成功后，新 Pod 才接收流量。
-10. 旧 Pod 在新 Pod 就绪后退出。
+1. Catalog GitHub Workflow 将完整 Catalog commit SHA 发送给 Forge GitLab 的受保护 Pipeline Trigger。
+2. Forge GitLab CI 拉取该精确 SHA，构建 Catalog bundle 和数据镜像，并推送 TCR。
+3. Forge GitLab CI 向 `deploy-files` 创建只修改 Catalog digest 的 MR。
+4. MR 校验 Forge/Catalog 兼容范围和镜像可拉取性。
+5. MR 获批并合并。
+6. 保持当前人工 `argocd_sync` 任务同步 Deployment，不在第一阶段改变该审批边界。
+7. Kubernetes 创建新 ReplicaSet。
+8. 新 Pod 的 `initContainer` 准备 Catalog 数据。
+9. Forge 启动并验证 `release.json`、Snapshot 摘要和兼容版本。
+10. `/readyz` 成功后，新 Pod 才接收流量。
+11. 旧 Pod 在新 Pod 就绪后退出。
+
+Forge GitLab Pipeline 至少接收以下受保护变量：
+
+```text
+PIPELINE_MODE=catalog
+CATALOG_REPOSITORY=<catalog clone URL>
+CATALOG_REVISION=<full 40-character commit SHA>
+CATALOG_RELEASE=<release identifier>
+```
+
+Pipeline 必须在普通 CI 工作区拉取 Catalog，再将生成后的 bundle 放入 Docker build context。Git 凭证不得通过
+Docker build argument、镜像 layer 或 bundle 文件传递。镜像 Label 和 `release.json` 同时记录 Catalog SHA
+与实际执行构建的 Forge SHA。
 
 `/healthz` 只表示进程存活；`/readyz` 必须表示本地 Catalog 已加载并可消费。
 
@@ -337,8 +353,9 @@ PR 页面只表达“候选变更”，不会产生正式 Card Release，也不�
 3. 创建不可变 Card GitHub Release；
 4. 生成 Artifact、Handoff 和 checksum；
 5. 汇总所有正式 Card Release；
-6. 生成新的 Catalog Snapshot 和数据镜像；
-7. 创建生产 Catalog digest 更新 MR。
+6. 使用完整 Catalog commit SHA 触发 Forge GitLab Catalog Pipeline；
+7. Forge GitLab 生成 Catalog Snapshot、数据镜像和镜像 digest；
+8. Forge GitLab 创建生产 Catalog digest 更新 MR。
 
 生产部署继续保留人工批准。Card Release 成功不等于已经进入生产。
 
@@ -530,9 +547,10 @@ Forge Runtime API 至少暴露：
 ### Phase 1：Catalog bundle
 
 - 定义 `release.json` 和 bundle 目录；
-- Catalog CI 生成完整本地 bundle；
+- Forge 增加可接收精确 Catalog SHA 的 bundle 构建命令；
 - 确定性和安全限制测试；
-- 构建并推送 Catalog 数据镜像。
+- Forge GitLab CI 构建并推送 Catalog 数据镜像；
+- Catalog GitHub Workflow 在正式 Release 完成后触发 Forge GitLab Pipeline。
 
 ### Phase 2：Forge 本地消费
 
@@ -573,10 +591,11 @@ Forge Runtime API 至少暴露：
 | 项目 | 决策 |
 | --- | --- |
 | Catalog Registry | `tbj7-xtiao-tcr1.tencentcloudcr.com/dmwork/octo-card-catalog` |
-| Catalog 镜像构建 | 由 GitLab CI 完成并推送现有 TCR |
+| Catalog 镜像构建 | 由 Forge 项目的 GitLab CI 完成并推送现有 TCR |
 | 部署 MR 审批 | 第一阶段复用 `deploy-files` 默认审批规则，不新增专属审批角色 |
 | ArgoCD | 保持当前人工 `argocd_sync`，第一阶段不改 Auto Sync |
 | 兼容性 | Forge 能力清单与 Catalog 自动生成的要求清单做集合匹配，不维护人工 SemVer 范围 |
 
-Catalog GitLab 项目的仓库路径、Runner Tag 和镜像推送凭证沿用现有内部基础设施配置，在实施 Phase 1 时
-落入 Catalog 的 `.gitlab-ci.yml`，不写入 Catalog bundle 或 Forge 镜像。
+Forge GitLab 复用当前 Runner、TCR 登录凭证和 `deploy-files` 写入能力。Catalog GitHub 只保存最小权限的
+Pipeline Trigger 凭证；Catalog Repository 的读取凭证只存在于 Forge GitLab CI，不写入 Docker layer、
+Catalog bundle 或 Forge 镜像。

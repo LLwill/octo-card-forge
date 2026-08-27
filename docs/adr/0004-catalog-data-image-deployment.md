@@ -19,6 +19,9 @@ Forge 应用镜像，无法保持两个仓库的独立发布节奏。
 1. Forge 应用镜像包含 Server、Web 和平台能力；
 2. Catalog 数据镜像包含经过 CI 编译和验证的 Snapshot、Artifact、Handoff 与 Profile 静态资源。
 
+Catalog 数据镜像由 Forge 项目的 GitLab CI 构建并推送现有 TCR。Catalog 发布流程只负责传递完整的
+Catalog commit SHA 并触发受保护 Pipeline；构建任务不得读取浮动 `main` 作为发布输入。
+
 Kubernetes 使用 Catalog 镜像作为 `initContainer`，将 `/catalog` 复制到 Pod 的 `emptyDir`。Forge
 容器以只读方式挂载该目录。`deploy-files` 同时记录两个镜像 digest，ArgoCD 通过 Deployment 滚动更新
 完成发布。
