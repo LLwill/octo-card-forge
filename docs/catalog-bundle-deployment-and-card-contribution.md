@@ -174,7 +174,9 @@ tbj7-xtiao-tcr1.tencentcloudcr.com/dmwork/octo-card-forge@sha256:<forge-digest>
     "features": ["handoff-index-v1", "local-profile-assets-v1"]
   },
   "builtWith": {
-    "forgeCli": "0.2.4"
+    "forgeCli": "0.2.4",
+    "forgeRevision": "<full-git-sha>",
+    "builderImageDigest": "sha256:<builder-digest>"
   },
   "cards": 3,
   "versions": 6
@@ -187,7 +189,7 @@ tbj7-xtiao-tcr1.tencentcloudcr.com/dmwork/octo-card-forge@sha256:<forge-digest>
 
 1. 镜像必须使用 registry digest 部署。
 2. 已发布 `card-id@version` 的 Artifact 和 Handoff 不得覆盖。
-3. 相同 Catalog Git SHA 必须生成相同 Snapshot、Artifact 和 Handoff 字节。
+3. 相同 Catalog Git SHA 与 Builder image digest 必须生成相同 Snapshot、Artifact 和 Handoff 字节。
 4. 构建结果不得包含时间戳、工作区绝对路径、Token 或环境专属 URL。
 5. 数据镜像不得包含 `.git`、Card Source 或 CI 凭证。
 
@@ -198,7 +200,8 @@ tbj7-xtiao-tcr1.tencentcloudcr.com/dmwork/octo-card-forge@sha256:<forge-digest>
 ```yaml
 volumes:
   - name: catalog-data
-    emptyDir: {}
+    emptyDir:
+      sizeLimit: 256Mi
 
 initContainers:
   - name: prepare-catalog
@@ -247,18 +250,24 @@ strategy:
 10. `/readyz` 成功后，新 Pod 才接收流量。
 11. 旧 Pod 在新 Pod 就绪后退出。
 
-Forge GitLab Pipeline 至少接收以下受保护变量：
+Forge GitLab Pipeline 只从 Trigger 接收 Catalog commit；仓库地址以及 Builder、基础镜像由
+Forge GitLab 的受保护配置固定：
 
 ```text
 PIPELINE_MODE=catalog
-CATALOG_REPOSITORY=<catalog clone URL>
 CATALOG_REVISION=<full 40-character commit SHA>
-CATALOG_RELEASE=<release identifier>
+FORGE_BUILDER_IMAGE=<forge-builder>@sha256:<digest>
+CATALOG_DATA_BASE_IMAGE=<base-image>@sha256:<digest>
 ```
 
-Pipeline 必须在普通 CI 工作区拉取 Catalog，再将生成后的 bundle 放入 Docker build context。Git 凭证不得通过
-Docker build argument、镜像 layer 或 bundle 文件传递。镜像 Label 和 `release.json` 同时记录 Catalog SHA
-与实际执行构建的 Forge SHA。
+Pipeline 只能读取固定的 Catalog 仓库，并确认目标 SHA 来自受保护 `main` 或正式 Snapshot Release。
+构建由固定 digest 的 Forge Builder 镜像执行。Git 凭证不得通过 Docker build argument、镜像 layer
+或 bundle 文件传递。镜像 Label 和 `release.json` 同时记录 Catalog SHA、Builder digest 与 Forge SHA。
+
+首次上线双镜像清单时，Forge 标签流水线还需要一次 bootstrap `CATALOG_IMAGE_DIGEST` 和
+`CATALOG_REVISION`。清单存在后，后续 Forge 发布必须从 `deploy-files` 继承当前 Catalog 值，避免
+应用升级把 Catalog 回退到某个静态 CI 变量。Registry 清理策略不得删除生产清单、回滚窗口或未合并
+部署 MR 引用的任何 Forge/Catalog digest。
 
 `/healthz` 只表示进程存活；`/readyz` 必须表示本地 Catalog 已加载并可消费。
 
@@ -511,13 +520,18 @@ Forge Runtime API 至少暴露：
 
 ```json
 {
+  "schemaVersion": 1,
   "mode": "published",
-  "forgeRevision": "<sha>",
-  "catalogRevision": "<sha>",
-  "catalogImageDigest": "sha256:...",
-  "cards": 3,
-  "versions": 6,
-  "ready": true
+  "capabilities": {},
+  "deployment": {
+    "ready": true,
+    "catalogSource": "local",
+    "forgeRevision": "<sha>",
+    "catalogRevision": "<sha>",
+    "catalogImageDigest": "sha256:...",
+    "cards": 3,
+    "versions": 6
+  }
 }
 ```
 

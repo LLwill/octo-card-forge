@@ -1,6 +1,7 @@
 import { Check, Clipboard, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { ComponentCatalogV1, JsonObject, RenderProfileManifestV1 } from "@mlt-org/octo-card-spec";
+import { useRuntime } from "../../app/runtime.js";
 import { ErrorState, LoadingState } from "../../components/AsyncState.js";
 import { RawPreviewFrame } from "../../components/PreviewFrame.js";
 import { Button } from "../../components/ui/button.js";
@@ -56,6 +57,7 @@ function sectionName(id: string, fallback: string) {
 }
 
 export function ComponentsPage() {
+  const { runtime } = useRuntime();
   const [data, setData] = useState<ComponentResponse>();
   const [error, setError] = useState<string>();
   const [revision, setRevision] = useState(0);
@@ -94,7 +96,9 @@ export function ComponentsPage() {
   const resources = {
     hostConfig: data.hostConfig,
     stylesheetUrls: [data.stylesheetUrl],
-    adaptiveCardsSdkUrl: `https://cdn.jsdelivr.net/npm/adaptivecards@${data.renderProfile.adaptiveCardsSdkVersion}/dist/adaptivecards.min.js`,
+    adaptiveCardsSdkUrl: runtime?.deployment?.catalogSource === "local"
+      ? serverPath(`/forge/api/profiles/${encodeURIComponent(data.reference)}/adaptivecards.min.js`)
+      : `https://cdn.jsdelivr.net/npm/adaptivecards@${data.renderProfile.adaptiveCardsSdkVersion}/dist/adaptivecards.min.js`,
   };
 
   return <main className="spec-page"><div className="spec-layout">

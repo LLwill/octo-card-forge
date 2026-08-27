@@ -21,8 +21,12 @@ function jsonForScript(value: unknown): string {
     .replaceAll("</script", "<\\/script");
 }
 
-export function createPreviewDocument(artifact: CardArtifactV1, sample: ArtifactSample): string {
-  const resources = deriveProfileResourceUrls(artifact);
+export function createPreviewDocument(
+  artifact: CardArtifactV1,
+  sample: ArtifactSample,
+  profileBaseUrl?: string,
+): string {
+  const resources = deriveProfileResourceUrls(artifact, profileBaseUrl);
   return createRawCardDocument(sample.card, {
     hostConfigUrl: resources.hostConfig,
     stylesheetUrls: [resources.theme, resources.stylesheet].filter((value): value is string => Boolean(value)),

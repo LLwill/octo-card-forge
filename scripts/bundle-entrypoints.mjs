@@ -26,6 +26,7 @@ const external = [
 await build({
   absWorkingDir: root,
   entryPoints: {
+    "catalog-bundle": "scripts/build-catalog-bundle.mjs",
     cli: "packages/cli/src/bin.ts",
     server: "packages/cli/src/server.ts",
   },

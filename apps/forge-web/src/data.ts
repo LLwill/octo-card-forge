@@ -94,13 +94,18 @@ function profilePackageUrl(base: string, relativePath: string): string {
   return `${base}${relativePath}`;
 }
 
-export function deriveProfileResourceUrls(artifact: CardArtifactV1): ProfileResourceUrls {
-  const base = profilePackageBase(artifact);
+export function deriveProfileResourceUrls(
+  artifact: CardArtifactV1,
+  profileBaseUrl?: string,
+): ProfileResourceUrls {
+  const base = profileBaseUrl ?? profilePackageBase(artifact);
   const manifest = artifact.profile.manifest;
   return {
     hostConfig: profilePackageUrl(base, manifest.hostConfig),
     ...(manifest.theme ? { theme: profilePackageUrl(base, manifest.theme) } : {}),
     stylesheet: profilePackageUrl(base, manifest.stylesheet),
-    adaptiveCardsSdk: `https://cdn.jsdelivr.net/npm/adaptivecards@${manifest.adaptiveCardsSdkVersion}/dist/adaptivecards.min.js`,
+    adaptiveCardsSdk: profileBaseUrl
+      ? profilePackageUrl(base, "adaptivecards.min.js")
+      : `https://cdn.jsdelivr.net/npm/adaptivecards@${manifest.adaptiveCardsSdkVersion}/dist/adaptivecards.min.js`,
   };
 }

@@ -35,7 +35,7 @@ const starterCard: JsonObject = {
 const previewWidths = [320, 480, 640] as const;
 
 export function PlaygroundPage() {
-  const { loading: runtimeLoading, error: runtimeError } = useRuntime();
+  const { runtime, loading: runtimeLoading, error: runtimeError } = useRuntime();
   const [profile, setProfile] = useState<ComponentResponse>();
   const [input, setInput] = useState(JSON.stringify(starterCard, null, 2));
   const [preview, setPreview] = useState<JsonObject>(starterCard);
@@ -53,8 +53,10 @@ export function PlaygroundPage() {
   const resources = useMemo(() => profile ? {
     hostConfig: profile.hostConfig,
     stylesheetUrls: [profile.stylesheetUrl],
-    adaptiveCardsSdkUrl: `https://cdn.jsdelivr.net/npm/adaptivecards@${profile.renderProfile.adaptiveCardsSdkVersion}/dist/adaptivecards.min.js`,
-  } : undefined, [profile]);
+    adaptiveCardsSdkUrl: runtime?.deployment?.catalogSource === "local"
+      ? serverPath(`/forge/api/profiles/${encodeURIComponent(profile.reference)}/adaptivecards.min.js`)
+      : `https://cdn.jsdelivr.net/npm/adaptivecards@${profile.renderProfile.adaptiveCardsSdkVersion}/dist/adaptivecards.min.js`,
+  } : undefined, [profile, runtime?.deployment?.catalogSource]);
 
   if (runtimeLoading || !profile) return <LoadingState label="正在准备预览工具" />;
   if (runtimeError) return <ErrorState message={runtimeError} />;

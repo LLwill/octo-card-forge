@@ -38,6 +38,23 @@ export async function handleRuntimeApi(
           rawCardPreview: Boolean(context.profile),
           handoffDownload: true,
         },
+    ...(context.mode === "published" && context.publishedCatalog?.root
+      ? {
+          deployment: {
+            ready: context.publishedCatalog.ready,
+            catalogSource: context.publishedCatalog.root ? "local" as const : "remote" as const,
+            ...(context.forgeRevision ? { forgeRevision: context.forgeRevision } : {}),
+            ...(context.publishedCatalog.bundle
+              ? {
+                  catalogRevision: context.publishedCatalog.bundle.release.catalogRevision,
+                  cards: context.publishedCatalog.bundle.release.cards,
+                  versions: context.publishedCatalog.bundle.release.versions,
+                }
+              : {}),
+            ...(context.catalogImageDigest ? { catalogImageDigest: context.catalogImageDigest } : {}),
+          },
+        }
+      : {}),
   };
   sendJson(res, 200, descriptor);
   return true;

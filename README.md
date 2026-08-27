@@ -37,9 +37,12 @@ Card Package，并提供样例预览、自由 JSON 预览、数据契约和交�
 - 不提供本地 Card 源码扫描或模板编译。
 
 ```bash
-CATALOG_SNAPSHOT_URL=https://catalog.example.com/catalog-snapshot.v1.json \
+CATALOG_ROOT=/app/catalog \
 pnpm start
 ```
+
+生产环境必须使用 `CATALOG_ROOT`。`CATALOG_SNAPSHOT_URL` 仅保留给本地开发和旧集成测试，
+不会作为本地 Bundle 校验失败时的降级路径。
 
 ### Workspace
 
@@ -147,10 +150,34 @@ Render Profile、Skill manifest 和生产依赖锁文件，不包含业务 Card 
 - `HOST`：默认 `0.0.0.0`
 - `PORT`：默认 `4318`
 - `BASE_PATH`：可选反向代理前缀
-- `CATALOG_SNAPSHOT_URL`：Published Catalog Snapshot 地址
+- `CATALOG_ROOT`：生产 Catalog Bundle 的只读挂载目录
+- `CATALOG_IMAGE_DIGEST`：当前 Catalog 数据镜像摘要，用于运行诊断
+- `CATALOG_REVISION`：部署清单声明的 Catalog 完整 Git SHA；必须与 Bundle 一致
+- `FORGE_REVISION`：当前 Forge 完整 Git SHA，用于运行诊断
+- `CATALOG_SNAPSHOT_URL`：仅用于本地开发和兼容测试的远端 Snapshot 地址
 
-GitLab 标签流水线会完整执行 typecheck、test、build，构建 digest-pinned 镜像，更新部署仓库，
-等待人工触发 ArgoCD 同步，并在部署后检查 `/healthz` 与 `/api/v1/runtime`。
+构建 Catalog Bundle：
+
+```bash
+pnpm catalog:bundle -- \
+  --snapshot <immutable-snapshot-url> \
+  --output .release/catalog \
+  --catalog-revision <catalog-commit-sha> \
+  --forge-revision <forge-commit-sha> \
+  --builder-image-digest sha256:<builder-digest>
+```
+
+构建过程会下载并校验 Artifact、Handoff 和固定版本的 Profile 资源，输出
+`release.json`、`bundle-manifest.json` 及逐文件 SHA-256。
+
+Forge 标签流水线构建应用镜像；Catalog Trigger Pipeline 使用固定 digest 的 Forge Builder
+构建 Catalog 数据镜像。两条流水线都通过部署 MR 更新 `deploy-files`，等待 MR 合并和人工
+ArgoCD 同步，并在部署后检查 `/readyz` 与 `/api/v1/runtime`。
+
+GitLab 需要配置受保护变量 `FORGE_BUILDER_IMAGE` 和 `CATALOG_DATA_BASE_IMAGE`，两者都必须
+使用 `@sha256:` 固定。首次切换到双镜像部署时还要提供一次 bootstrap
+`CATALOG_IMAGE_DIGEST` 与 `CATALOG_REVISION`；后续 Forge 发布会从 `deploy-files` 保留当前
+Catalog 版本。Registry 必须保留所有仍可能用于生产或回滚的 Forge/Catalog digest。
 
 ## 文档
 

@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "supports": {
+    "catalogSnapshot": [1],
+    "cardArtifact": [1],
+    "handoffLayout": [1],
+    "profileBundle": [1],
+    "features": [
+      "handoff-index-v1",
+      "local-profile-assets-v1"
+    ]
+  }
+}

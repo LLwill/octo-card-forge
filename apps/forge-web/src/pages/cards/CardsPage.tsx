@@ -127,7 +127,7 @@ export function CardsPage() {
         {snapshotLoading ? <LoadingState label="正在加载卡片库" /> : <CatalogGrid cards={cards} navigate={navigate} />}
       </section> : <section className="card-detail">
         <div className="card-detail-inner">
-          {artifactLoading || !selectedCard || !selectedVersion || !artifact ? <LoadingState label="正在加载卡片" /> : <CardDetail card={selectedCard} version={selectedVersion} artifact={artifact} searchParams={searchParams} setSearchParams={setSearchParams} />}
+          {artifactLoading || !selectedCard || !selectedVersion || !artifact ? <LoadingState label="正在加载卡片" /> : <CardDetail card={selectedCard} version={selectedVersion} artifact={artifact} profileBaseUrl={runtime?.deployment?.catalogSource === "local" ? serverPath(`/forge/api/profiles/${encodeURIComponent(artifact.profile.reference)}/`) : undefined} searchParams={searchParams} setSearchParams={setSearchParams} />}
           {error && snapshot ? <div className="inline-error"><ErrorState message={error} /></div> : null}
         </div>
       </section>}
@@ -150,10 +150,11 @@ function CatalogGrid({ cards, navigate }: {
   </button>)}</div>;
 }
 
-function CardDetail({ card, version, artifact, searchParams, setSearchParams }: {
+function CardDetail({ card, version, artifact, profileBaseUrl, searchParams, setSearchParams }: {
   card: CatalogCard;
   version: CatalogVersion;
   artifact: CardArtifactV1;
+  profileBaseUrl?: string;
   searchParams: URLSearchParams;
   setSearchParams: ReturnType<typeof useSearchParams>[1];
 }) {
@@ -174,7 +175,7 @@ function CardDetail({ card, version, artifact, searchParams, setSearchParams }: 
     <Link className="detail-breadcrumb" to="/cards">卡片库</Link>
     <header className="detail-header"><div><div className="identity-line"><h1>{card.name}</h1><code>{card.id}</code></div><p>{describeCard(card)}</p><div className="detail-meta"><span className="status-draft">已发布</span><span>v{version.version}</span><span>{Object.keys(artifact.views).length} 个视图</span></div></div><div className="detail-actions">{card.versions.length > 1 ? <label>版本<select value={version.reference} onChange={(event) => setQuery("version", event.target.value)}>{card.versions.map((candidate) => <option key={candidate.reference} value={candidate.reference}>{candidate.version}</option>)}</select></label> : null}{version.handoff ? <a className="button primary" href={serverPath(`/api/v1/cards/${encodeURIComponent(version.reference)}/handoff`)}><Download size={14} />下载 Server 交付包</a> : null}{version.release ? <SafeExternalLink href={version.release.url}>发行说明</SafeExternalLink> : null}</div></header>
     <div className="detail-tabs" role="tablist">{Object.entries(tabLabels).filter(([key]) => key !== "handoff" || version.handoff).map(([key, label]) => <button key={key} type="button" className={tab === key ? "active" : ""} onClick={() => setQuery("tab", key)}>{label}</button>)}</div>
-    {tab === "preview" ? <PreviewPanel artifact={artifact} version={version} viewName={viewName} sample={sample} setQuery={setQuery} /> : null}
+    {tab === "preview" ? <PreviewPanel artifact={artifact} profileBaseUrl={profileBaseUrl} version={version} viewName={viewName} sample={sample} setQuery={setQuery} /> : null}
     {tab === "contract" ? <DataContractPanel contract={artifact.dataContract} /> : null}
     {tab === "handoff" && version.handoff ? <HandoffPanel version={version} /> : null}
   </>;
@@ -293,11 +294,11 @@ function HandoffPanel({ version }: { version: CatalogVersion }) {
   </section>;
 }
 
-function PreviewPanel({ artifact, version, viewName, sample, setQuery }: { artifact: CardArtifactV1; version: CatalogVersion; viewName: string; sample: CardArtifactV1["views"][string]["samples"][number]; setQuery(key: string, value: string): void }) {
+function PreviewPanel({ artifact, profileBaseUrl, version, viewName, sample, setQuery }: { artifact: CardArtifactV1; profileBaseUrl?: string; version: CatalogVersion; viewName: string; sample: CardArtifactV1["views"][string]["samples"][number]; setQuery(key: string, value: string): void }) {
   const view = artifact.views[viewName];
-  const resources = deriveProfileResourceUrls(artifact);
+  const resources = deriveProfileResourceUrls(artifact, profileBaseUrl);
   const [width, setWidth] = useState(480);
-  return <div className="preview-stack"><div className="preview-toolbar"><label>视图<select value={viewName} onChange={(event) => setQuery("view", event.target.value)}>{Object.keys(artifact.views).map((name) => <option key={name}>{name}</option>)}</select></label><label>样例<select value={sample.name} onChange={(event) => setQuery("sample", event.target.value)}>{view.samples.map((candidate) => <option key={candidate.name}>{candidate.name}</option>)}</select></label><div className="width-switch" aria-label="预览宽度">{[320, 480, 640].map((value) => <button key={value} type="button" className={width === value ? "active" : ""} onClick={() => setWidth(value)}>{value}</button>)}</div></div><section className="preview-surface"><div className="detail-preview-frame" style={{ width: `min(100%, ${width}px)` }}><PreviewFrame artifact={artifact} sample={sample} title={`${artifact.card.name} ${viewName} 预览`} /></div></section><div className="detail-ledger"><Fact label="数据契约" value={`${Object.keys(artifact.dataContract.properties ?? {}).length} 个字段`} /><Fact label="交互动作" value={`${sample.inspection.actions.length} 个`} /><Fact label="渲染规范" value={artifact.profile.reference} mono /><Fact label="源文件" value={version.source.path} mono /></div><details className="technical-details"><summary>更多技术信息</summary><div className="technical-details-content"><dl><Fact label="产物摘要" value={`${version.artifact.sha256.slice(0, 10)}...${version.artifact.sha256.slice(-8)}`} mono /><Fact label="渲染 SDK" value={artifact.profile.manifest.adaptiveCardsSdkVersion} /><Fact label="数据协议" value={view.wireProfile} mono /><Fact label="来源提交" value={version.source.commit.slice(0, 12)} mono /></dl><div className="resource-links"><SafeExternalLink href={resources.hostConfig}>主机配置</SafeExternalLink><SafeExternalLink href={resources.stylesheet}>样式文件</SafeExternalLink></div></div></details></div>;
+  return <div className="preview-stack"><div className="preview-toolbar"><label>视图<select value={viewName} onChange={(event) => setQuery("view", event.target.value)}>{Object.keys(artifact.views).map((name) => <option key={name}>{name}</option>)}</select></label><label>样例<select value={sample.name} onChange={(event) => setQuery("sample", event.target.value)}>{view.samples.map((candidate) => <option key={candidate.name}>{candidate.name}</option>)}</select></label><div className="width-switch" aria-label="预览宽度">{[320, 480, 640].map((value) => <button key={value} type="button" className={width === value ? "active" : ""} onClick={() => setWidth(value)}>{value}</button>)}</div></div><section className="preview-surface"><div className="detail-preview-frame" style={{ width: `min(100%, ${width}px)` }}><PreviewFrame artifact={artifact} profileBaseUrl={profileBaseUrl} sample={sample} title={`${artifact.card.name} ${viewName} 预览`} /></div></section><div className="detail-ledger"><Fact label="数据契约" value={`${Object.keys(artifact.dataContract.properties ?? {}).length} 个字段`} /><Fact label="交互动作" value={`${sample.inspection.actions.length} 个`} /><Fact label="渲染规范" value={artifact.profile.reference} mono /><Fact label="源文件" value={version.source.path} mono /></div><details className="technical-details"><summary>更多技术信息</summary><div className="technical-details-content"><dl><Fact label="产物摘要" value={`${version.artifact.sha256.slice(0, 10)}...${version.artifact.sha256.slice(-8)}`} mono /><Fact label="渲染 SDK" value={artifact.profile.manifest.adaptiveCardsSdkVersion} /><Fact label="数据协议" value={view.wireProfile} mono /><Fact label="来源提交" value={version.source.commit.slice(0, 12)} mono /></dl><div className="resource-links"><SafeExternalLink href={resources.hostConfig}>主机配置</SafeExternalLink><SafeExternalLink href={resources.stylesheet}>样式文件</SafeExternalLink></div></div></details></div>;
 }
 
 interface DataFieldRow {
