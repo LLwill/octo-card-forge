@@ -24,6 +24,12 @@
 | [`cli-skill-and-component-system.md`](./cli-skill-and-component-system.md) | CLI、Skill 和组件能力边界 |
 | [`preview-system-design.md`](./preview-system-design.md) | Preview API v1、revision 和页面接入边界 |
 
+待评审目标方案：
+
+| 文档 | 用途 |
+| --- | --- |
+| [`catalog-bundle-deployment-and-card-contribution.md`](./catalog-bundle-deployment-and-card-contribution.md) | Catalog 数据镜像、ArgoCD 部署和 Card 贡献发布流程 |
+
 历史 Proposal：
 
 - [`shared-go-renderer-design.md`](./shared-go-renderer-design.md) 保留为研究记录，不是当前重构前置条件；
@@ -420,11 +426,12 @@ Forge Web 默认只读。CLI 使用开发者现有的 Git/`gh` 凭证，不实�
 - 使用 pnpm Monorepo，但根 `src/` 仍承担兼容 CLI/Server 和部分 legacy 实现；
 - `packages/card-spec`、`packages/core`、`packages/workspace` 和 `packages/preview-kit` 已有实际实现，其他目标 package/app 仍有空壳；
 - Core 已是编译、校验、Inspection 和 utility ID 解析的唯一实现，根 `src/` 只保留兼容 facade；
-- 将正式 Card 和版本放在 `cards/`；
-- 通过 `src/registry.ts` 扫描文件；
-- 通过本地 Node HTTP 服务向 `apps/forge-web` 提供 `/api/v1` 和兼容 API；
+- 正式 Card Source 和历史版本已经迁出 Forge，Forge 测试只使用 `tests/fixtures/cards/`；
+- CLI Card 命令和 Workspace Server 通过显式 `--card` / `cardRoot` 读取单个本地包，不再扫描仓库级 `cards/`；
+- Published Server 当前通过远端 Catalog Snapshot、Artifact 和 Handoff 提供数据；独立 Catalog 数据镜像是待评审的目标部署方式；
+- 通过本地 Node HTTP 服务向 `apps/forge-web` 提供 `/api/v1`、Published Catalog 和兼容 API；
 - legacy 页面已经删除，旧 URL 只保留重定向；
-- 将 `cards/` 打进部署包；
+- 部署包和 Forge 镜像不包含业务 Card Source；
 - 使用 TypeScript `adaptivecards-templating` 编译。
 
 这些是迁移起点，不是最终边界。
