@@ -25,6 +25,20 @@
         "rawCardPreview": { "type": "boolean" },
         "handoffDownload": { "type": "boolean" }
       }
+    },
+    "deployment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ready", "catalogSource"],
+      "properties": {
+        "ready": { "type": "boolean" },
+        "catalogSource": { "enum": ["local", "remote"] },
+        "forgeRevision": { "type": "string" },
+        "catalogRevision": { "type": "string" },
+        "catalogImageDigest": { "type": "string" },
+        "cards": { "type": "integer", "minimum": 0 },
+        "versions": { "type": "integer", "minimum": 0 }
+      }
     }
   }
 }

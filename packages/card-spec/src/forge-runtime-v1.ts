@@ -15,15 +15,33 @@ export interface ForgeRuntimeDescriptorV1 {
   schemaVersion: 1;
   mode: ForgeRuntimeMode;
   capabilities: ForgeRuntimeCapabilitiesV1;
+  deployment?: {
+    ready: boolean;
+    catalogSource: "local" | "remote";
+    forgeRevision?: string;
+    catalogRevision?: string;
+    catalogImageDigest?: string;
+    cards?: number;
+    versions?: number;
+  };
 }
 
-const RUNTIME_KEYS = new Set(["schemaVersion", "mode", "capabilities"]);
+const RUNTIME_KEYS = new Set(["schemaVersion", "mode", "capabilities", "deployment"]);
 const CAPABILITY_KEYS = new Set([
   "cardCatalog",
   "componentCatalog",
   "templateDataPreview",
   "rawCardPreview",
   "handoffDownload",
+]);
+const DEPLOYMENT_KEYS = new Set([
+  "ready",
+  "catalogSource",
+  "forgeRevision",
+  "catalogRevision",
+  "catalogImageDigest",
+  "cards",
+  "versions",
 ]);
 
 function escapePointer(value: string): string {
@@ -100,6 +118,47 @@ export function decodeForgeRuntimeDescriptorV1(
     return { ok: false, issues };
   }
 
+  let deployment: ForgeRuntimeDescriptorV1["deployment"];
+  if (input.deployment !== undefined) {
+    if (!isJsonObject(input.deployment)) {
+      issues.push(issue("contract.type", "/deployment", "deployment must be an object"));
+    } else {
+      unknownKeys(input.deployment, DEPLOYMENT_KEYS, "/deployment", issues);
+      if (typeof input.deployment.ready !== "boolean") {
+        issues.push(issue("contract.type", "/deployment/ready", "ready must be a boolean"));
+      }
+      if (input.deployment.catalogSource !== "local" && input.deployment.catalogSource !== "remote") {
+        issues.push(issue("contract.enum", "/deployment/catalogSource", "catalogSource must be local or remote"));
+      }
+      for (const key of ["forgeRevision", "catalogRevision", "catalogImageDigest"] as const) {
+        if (input.deployment[key] !== undefined && typeof input.deployment[key] !== "string") {
+          issues.push(issue("contract.type", `/deployment/${key}`, `${key} must be a string when provided`));
+        }
+      }
+      for (const key of ["cards", "versions"] as const) {
+        if (input.deployment[key] !== undefined && (!Number.isInteger(input.deployment[key]) || (input.deployment[key] as number) < 0)) {
+          issues.push(issue("contract.type", `/deployment/${key}`, `${key} must be a non-negative integer when provided`));
+        }
+      }
+      if (
+        typeof input.deployment.ready === "boolean" &&
+        (input.deployment.catalogSource === "local" || input.deployment.catalogSource === "remote")
+      ) {
+        deployment = {
+          ready: input.deployment.ready,
+          catalogSource: input.deployment.catalogSource,
+          ...(typeof input.deployment.forgeRevision === "string" ? { forgeRevision: input.deployment.forgeRevision } : {}),
+          ...(typeof input.deployment.catalogRevision === "string" ? { catalogRevision: input.deployment.catalogRevision } : {}),
+          ...(typeof input.deployment.catalogImageDigest === "string" ? { catalogImageDigest: input.deployment.catalogImageDigest } : {}),
+          ...(Number.isInteger(input.deployment.cards) ? { cards: input.deployment.cards as number } : {}),
+          ...(Number.isInteger(input.deployment.versions) ? { versions: input.deployment.versions as number } : {}),
+        };
+      }
+    }
+  }
+
+  if (issues.length > 0) return { ok: false, issues };
+
   return {
     ok: true,
     notices: [],
@@ -107,6 +166,7 @@ export function decodeForgeRuntimeDescriptorV1(
       schemaVersion: 1,
       mode: input.mode,
       capabilities,
+      ...(deployment ? { deployment } : {}),
     },
   };
 }

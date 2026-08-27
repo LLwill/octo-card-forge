@@ -35,6 +35,7 @@
     "build:packages": "pnpm --recursive --filter './packages/**' --filter './apps/**' --if-present run build",
     "build:entries": "node scripts/bundle-entrypoints.mjs",
     "package:deploy": "pnpm build && node scripts/package-deploy.mjs",
+    "catalog:bundle": "pnpm build && node dist/catalog-bundle.js",
     "skill:pack": "node scripts/package-skill.mjs",
     "gen:catalog": "tsx scripts/generate-component-catalog.mts",
     "start": "node scripts/start-service.mjs",

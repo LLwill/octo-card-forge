@@ -1,0 +1,16 @@
+ARG CATALOG_DATA_BASE_IMAGE
+FROM ${CATALOG_DATA_BASE_IMAGE}
+
+ARG CATALOG_REVISION
+ARG FORGE_REVISION
+ARG BUILDER_IMAGE_DIGEST
+
+LABEL org.opencontainers.image.title="octo-card-catalog" \
+      org.opencontainers.image.revision="${CATALOG_REVISION}" \
+      octo.card-forge.revision="${FORGE_REVISION}" \
+      octo.card-forge.builder-image-digest="${BUILDER_IMAGE_DIGEST}"
+
+COPY --chown=10001:10001 .release/catalog /catalog
+
+USER 10001:10001
+CMD ["sh", "-c", "cp -R /catalog/. /catalog-data/"]

@@ -5,12 +5,19 @@ export interface ServerContext {
   mode: ForgeRuntimeMode;
   card?: CardPackage;
   profile?: RenderProfileSource;
+  publishedCatalog?: PublishedCatalogContext;
+  catalogImageDigest?: string;
+  forgeRevision?: string;
 }
 
 export interface PublishedCatalogContext {
-  snapshotUrl: string;
+  snapshotUrl?: string;
+  root?: string;
   fetch: typeof fetch;
   snapshot?: Promise<import("@mlt-org/octo-card-catalog-snapshot").CatalogSnapshotV1>;
+  bundle?: import("./catalog-bundle.js").LoadedCatalogBundle;
+  ready: boolean;
+  error?: string;
 }
 
 export interface ForgeServerOptions {
@@ -20,6 +27,10 @@ export interface ForgeServerOptions {
   profile?: RenderProfileSource;
   basePath?: string;
   catalogSnapshotUrl?: string;
+  catalogRoot?: string;
+  catalogImageDigest?: string;
+  catalogRevision?: string;
+  forgeRevision?: string;
   catalogFetch?: typeof fetch;
   forgeWebRoot?: string;
 }

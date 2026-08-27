@@ -37,6 +37,32 @@ describe("forge runtime descriptor decoder", () => {
     if (result.ok) expect(result.value.mode).toBe("published");
   });
 
+  it("accepts immutable deployment identity for a local Catalog", () => {
+    const result = decodeForgeRuntimeDescriptorV1({
+      schemaVersion: 1,
+      mode: "published",
+      capabilities: {
+        cardCatalog: true,
+        componentCatalog: true,
+        templateDataPreview: false,
+        rawCardPreview: true,
+        handoffDownload: true,
+      },
+      deployment: {
+        ready: true,
+        catalogSource: "local",
+        forgeRevision: "a".repeat(40),
+        catalogRevision: "b".repeat(40),
+        catalogImageDigest: `sha256:${"c".repeat(64)}`,
+        cards: 3,
+        versions: 6,
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.deployment?.catalogSource).toBe("local");
+  });
+
   it("fails closed for incomplete capabilities and unknown properties", () => {
     const result = decodeForgeRuntimeDescriptorV1({
       schemaVersion: 1,

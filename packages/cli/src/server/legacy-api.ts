@@ -33,6 +33,15 @@ export async function handleLegacyApi(
     return true;
   }
 
+  if (req.method === "GET" && url.pathname === "/readyz") {
+    const ready = context.mode !== "published" || context.publishedCatalog?.ready === true;
+    sendJson(res, ready ? 200 : 503, {
+      status: ready ? "ready" : "not_ready",
+      ...(ready || !context.publishedCatalog?.error ? {} : { message: context.publishedCatalog.error }),
+    });
+    return true;
+  }
+
   if (req.method === "GET" && url.pathname === "/api/cards") {
     if (!context.card) return false;
     const cards = [context.card];

@@ -29,8 +29,16 @@ function PreviewIframe({ document, title }: { document: string; title: string })
   return <iframe ref={frameRef} className="card-preview" title={title} sandbox="allow-scripts" scrolling="no" srcDoc={document} style={contentHeight ? { height: `${contentHeight}px` } : undefined} />;
 }
 
-export function PreviewFrame({ artifact, sample, title }: { artifact: CardArtifactV1; sample: ArtifactSample; title: string }) {
-  const document = useMemo(() => createPreviewDocument(artifact, sample), [artifact, sample]);
+export function PreviewFrame({ artifact, profileBaseUrl, sample, title }: {
+  artifact: CardArtifactV1;
+  profileBaseUrl?: string;
+  sample: ArtifactSample;
+  title: string;
+}) {
+  const document = useMemo(
+    () => createPreviewDocument(artifact, sample, profileBaseUrl),
+    [artifact, profileBaseUrl, sample],
+  );
   return <PreviewIframe document={document} title={title} />;
 }
 

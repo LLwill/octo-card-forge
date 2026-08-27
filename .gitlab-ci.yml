@@ -10,6 +10,7 @@ workflow:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_TAG'
+    - if: '$CI_PIPELINE_SOURCE == "trigger" && $PIPELINE_MODE == "catalog"'
 
 stages:
   - build
@@ -23,6 +24,7 @@ variables:
   APP_NAME: octo-card-forge
   REPOSITORY: tbj7-xtiao-tcr1.tencentcloudcr.com
   CONTAINER_IMAGE: tbj7-xtiao-tcr1.tencentcloudcr.com/dmwork/octo-card-forge
+  CATALOG_IMAGE: tbj7-xtiao-tcr1.tencentcloudcr.com/dmwork/octo-card-catalog
   DEPLOY_FILES_REPO: code.mlamp.cn/dm-fa/infra/deploy-files.git
   FF_USE_FASTZIP: "true"
   ROBOT_PUSH_MESSAGE: "enable"
@@ -76,7 +78,7 @@ package_tags:
         --build-arg NODE_IMAGE="${NODE_IMAGE}" \
         --build-arg NPM_REGISTRY="${NPM_REGISTRY}" \
         --build-arg PNPM_VERSION="${PNPM_VERSION}" \
-        --build-arg GIT_COMMIT="${CI_COMMIT_SHORT_SHA}" \
+        --build-arg GIT_COMMIT="${CI_COMMIT_SHA}" \
         --build-arg GIT_BRANCH="${CI_COMMIT_REF_NAME}" \
         --build-arg GIT_TAG="${CI_COMMIT_TAG}" \
         --build-arg BUILD_DATE="${BUILD_DATE}" \
@@ -92,6 +94,85 @@ package_tags:
   artifacts:
     reports:
       dotenv: package.env
+
+package_catalog:
+  stage: package
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "trigger" && $PIPELINE_MODE == "catalog"'
+  tags:
+    - tke-deepmining-runner
+  image: $DOCKER_IMAGE
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - i=0; while [ "$i" -lt 12 ]; do docker info && break; sleep 5; i=$(( i + 1 )) ; done
+    - echo "$HARBOR_PWD" | docker login "$REPOSITORY" -u 100028731872 --password-stdin
+  script:
+    - |
+      set -eu
+      printf '%s' "$CATALOG_REVISION" | grep -Eq '^[0-9a-f]{40}$' || { echo "CATALOG_REVISION must be a lowercase 40-character SHA"; exit 1; }
+      printf '%s' "$FORGE_BUILDER_IMAGE" | grep -Eq '^.+@sha256:[0-9a-f]{64}$' || { echo "FORGE_BUILDER_IMAGE must be pinned by digest"; exit 1; }
+      printf '%s' "$CATALOG_DATA_BASE_IMAGE" | grep -Eq '^.+@sha256:[0-9a-f]{64}$' || { echo "CATALOG_DATA_BASE_IMAGE must be pinned by digest"; exit 1; }
+      docker pull "$FORGE_BUILDER_IMAGE"
+      BUILDER_IMAGE_DIGEST="${FORGE_BUILDER_IMAGE##*@}"
+      FORGE_BUILDER_REVISION=$(docker image inspect "$FORGE_BUILDER_IMAGE" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')
+      printf '%s' "$FORGE_BUILDER_REVISION" | grep -Eq '^[0-9a-f]{40}$' || { echo "Forge Builder image does not carry a full revision label"; exit 1; }
+      SNAPSHOT_URL="https://github.com/LLwill/octo-card-catalog/releases/download/catalog-snapshot/${CATALOG_REVISION}/catalog-snapshot.v1.json"
+      BUILDER_CONTAINER="catalog-builder-${CI_PIPELINE_ID}"
+      SMOKE_CONTAINER="catalog-smoke-${CI_PIPELINE_ID}"
+      SMOKE_NETWORK="catalog-smoke-${CI_PIPELINE_ID}"
+      SMOKE_VOLUME="catalog-smoke-${CI_PIPELINE_ID}"
+      cleanup() {
+        docker rm -f "$BUILDER_CONTAINER" "$SMOKE_CONTAINER" >/dev/null 2>&1 || true
+        docker network rm "$SMOKE_NETWORK" >/dev/null 2>&1 || true
+        docker volume rm "$SMOKE_VOLUME" >/dev/null 2>&1 || true
+      }
+      trap cleanup EXIT
+      docker create --name "$BUILDER_CONTAINER" \
+        -e CATALOG_SNAPSHOT="$SNAPSHOT_URL" \
+        -e CATALOG_REVISION="$CATALOG_REVISION" \
+        -e FORGE_REVISION="$FORGE_BUILDER_REVISION" \
+        -e BUILDER_IMAGE_DIGEST="$BUILDER_IMAGE_DIGEST" \
+        "$FORGE_BUILDER_IMAGE" \
+        node dist/catalog-bundle.js --output /tmp/catalog
+      docker start -a "$BUILDER_CONTAINER"
+      mkdir -p .release
+      docker cp "$BUILDER_CONTAINER:/tmp/catalog" .release/catalog
+      BUILDER_SUFFIX=$(printf '%s' "$BUILDER_IMAGE_DIGEST" | cut -d: -f2 | cut -c1-12)
+      PUSH_CATALOG_IMAGE="${CATALOG_IMAGE}:${CATALOG_REVISION}-${BUILDER_SUFFIX}"
+      docker build \
+        -t "$PUSH_CATALOG_IMAGE" \
+        --build-arg CATALOG_DATA_BASE_IMAGE="$CATALOG_DATA_BASE_IMAGE" \
+        --build-arg CATALOG_REVISION="$CATALOG_REVISION" \
+        --build-arg FORGE_REVISION="$FORGE_BUILDER_REVISION" \
+        --build-arg BUILDER_IMAGE_DIGEST="$BUILDER_IMAGE_DIGEST" \
+        -f Dockerfile.catalog .
+      docker network create "$SMOKE_NETWORK"
+      docker volume create "$SMOKE_VOLUME"
+      docker run --rm --user 0 -v "$SMOKE_VOLUME:/catalog-data" "$CATALOG_DATA_BASE_IMAGE" sh -c 'chown 10001:10001 /catalog-data'
+      docker run --rm -v "$SMOKE_VOLUME:/catalog-data" "$PUSH_CATALOG_IMAGE"
+      docker run -d --name "$SMOKE_CONTAINER" --network "$SMOKE_NETWORK" \
+        -e CATALOG_ROOT=/app/catalog \
+        -e CATALOG_IMAGE_DIGEST=sha256:local-smoke \
+        -e CATALOG_REVISION="$CATALOG_REVISION" \
+        -e FORGE_REVISION="$FORGE_BUILDER_REVISION" \
+        -v "$SMOKE_VOLUME:/app/catalog:ro" \
+        "$FORGE_BUILDER_IMAGE"
+      docker run --rm --network "$SMOKE_NETWORK" -e SMOKE_HOST="$SMOKE_CONTAINER" "$CURL_IMAGE" sh -c \
+        'i=0; until curl --fail --silent "http://${SMOKE_HOST}:4318/readyz" | grep -Eq '"'"'"status"[[:space:]]*:[[:space:]]*"ready"'"'"'; do i=$((i + 1)); [ "$i" -lt 30 ] || exit 1; sleep 1; done'
+      docker run --rm --network "$SMOKE_NETWORK" -e SMOKE_HOST="$SMOKE_CONTAINER" -e EXPECTED_CATALOG_REVISION="$CATALOG_REVISION" "$CURL_IMAGE" sh -c \
+        'curl --fail --silent "http://${SMOKE_HOST}:4318/api/v1/runtime" | grep -Eq "\"catalogRevision\"[[:space:]]*:[[:space:]]*\"${EXPECTED_CATALOG_REVISION}\""'
+      docker push "$PUSH_CATALOG_IMAGE"
+      CATALOG_IMAGE_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "$PUSH_CATALOG_IMAGE" | cut -d@ -f2)
+      test -n "$CATALOG_IMAGE_DIGEST"
+      {
+        echo "CATALOG_IMAGE_DIGEST=$CATALOG_IMAGE_DIGEST"
+        echo "CATALOG_REVISION=$CATALOG_REVISION"
+      } | tee catalog-package.env
+  artifacts:
+    reports:
+      dotenv: catalog-package.env
 
 sync_code:
   stage: sync
@@ -109,12 +190,13 @@ sync_code:
     - |
       set -e
 
-      if [ -z "$IMAGE_DIGEST" ] || [ -z "$CATALOG_SNAPSHOT_URL" ]; then
-        echo "Error: IMAGE_DIGEST and CATALOG_SNAPSHOT_URL are required"
+      if [ -z "$IMAGE_DIGEST" ]; then
+        echo "Error: IMAGE_DIGEST is required"
         exit 1
       fi
 
       TARGET_BRANCH="$APP_NAME-prod"
+      SOURCE_BRANCH="deploy/${APP_NAME}-${CI_JOB_ID}"
       DEPLOY_DIR="deploy-repo"
       DEPLOY_REPO_URL="https://__token__:${CODE_TOKEN}@${DEPLOY_FILES_REPO}"
 
@@ -130,6 +212,27 @@ sync_code:
         cd ..
       fi
 
+      CURRENT_MANIFEST="$DEPLOY_DIR/manifests/deploy.yaml"
+      if [ -f "$CURRENT_MANIFEST" ]; then
+        CURRENT_CATALOG_IMAGE_DIGEST=$(awk -v repo="$CATALOG_IMAGE" '
+          $1 == "image:" {
+            gsub(/"/, "", $2)
+            prefix = repo "@"
+            if (index($2, prefix) == 1) { print substr($2, length(prefix) + 1); exit }
+          }
+        ' "$CURRENT_MANIFEST")
+        CURRENT_CATALOG_REVISION=$(awk '
+          $1 == "-" && $2 == "name:" && $3 == "CATALOG_REVISION" {
+            getline
+            if ($1 == "value:") { gsub(/"/, "", $2); print $2; exit }
+          }
+        ' "$CURRENT_MANIFEST")
+      fi
+      CATALOG_IMAGE_DIGEST="${CURRENT_CATALOG_IMAGE_DIGEST:-${CATALOG_IMAGE_DIGEST:-}}"
+      CATALOG_REVISION="${CURRENT_CATALOG_REVISION:-${CATALOG_REVISION:-}}"
+      printf '%s' "$CATALOG_IMAGE_DIGEST" | grep -Eq '^sha256:[0-9a-f]{64}$' || { echo "Error: a current or bootstrap CATALOG_IMAGE_DIGEST is required"; exit 1; }
+      printf '%s' "$CATALOG_REVISION" | grep -Eq '^[0-9a-f]{40}$' || { echo "Error: a current or bootstrap CATALOG_REVISION is required"; exit 1; }
+
       if [ ! -f manifests/deploy.yaml ]; then
         echo "Error: manifests/deploy.yaml not found"
         exit 1
@@ -143,7 +246,10 @@ sync_code:
       sed -i "s|{{BRANCH}}|prod|g" manifests/deploy.yaml
       sed -i "s|{{REPO_URL}}|${CONTAINER_IMAGE}|g" manifests/deploy.yaml
       sed -i "s|{{IMAGE_DIGEST}}|${IMAGE_DIGEST}|g" manifests/deploy.yaml
-      sed -i "s|{{CATALOG_SNAPSHOT_URL}}|${CATALOG_SNAPSHOT_URL}|g" manifests/deploy.yaml
+      sed -i "s|{{CATALOG_REPO_URL}}|${CATALOG_IMAGE}|g" manifests/deploy.yaml
+      sed -i "s|{{CATALOG_IMAGE_DIGEST}}|${CATALOG_IMAGE_DIGEST}|g" manifests/deploy.yaml
+      sed -i "s|{{CATALOG_REVISION}}|${CATALOG_REVISION}|g" manifests/deploy.yaml
+      sed -i "s|{{FORGE_REVISION}}|${CI_COMMIT_SHA}|g" manifests/deploy.yaml
 
       if grep -q "{{" manifests/deploy.yaml; then
         echo "Error: unresolved placeholder remains after render"
@@ -158,16 +264,61 @@ sync_code:
         exit 0
       fi
 
+      git checkout -b "$SOURCE_BRANCH"
       git commit -m "Update octo-card-forge prod to ${CI_COMMIT_TAG} (@${IMAGE_DIGEST})"
-      git push "$DEPLOY_REPO_URL" "HEAD:$TARGET_BRANCH"
+      git push \
+        -o merge_request.create \
+        -o merge_request.target="$TARGET_BRANCH" \
+        -o merge_request.remove_source_branch \
+        -o merge_request.title="Deploy octo-card-forge ${CI_COMMIT_TAG}" \
+        "$DEPLOY_REPO_URL" "HEAD:$SOURCE_BRANCH"
+
+sync_catalog:
+  stage: sync
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "trigger" && $PIPELINE_MODE == "catalog"'
+  tags:
+    - tke-deepmining-runner
+  image: $GIT_IMAGE
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - git config --global user.email "ci@mininglamp.com"
+    - git config --global user.name "ci"
+    - |
+      set -eu
+      test -n "$CATALOG_IMAGE_DIGEST"
+      test -n "$CATALOG_REVISION"
+      TARGET_BRANCH="$APP_NAME-prod"
+      SOURCE_BRANCH="deploy/${APP_NAME}-catalog-${CI_JOB_ID}"
+      DEPLOY_REPO_URL="https://__token__:${CODE_TOKEN}@${DEPLOY_FILES_REPO}"
+      git clone -b "$TARGET_BRANCH" --depth 1 --single-branch "$DEPLOY_REPO_URL" deploy-repo
+      cd deploy-repo
+      git checkout -b "$SOURCE_BRANCH"
+      grep -q "image: \"${CATALOG_IMAGE}@sha256:" manifests/deploy.yaml || { echo "Catalog image is not present in the deployed manifest"; exit 1; }
+      grep -q "name: CATALOG_IMAGE_DIGEST" manifests/deploy.yaml || { echo "Catalog digest metadata is not present in the deployed manifest"; exit 1; }
+      grep -q "name: CATALOG_REVISION" manifests/deploy.yaml || { echo "Catalog revision metadata is not present in the deployed manifest"; exit 1; }
+      sed -i -E "s|(image: \"${CATALOG_IMAGE}@)sha256:[0-9a-f]+|\\1${CATALOG_IMAGE_DIGEST}|" manifests/deploy.yaml
+      sed -i "/name: CATALOG_IMAGE_DIGEST/{n;s|value: .*|value: \"${CATALOG_IMAGE_DIGEST}\"|;}" manifests/deploy.yaml
+      sed -i "/name: CATALOG_REVISION/{n;s|value: .*|value: \"${CATALOG_REVISION}\"|;}" manifests/deploy.yaml
+      git add manifests/deploy.yaml
+      if git diff --cached --quiet; then echo "Catalog digest is already deployed"; exit 0; fi
+      git commit -m "Update octo-card-catalog to ${CATALOG_REVISION} (@${CATALOG_IMAGE_DIGEST})"
+      git push \
+        -o merge_request.create \
+        -o merge_request.target="$TARGET_BRANCH" \
+        -o merge_request.remove_source_branch \
+        -o merge_request.title="Deploy octo-card-catalog ${CATALOG_REVISION}" \
+        "$DEPLOY_REPO_URL" "HEAD:$SOURCE_BRANCH"
 
 argocd_sync:
   stage: deploy
-  only:
-    - tags
+  rules:
+    - if: '$CI_COMMIT_TAG'
+    - if: '$CI_PIPELINE_SOURCE == "trigger" && $PIPELINE_MODE == "catalog"'
   tags:
     - tke-deepmining-runner
-  image: $CURL_IMAGE
+  image: $GIT_IMAGE
   variables:
     GIT_STRATEGY: none
   when: manual
@@ -176,6 +327,11 @@ argocd_sync:
     - |
       set -e
       test -n "$ARGOCD_TOKEN"
+      apk add --no-cache curl >/dev/null
+      DEPLOY_REPO_URL="https://__token__:${CODE_TOKEN}@${DEPLOY_FILES_REPO}"
+      git clone -b "$APP_NAME-prod" --depth 1 --single-branch "$DEPLOY_REPO_URL" deployed
+      if [ -n "$IMAGE_DIGEST" ]; then grep -Fq "image: \"${CONTAINER_IMAGE}@${IMAGE_DIGEST}\"" deployed/manifests/deploy.yaml; fi
+      if [ -n "$CATALOG_IMAGE_DIGEST" ]; then grep -Fq "image: \"${CATALOG_IMAGE}@${CATALOG_IMAGE_DIGEST}\"" deployed/manifests/deploy.yaml; fi
       curl --fail --show-error --silent \
         -X POST "http://$ARGOCD_SERVER/api/v1/applications/$ARGOCD_APP/sync" \
         -H "Authorization: Bearer $ARGOCD_TOKEN" \
@@ -184,8 +340,9 @@ argocd_sync:
 
 smoke_prod:
   stage: smoke
-  only:
-    - tags
+  rules:
+    - if: '$CI_COMMIT_TAG'
+    - if: '$CI_PIPELINE_SOURCE == "trigger" && $PIPELINE_MODE == "catalog"'
   needs:
     - argocd_sync
   tags:
@@ -198,12 +355,18 @@ smoke_prod:
       set -e
       test -n "$PROD_URL"
       i=0
-      until curl --fail --show-error --silent "${PROD_URL%/}/healthz" | grep -q '"status":"ok"'; do
+      until curl --fail --show-error --silent "${PROD_URL%/}/readyz" | grep -Eq '"status"[[:space:]]*:[[:space:]]*"ready"'; do
         i=$((i + 1))
         if [ "$i" -ge 30 ]; then exit 1; fi
         sleep 10
       done
-      curl --fail --show-error --silent "${PROD_URL%/}/api/v1/runtime" | grep -q '"mode":"published"'
+      RUNTIME=$(curl --fail --show-error --silent "${PROD_URL%/}/api/v1/runtime")
+      printf '%s' "$RUNTIME" | grep -Eq '"mode"[[:space:]]*:[[:space:]]*"published"'
+      printf '%s' "$RUNTIME" | grep -Eq '"cards"[[:space:]]*:[[:space:]]*[1-9][0-9]*'
+      printf '%s' "$RUNTIME" | grep -Eq '"versions"[[:space:]]*:[[:space:]]*[1-9][0-9]*'
+      if [ -n "$CATALOG_REVISION" ]; then printf '%s' "$RUNTIME" | grep -Eq "\"catalogRevision\"[[:space:]]*:[[:space:]]*\"$CATALOG_REVISION\""; fi
+      if [ -n "$CATALOG_IMAGE_DIGEST" ]; then printf '%s' "$RUNTIME" | grep -Eq "\"catalogImageDigest\"[[:space:]]*:[[:space:]]*\"$CATALOG_IMAGE_DIGEST\""; fi
+      if [ -n "$IMAGE_DIGEST" ]; then printf '%s' "$RUNTIME" | grep -Eq "\"forgeRevision\"[[:space:]]*:[[:space:]]*\"$CI_COMMIT_SHA\""; fi
 
 notify_success:
   stage: notify

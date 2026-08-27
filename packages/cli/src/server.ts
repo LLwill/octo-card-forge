@@ -17,6 +17,7 @@ import {
 import {
   DEFAULT_CATALOG_SNAPSHOT_URL,
   handlePublishedCatalogApi,
+  initializePublishedCatalog,
 } from "./server/published-catalog.js";
 import { handleRuntimeApi } from "./server/runtime.js";
 import { handlePreviewApi } from "./server/preview.js";
@@ -50,9 +51,24 @@ async function prepareForgeServer(options: ForgeServerOptions = {}): Promise<{
     profile,
   };
   const publishedCatalog: PublishedCatalogContext = {
-    snapshotUrl: options.catalogSnapshotUrl ?? DEFAULT_CATALOG_SNAPSHOT_URL,
+    ...(options.catalogRoot
+      ? { root: path.resolve(options.catalogRoot) }
+      : { snapshotUrl: options.catalogSnapshotUrl ?? DEFAULT_CATALOG_SNAPSHOT_URL }),
     fetch: options.catalogFetch ?? fetch,
+    ready: false,
   };
+  await initializePublishedCatalog(publishedCatalog);
+  if (
+    publishedCatalog.bundle &&
+    options.catalogRevision &&
+    publishedCatalog.bundle.release.catalogRevision !== options.catalogRevision
+  ) {
+    publishedCatalog.ready = false;
+    publishedCatalog.error = `Catalog revision mismatch: expected ${options.catalogRevision}, loaded ${publishedCatalog.bundle.release.catalogRevision}`;
+  }
+  context.publishedCatalog = publishedCatalog;
+  context.catalogImageDigest = options.catalogImageDigest;
+  context.forgeRevision = options.forgeRevision;
   const webRoot = resolveInProject("web");
   const forgeWebRoot = options.forgeWebRoot
     ? path.resolve(options.forgeWebRoot)
