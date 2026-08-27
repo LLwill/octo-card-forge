@@ -1,20 +1,13 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
+import { buildHandoffArchiveForCard } from "../handoff.js";
 import {
-  buildHandoffArchive,
-  buildHandoffArchiveForCard,
-} from "../handoff.js";
-import {
-  compileCard,
   compileCardPackage,
-  compileSample,
   compileSampleFromPackage,
 } from "../compiler.js";
 import {
-  getCard,
   getCurrentRenderProfile,
   getRenderProfile,
-  listCards,
   resolveCardAssetPath,
 } from "../registry.js";
 import { readJson, readText, resolveInProject } from "../fs.js";
@@ -41,7 +34,8 @@ export async function handleLegacyApi(
   }
 
   if (req.method === "GET" && url.pathname === "/api/cards") {
-    const cards = context.card ? [context.card] : await listCards();
+    if (!context.card) return false;
+    const cards = [context.card];
     sendJson(
       res,
       200,
@@ -138,31 +132,43 @@ export async function handleLegacyApi(
 
   const handoffMatch = url.pathname.match(/^\/api\/cards\/([^/]+)\/handoff$/);
   if (req.method === "GET" && handoffMatch) {
-    const cardId = decodeURIComponent(handoffMatch[1]);
-    const archive = context.card
-      ? await buildHandoffArchiveForCard(context.card, context.profile)
-      : await buildHandoffArchive(cardId);
+    if (!context.card) return false;
+    const cardReference = decodeURIComponent(handoffMatch[1]);
+    if (
+      cardReference !== context.card.reference &&
+      cardReference !== context.card.manifest.id
+    ) {
+      sendJson(res, 404, {
+        code: "card_not_found",
+        message: `Unknown workspace card: ${cardReference}`,
+      });
+      return true;
+    }
+    const archive = await buildHandoffArchiveForCard(context.card, context.profile);
     sendBinaryDownload(res, archive.fileName, "application/zip", archive.buffer);
     return true;
   }
 
   const cardMatch = url.pathname.match(/^\/api\/cards\/([^/]+)\/(contract|context)$/);
   if (req.method === "GET" && cardMatch) {
+    if (!context.card) return false;
     const cardReference = decodeURIComponent(cardMatch[1]);
-    const card = context.card ?? await getCard(cardReference);
+    const card = context.card;
+    if (cardReference !== card.reference && cardReference !== card.manifest.id) {
+      sendJson(res, 404, { code: "card_not_found", message: `Unknown workspace card: ${cardReference}` });
+      return true;
+    }
     if (cardMatch[2] === "contract") {
       const interactionReports = [];
       for (const [view, definition] of Object.entries(card.manifest.views)) {
         for (const samplePath of definition.samples) {
           const sample = path.basename(samplePath, path.extname(samplePath));
-          const result = context.card
-            ? await compileSampleFromPackage({
-                card,
-                sample,
-                view,
-                profile: context.profile,
-              })
-            : await compileSample({ cardId: card.reference, sample });
+          const result = await compileSampleFromPackage({
+            card,
+            sample,
+            view,
+            profile: context.profile,
+          });
           interactionReports.push({
             sample,
             view,
@@ -201,18 +207,19 @@ export async function handleLegacyApi(
 
   const sampleMatch = url.pathname.match(/^\/api\/cards\/([^/]+)\/samples\/([^/]+)$/);
   if (req.method === "GET" && sampleMatch) {
+    if (!context.card) return false;
+    const cardReference = decodeURIComponent(sampleMatch[1]);
+    if (cardReference !== context.card.reference && cardReference !== context.card.manifest.id) {
+      sendJson(res, 404, { code: "card_not_found", message: `Unknown workspace card: ${cardReference}` });
+      return true;
+    }
     const sample = decodeURIComponent(sampleMatch[2]);
-    const result = context.card
-      ? await compileSampleFromPackage({
-          card: context.card,
-          sample,
-          view: url.searchParams.get("view") ?? undefined,
-          profile: context.profile,
-        })
-      : await compileSample({
-          cardId: decodeURIComponent(sampleMatch[1]),
-          sample,
-        });
+    const result = await compileSampleFromPackage({
+      card: context.card,
+      sample,
+      view: url.searchParams.get("view") ?? undefined,
+      profile: context.profile,
+    });
     sendJson(res, 200, result);
     return true;
   }
@@ -221,7 +228,13 @@ export async function handleLegacyApi(
     /^\/api\/cards\/([^/]+)\/views\/([^/]+)\/template$/,
   );
   if (req.method === "GET" && templateMatch) {
-    const card = context.card ?? await getCard(decodeURIComponent(templateMatch[1]));
+    if (!context.card) return false;
+    const cardReference = decodeURIComponent(templateMatch[1]);
+    const card = context.card;
+    if (cardReference !== card.reference && cardReference !== card.manifest.id) {
+      sendJson(res, 404, { code: "card_not_found", message: `Unknown workspace card: ${cardReference}` });
+      return true;
+    }
     const viewName = decodeURIComponent(templateMatch[2]);
     const view = card.manifest.views[viewName];
     if (!view) {
@@ -257,6 +270,7 @@ export async function handleLegacyApi(
   }
 
   if (req.method === "POST" && url.pathname === "/api/render") {
+    if (!context.card) return false;
     const body = await readBody(req);
     if (
       typeof body.cardId !== "string" ||
@@ -271,18 +285,16 @@ export async function handleLegacyApi(
       });
       return true;
     }
-    const result = context.card
-      ? await compileCardPackage({
-          card: context.card,
-          view: body.view,
-          data: body.data as JsonObject,
-          profile: context.profile,
-        })
-      : await compileCard({
-          cardId: body.cardId,
-          view: body.view,
-          data: body.data as JsonObject,
-        });
+    if (body.cardId !== context.card.reference && body.cardId !== context.card.manifest.id) {
+      sendJson(res, 404, { code: "card_not_found", message: `Unknown workspace card: ${body.cardId}` });
+      return true;
+    }
+    const result = await compileCardPackage({
+      card: context.card,
+      view: body.view,
+      data: body.data as JsonObject,
+      profile: context.profile,
+    });
     const valid = !result.issues.some((issue) => issue.severity === "error");
     sendJson(res, valid ? 200 : 422, { valid, ...result });
     return true;

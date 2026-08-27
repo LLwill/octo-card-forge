@@ -3,7 +3,6 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import JSZip from "jszip";
 import { resolveCardArtifactForCard, type ResolvedCardArtifact } from "./artifact.js";
-import { getCard } from "./registry.js";
 import type { CardInspection, CardPackage, JsonObject, RenderProfileSource } from "./types.js";
 
 /** Keep the persisted interaction report aligned with the strict server decoder. */
@@ -76,10 +75,6 @@ export async function buildHandoffPackageForCard(
 ): Promise<JsonObject> {
   const context = await resolveCardArtifactForCard(card, profileSource);
   return handoffFromArtifact(card, context);
-}
-
-export async function buildHandoffPackage(cardId: string): Promise<JsonObject> {
-  return buildHandoffPackageForCard(await getCard(cardId));
 }
 
 function json(value: unknown): string {
@@ -195,12 +190,6 @@ export async function buildHandoffArchiveForCard(
   };
 }
 
-export async function buildHandoffArchive(
-  cardId: string
-): Promise<{ buffer: Buffer; fileName: string }> {
-  return buildHandoffArchiveForCard(await getCard(cardId));
-}
-
 export async function writeHandoffPackageForCard(
   card: CardPackage,
   output: string,
@@ -214,11 +203,4 @@ export async function writeHandoffPackageForCard(
   await mkdir(path.dirname(filePath), { recursive: true });
   await writeFile(filePath, archive.buffer);
   return { filePath, bytes: archive.buffer.byteLength };
-}
-
-export async function writeHandoffPackage(
-  cardId: string,
-  output: string
-): Promise<{ filePath: string; bytes: number }> {
-  return writeHandoffPackageForCard(await getCard(cardId), output);
 }

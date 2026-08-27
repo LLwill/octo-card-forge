@@ -12,6 +12,7 @@ import type { CardArtifactV1 } from "@mlt-org/octo-card-spec";
 
 const execFileAsync = promisify(execFile);
 const cliEntry = path.resolve("packages/cli/src/bin.ts");
+const cardRoot = path.resolve("tests/fixtures/cards/example.choice");
 
 function node(args: string[], opts?: { cwd?: string }) {
   return execFileAsync(
@@ -26,7 +27,7 @@ describe("Artifact consumer fixture (repo-free consumption)", () => {
     const tmpDir = await mkdtemp(path.join(os.tmpdir(), "octo-artifact-consumer-"));
     const artifactPath = path.join(tmpDir, "artifact.json");
     try {
-      await node(["artifact", "build", "ai.decision-action", "--out", artifactPath]);
+      await node(["artifact", "build", "--card", cardRoot, "--out", artifactPath]);
 
       const raw = await readFile(artifactPath, "utf8");
       const artifact: CardArtifactV1 = JSON.parse(raw);
@@ -35,7 +36,7 @@ describe("Artifact consumer fixture (repo-free consumption)", () => {
       expect(artifact.mediaType).toBe(
         "application/vnd.octo.card-artifact+json;version=1"
       );
-      expect(artifact.card.id).toBe("ai.decision-action");
+      expect(artifact.card.id).toBe("example.choice");
       expect(artifact.profile.reference).toMatch(/^octo-chat@\d+\.\d+\.\d+/);
       expect(artifact.profile.manifest.id).toBe("octo-chat");
       expect(artifact.profile.capabilities.allowedElements).toContain("TextBlock");
@@ -71,7 +72,7 @@ describe("Artifact consumer fixture (repo-free consumption)", () => {
     const tmpDir = await mkdtemp(path.join(os.tmpdir(), "octo-artifact-verify-"));
     const artifactPath = path.join(tmpDir, "artifact.json");
     try {
-      await node(["artifact", "build", "ai.decision-action", "--out", artifactPath]);
+      await node(["artifact", "build", "--card", cardRoot, "--out", artifactPath]);
       const original: CardArtifactV1 = JSON.parse(await readFile(artifactPath, "utf8"));
       const correctDigest = artifactSha256(original);
 
@@ -105,7 +106,7 @@ describe("Artifact consumer fixture (repo-free consumption)", () => {
     const artifactPath = path.join(tmpDir, "artifact.json");
     try {
       const { stdout: buildOut } = await node([
-        "artifact", "build", "ai.decision-action", "--out", artifactPath, "--format", "json",
+        "artifact", "build", "--card", cardRoot, "--out", artifactPath, "--format", "json",
       ]);
       const { sha256 } = JSON.parse(buildOut);
       const { stdout } = await node([

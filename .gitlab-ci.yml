@@ -16,6 +16,7 @@ stages:
   - package
   - sync
   - deploy
+  - smoke
   - notify
 
 variables:
@@ -37,8 +38,9 @@ variables:
 
 build:
   stage: build
-  only:
-    - merge_requests
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_TAG'
   tags:
     - tke-deepmining-runner
   image: $NODE_IMAGE
@@ -62,7 +64,6 @@ package_tags:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
     PUSH_IMAGE_PATH: $CONTAINER_IMAGE:$CI_COMMIT_TAG
-    PUSH_IMAGE_LATEST: "$CONTAINER_IMAGE:latest"
   before_script:
     - i=0; while [ "$i" -lt 12 ]; do docker info && break; sleep 5; i=$(( i + 1 )) ; done
     - echo "$HARBOR_PWD" | docker login "$REPOSITORY" -u 100028731872 --password-stdin
@@ -72,7 +73,6 @@ package_tags:
       BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
       docker build \
         -t "${PUSH_IMAGE_PATH}" \
-        -t "${PUSH_IMAGE_LATEST}" \
         --build-arg NODE_IMAGE="${NODE_IMAGE}" \
         --build-arg NPM_REGISTRY="${NPM_REGISTRY}" \
         --build-arg PNPM_VERSION="${PNPM_VERSION}" \
@@ -82,7 +82,6 @@ package_tags:
         --build-arg BUILD_DATE="${BUILD_DATE}" \
         -f ./Dockerfile.ci .
       docker push "${PUSH_IMAGE_PATH}"
-      docker push "${PUSH_IMAGE_LATEST}"
       IMAGE_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "${PUSH_IMAGE_PATH}" | cut -d@ -f2)
       if [ -z "$IMAGE_DIGEST" ]; then
         echo "ERROR resolve image digest failed"
@@ -110,8 +109,8 @@ sync_code:
     - |
       set -e
 
-      if [[ -z "$IMAGE_DIGEST" ]]; then
-        echo "Error: IMAGE_DIGEST not set; refusing to render manifest"
+      if [ -z "$IMAGE_DIGEST" ] || [ -z "$CATALOG_SNAPSHOT_URL" ]; then
+        echo "Error: IMAGE_DIGEST and CATALOG_SNAPSHOT_URL are required"
         exit 1
       fi
 
@@ -144,6 +143,7 @@ sync_code:
       sed -i "s|{{BRANCH}}|prod|g" manifests/deploy.yaml
       sed -i "s|{{REPO_URL}}|${CONTAINER_IMAGE}|g" manifests/deploy.yaml
       sed -i "s|{{IMAGE_DIGEST}}|${IMAGE_DIGEST}|g" manifests/deploy.yaml
+      sed -i "s|{{CATALOG_SNAPSHOT_URL}}|${CATALOG_SNAPSHOT_URL}|g" manifests/deploy.yaml
 
       if grep -q "{{" manifests/deploy.yaml; then
         echo "Error: unresolved placeholder remains after render"
@@ -159,7 +159,7 @@ sync_code:
       fi
 
       git commit -m "Update octo-card-forge prod to ${CI_COMMIT_TAG} (@${IMAGE_DIGEST})"
-      git push --force "$DEPLOY_REPO_URL" "HEAD:$TARGET_BRANCH"
+      git push "$DEPLOY_REPO_URL" "HEAD:$TARGET_BRANCH"
 
 argocd_sync:
   stage: deploy
@@ -170,10 +170,40 @@ argocd_sync:
   image: $CURL_IMAGE
   variables:
     GIT_STRATEGY: none
+  when: manual
+  allow_failure: false
   script:
     - |
-      echo "Tag build: skipping auto ArgoCD sync for prod. Trigger manually after reviewing the release:"
-      echo "curl -X POST http://$ARGOCD_SERVER/api/v1/applications/$ARGOCD_APP/sync -H \"Authorization: Bearer \$ARGOCD_TOKEN\" -H \"Content-Type: application/json\" -d '{\"prune\":false,\"dryRun\":false}'"
+      set -e
+      test -n "$ARGOCD_TOKEN"
+      curl --fail --show-error --silent \
+        -X POST "http://$ARGOCD_SERVER/api/v1/applications/$ARGOCD_APP/sync" \
+        -H "Authorization: Bearer $ARGOCD_TOKEN" \
+        -H "Content-Type: application/json" \
+        -d '{"prune":false,"dryRun":false}'
+
+smoke_prod:
+  stage: smoke
+  only:
+    - tags
+  needs:
+    - argocd_sync
+  tags:
+    - tke-deepmining-runner
+  image: $CURL_IMAGE
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - |
+      set -e
+      test -n "$PROD_URL"
+      i=0
+      until curl --fail --show-error --silent "${PROD_URL%/}/healthz" | grep -q '"status":"ok"'; do
+        i=$((i + 1))
+        if [ "$i" -ge 30 ]; then exit 1; fi
+        sleep 10
+      done
+      curl --fail --show-error --silent "${PROD_URL%/}/api/v1/runtime" | grep -q '"mode":"published"'
 
 notify_success:
   stage: notify
@@ -186,12 +216,12 @@ notify_success:
   variables:
     GIT_STRATEGY: none
   script: |
-    if [[ "$ROBOT_PUSH_MESSAGE" == "disable" ]]; then exit 0; fi
-    MESSAGE="octo-card-forge prod pipeline success\ntag: ${CI_COMMIT_TAG}\ncommit: ${CI_COMMIT_SHORT_SHA}\nimage: ${CONTAINER_IMAGE}:${CI_COMMIT_TAG}\npipeline: ${CI_PIPELINE_URL}\nNOTE: ArgoCD sync not yet triggered, run it manually."
-    if [[ -n "$DISCORD_WEBHOOK" ]]; then
+    if [ "$ROBOT_PUSH_MESSAGE" = "disable" ]; then exit 0; fi
+    MESSAGE="octo-card-forge prod pipeline success\ntag: ${CI_COMMIT_TAG}\ncommit: ${CI_COMMIT_SHORT_SHA}\nimage: ${CONTAINER_IMAGE}@${IMAGE_DIGEST}\npipeline: ${CI_PIPELINE_URL}"
+    if [ -n "$DISCORD_WEBHOOK" ]; then
       curl -s -X POST "$DISCORD_WEBHOOK" -H "Content-Type: application/json" -d "{\"content\":\"$MESSAGE\"}"
     fi
-    if [[ -n "$WECOM_WEBHOOK" ]]; then
+    if [ -n "$WECOM_WEBHOOK" ]; then
       curl -s -X POST "$WECOM_WEBHOOK" -H "Content-Type: application/json" -d "{\"msgtype\":\"text\",\"text\":{\"content\":\"$MESSAGE\"}}"
     fi
 
@@ -206,11 +236,11 @@ notify_failure:
   variables:
     GIT_STRATEGY: none
   script: |
-    if [[ "$ROBOT_PUSH_MESSAGE" == "disable" ]]; then exit 0; fi
+    if [ "$ROBOT_PUSH_MESSAGE" = "disable" ]; then exit 0; fi
     MESSAGE="octo-card-forge prod pipeline failed\ntag: ${CI_COMMIT_TAG}\ncommit: ${CI_COMMIT_SHORT_SHA}\npipeline: ${CI_PIPELINE_URL}"
-    if [[ -n "$DISCORD_WEBHOOK" ]]; then
+    if [ -n "$DISCORD_WEBHOOK" ]; then
       curl -s -X POST "$DISCORD_WEBHOOK" -H "Content-Type: application/json" -d "{\"content\":\"$MESSAGE\"}"
     fi
-    if [[ -n "$WECOM_WEBHOOK" ]]; then
+    if [ -n "$WECOM_WEBHOOK" ]; then
       curl -s -X POST "$WECOM_WEBHOOK" -H "Content-Type: application/json" -d "{\"msgtype\":\"text\",\"text\":{\"content\":\"$MESSAGE\"}}"
     fi

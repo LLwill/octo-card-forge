@@ -114,9 +114,10 @@ describe("CLI package contents", () => {
     }
   }, 15_000);
 
-  it("copies the Skill manifest into the production image", async () => {
+  it("builds the production image from the deploy artifact", async () => {
     const dockerfile = await readFile("Dockerfile.ci", "utf8");
-    expect(dockerfile).toContain("COPY --chown=octo:octo skills ./skills");
+    expect(dockerfile).toContain("pnpm package:deploy /release");
+    expect(dockerfile).not.toContain("COPY --chown=octo:octo cards ./cards");
   });
 
   it("builds the characterized deploy bundle", async () => {
@@ -148,10 +149,10 @@ describe("CLI package contents", () => {
           "./dist/server.js",
           "./scripts/start-service.mjs",
           "./apps/forge-web/dist/index.html",
-          "./cards/docs.access-request/goldens/pending.card.json",
           "./skills/octo-design-cards/skill-manifest.json",
         ])
       );
+      expect(files.some((file) => file.startsWith("./cards/"))).toBe(false);
       expect(manifest).toMatchObject({
         entrypoint: "pnpm start",
         renderProfile: CURRENT_RENDER_PROFILE,
@@ -183,10 +184,9 @@ describe("CLI package contents", () => {
         await expect(
           waitForJson(`http://127.0.0.1:${port}/phase1/healthz`)
         ).resolves.toEqual({ status: "ok" });
-        const cards = await waitForJson(
-          `http://127.0.0.1:${port}/phase1/api/cards`
-        ) as Array<{ reference: string }>;
-        expect(cards.map((card) => card.reference)).toContain("docs.access-request");
+        await expect(
+          waitForJson(`http://127.0.0.1:${port}/phase1/api/v1/runtime`),
+        ).resolves.toMatchObject({ mode: "published" });
       } finally {
         service.kill("SIGTERM");
         await new Promise<void>((resolve) => {

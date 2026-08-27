@@ -1,6 +1,6 @@
 import path from "node:path";
 import { compileSampleFromPackage } from "./compiler.js";
-import { getCard, listCards, loadCardPackage } from "./registry.js";
+import { loadCardPackage } from "./registry.js";
 import type { CardPackage, CheckReport, RenderProfileSource } from "./types.js";
 
 async function checkCardPackages(
@@ -58,10 +58,6 @@ async function checkCardPackages(
     report.cards.push(item);
   }
   return report;
-}
-
-export async function checkCards(cardId?: string): Promise<CheckReport> {
-  return checkCardPackages(cardId ? [await getCard(cardId)] : await listCards());
 }
 
 export async function checkCardPackage(

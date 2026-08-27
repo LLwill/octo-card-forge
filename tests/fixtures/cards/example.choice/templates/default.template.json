@@ -1,0 +1,99 @@
+{
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "ColumnSet",
+      "columns": [
+        {
+          "type": "Column",
+          "width": "stretch",
+          "items": [
+            {
+              "type": "TextBlock",
+              "text": "${title}",
+              "size": "Medium",
+              "weight": "Bolder",
+              "wrap": true
+            },
+            {
+              "type": "TextBlock",
+              "text": "创建人 ${creatorName}",
+              "size": "Small",
+              "isSubtle": true,
+              "spacing": "Small",
+              "wrap": true
+            },
+            {
+              "type": "TextBlock",
+              "text": "由 ${forwarderName} 转发",
+              "size": "Small",
+              "isSubtle": true,
+              "spacing": "None",
+              "wrap": true,
+              "$when": "${forwarderName != null && forwarderName != ''}"
+            }
+          ]
+        },
+        {
+          "type": "Column",
+          "width": "auto",
+          "items": [
+            {
+              "type": "TextBlock",
+              "id": "octo-badge-accent-permission",
+              "text": "${permissionLabel}",
+              "size": "Small",
+              "weight": "Bolder",
+              "color": "Accent",
+              "wrap": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "Container",
+      "id": "octo--surface-subtle--inset-md--uid-document-preview",
+      "style": "emphasis",
+      "spacing": "Medium",
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "${previewText}",
+          "wrap": true,
+          "maxLines": 3
+        },
+        {
+          "type": "TextBlock",
+          "text": "${updatedAt}",
+          "size": "Small",
+          "isSubtle": true,
+          "spacing": "Small",
+          "wrap": true,
+          "$when": "${updatedAt != null && updatedAt != ''}"
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.OpenUrl",
+      "id": "open-document",
+      "title": "打开文档",
+      "url": "${documentUrl}"
+    },
+    {
+      "type": "Action.Submit",
+      "id": "copy-document-link",
+      "title": "复制链接",
+      "associatedInputs": "none",
+      "data": {
+        "action": "copyDocumentLink",
+        "documentId": "${documentId}",
+        "linkUrl": "${linkUrl}"
+      }
+    }
+  ]
+}

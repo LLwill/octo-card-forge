@@ -31,7 +31,6 @@ const files = [
   "dist",
   "web",
   "apps/forge-web/dist",
-  "cards",
   "render-profiles",
   "skills/octo-design-cards/skill-manifest.json",
   "scripts/start-service.mjs",
@@ -48,6 +47,7 @@ const deploymentManifest = {
   host: "0.0.0.0",
   port: "PORT",
   basePath: "BASE_PATH",
+  catalogSnapshotUrl: "CATALOG_SNAPSHOT_URL",
   renderProfile: `octo-chat@${profileManifest.version}`,
   files,
 };

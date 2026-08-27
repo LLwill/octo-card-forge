@@ -6,8 +6,8 @@
 #   {{IMAGE_DIGEST}}  immutable image digest from the package job
 #   {{BRANCH}}        environment name (currently always "prod" — single env)
 #
-# Stateless HTTP service: only reads the cards / render-profiles / web assets
-# baked into the image. No DB, no queue, no ConfigMap/Secret needed.
+# Stateless HTTP service: reads the published Catalog Snapshot plus the
+# render-profile and web assets baked into the image.
 #
 # `replicas` is intentionally omitted so `kubectl scale` sticks across ArgoCD
 # syncs (ArgoCD only reconciles fields present in git); defaults to 1.
@@ -35,6 +35,10 @@ spec:
         app.kubernetes.io/name: octo-card-forge
         octo.card-forge/env: "{{BRANCH}}"
     spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       imagePullSecrets:
         - name: tcr-image-xtiao
       terminationGracePeriodSeconds: 30
@@ -52,6 +56,14 @@ spec:
               value: "0.0.0.0"
             - name: PORT
               value: "4318"
+            - name: CATALOG_SNAPSHOT_URL
+              value: "{{CATALOG_SNAPSHOT_URL}}"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           readinessProbe:
             httpGet:
               path: /healthz

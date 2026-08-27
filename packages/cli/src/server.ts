@@ -45,7 +45,7 @@ async function prepareForgeServer(options: ForgeServerOptions = {}): Promise<{
     ? await loadRenderProfileForReference(card.manifest.renderProfile, options.profile)
     : options.profile;
   const context: ServerContext = {
-    mode: card || profile ? "workspace" : "published",
+    mode: card ? "workspace" : "published",
     card,
     profile,
   };

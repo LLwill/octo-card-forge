@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { readdir, stat } from "node:fs/promises";
+import { stat } from "node:fs/promises";
 import path from "node:path";
 import { projectRoot, readJson, resolveInProject } from "./fs.js";
 import { loadProfileComponentCatalog } from "./component-catalog-source.js";
@@ -215,72 +215,6 @@ export async function loadCardPackage(root: string): Promise<CardPackage> {
     mutable: kind === "draft",
     manifest,
   };
-}
-
-function isCurrentRenderProfile(manifest: CardManifest): boolean {
-  return resolveRenderProfileReference(manifest.renderProfile) === CURRENT_RENDER_PROFILE;
-}
-
-export async function listCards(): Promise<CardPackage[]> {
-  const cardsRoot = resolveInProject("cards");
-  const entries = await readdir(cardsRoot, { withFileTypes: true });
-  const cards: CardPackage[] = [];
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
-    const root = path.join(cardsRoot, entry.name);
-    const draft = await loadCardPackage(root);
-    const manifest = draft.manifest;
-    // The root package is the current editable source and must remain
-    // discoverable. Drafts normally follow @latest; check/compile surfaces an
-    // explicit profile error instead of silently removing a stale draft.
-    cards.push(draft);
-
-    const versionsRoot = path.join(root, "versions");
-    let versions: import("node:fs").Dirent[] = [];
-    try {
-      versions = await readdir(versionsRoot, { withFileTypes: true });
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-    }
-    for (const versionEntry of versions) {
-      if (!versionEntry.isDirectory()) continue;
-      const versionRoot = path.join(versionsRoot, versionEntry.name);
-      const versionManifestPath = path.join(versionRoot, "manifest.json");
-      const version = await loadCardPackage(versionRoot);
-      const versionManifest = version.manifest;
-      if (versionManifest.id !== manifest.id) {
-        throw new Error(
-          `${versionManifestPath}: version package id must be ${manifest.id}`
-        );
-      }
-      if (versionManifest.version !== versionEntry.name) {
-        throw new Error(
-          `${versionManifestPath}: version must match directory ${versionEntry.name}`
-        );
-      }
-      if (isCurrentRenderProfile(versionManifest)) {
-        cards.push(version);
-      }
-    }
-  }
-  return cards.sort((a, b) =>
-    a.manifest.id.localeCompare(b.manifest.id) ||
-    (a.kind === b.kind ? 0 : a.kind === "draft" ? -1 : 1) ||
-    a.manifest.version.localeCompare(b.manifest.version, undefined, {
-      numeric: true,
-    })
-  );
-}
-
-export async function getCard(cardId: string): Promise<CardPackage> {
-  const cards = await listCards();
-  const card = cards.find((item) => item.reference === cardId);
-  if (!card) {
-    throw new Error(
-      `Unknown card reference: ${cardId} (historical packages are rendered from artifacts, not this workspace)`
-    );
-  }
-  return card;
 }
 
 export async function getRenderProfile(reference?: string): Promise<RenderProfileSource> {

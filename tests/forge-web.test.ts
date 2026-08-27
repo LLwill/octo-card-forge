@@ -21,8 +21,17 @@ import {
   loadCatalogSnapshot,
 } from "../apps/forge-web/src/data.js";
 import { createRawCardDocument } from "../apps/forge-web/src/data/preview-document.js";
-import { buildCardArtifact } from "../packages/cli/src/artifact.js";
+import { buildCardArtifactForCard } from "../packages/cli/src/artifact.js";
 import { createForgeServer } from "../packages/cli/src/server.js";
+import { loadChoiceCard, loadNoticeCard } from "./card-fixtures.js";
+
+async function noticeArtifact() {
+  return buildCardArtifactForCard(await loadNoticeCard());
+}
+
+async function choiceArtifact() {
+  return buildCardArtifactForCard(await loadChoiceCard());
+}
 
 describe("Forge Web catalog client", () => {
   it("escapes raw card JSON before embedding it in the sandbox document", () => {
@@ -40,7 +49,7 @@ describe("Forge Web catalog client", () => {
   });
 
   it("loads canonical snapshot and artifact data and derives exact profile resources", async () => {
-    const artifact = await buildCardArtifact("docs.access-request@0.3.0");
+    const artifact = await noticeArtifact();
     const digest = artifactSha256(artifact);
     const snapshot = buildCatalogSnapshot({
       channel: "release",
@@ -56,7 +65,7 @@ describe("Forge Web catalog client", () => {
         },
         artifact: { url: "https://example.test/card.artifact.json", sha256: digest },
         source: { repository: "example/catalog", commit: "b".repeat(40), path: "cards/docs/access-request" },
-        release: { tag: "card/docs.access-request/v0.3.0", url: "https://example.test/releases/0.3.0" },
+        release: { tag: "card/example.notice/v0.1.0", url: "https://example.test/releases/0.1.0" },
       }],
     });
     const fetcher = async (input: RequestInfo | URL): Promise<Response> => {
@@ -75,7 +84,7 @@ describe("Forge Web catalog client", () => {
     });
     const resources = deriveProfileResourceUrls(loadedArtifact);
 
-    expect(loadedSnapshot.cards[0].latest).toBe("0.3.0");
+    expect(loadedSnapshot.cards[0].latest).toBe("0.1.0");
     expect(loadedArtifact.profile.reference).toBe("octo-chat@1.2.0-rc.4");
     expect(resources).toEqual({
       hostConfig: "https://cdn.jsdelivr.net/npm/@mlt-org/octo-card-profile-octo-chat@1.2.0-rc.4/dist/host-config.json",
@@ -83,31 +92,31 @@ describe("Forge Web catalog client", () => {
       stylesheet: "https://cdn.jsdelivr.net/npm/@mlt-org/octo-card-profile-octo-chat@1.2.0-rc.4/dist/styles.css",
       adaptiveCardsSdk: "https://cdn.jsdelivr.net/npm/adaptivecards@3.0.6/dist/adaptivecards.min.js",
     });
-    expect(artifactRequestUrl("docs.access-request@0.3.0")).toBe(
-      "./api/artifacts/docs.access-request%400.3.0",
+    expect(artifactRequestUrl("example.notice@0.1.0")).toBe(
+      "./api/artifacts/example.notice%400.1.0",
     );
   });
 
   it("rejects a canonical digest mismatch", async () => {
-    const artifact = await buildCardArtifact("docs.access-request@0.3.0");
-    await expect(loadCardArtifact("docs.access-request@0.3.0", "0".repeat(64), {
+    const artifact = await noticeArtifact();
+    await expect(loadCardArtifact("example.notice@0.1.0", "0".repeat(64), {
       fetch: async () => new Response(canonicalArtifactBytes(artifact)),
     })).rejects.toThrow("digest mismatch");
   });
 
   it("rejects an artifact whose identity does not match the requested reference", async () => {
-    const artifact = await buildCardArtifact("ai.decision-action@0.2.0");
+    const artifact = await choiceArtifact();
     const digest = artifactSha256(artifact);
 
-    await expect(loadCardArtifact("docs.access-request@0.3.0", digest, {
+    await expect(loadCardArtifact("example.notice@0.1.0", digest, {
       artifact,
     })).rejects.toThrow(
-      "Card artifact identity mismatch: expected docs.access-request@0.3.0, received ai.decision-action@0.2.0",
+      "Card artifact identity mismatch: expected example.notice@0.1.0, received example.choice@0.1.0",
     );
   });
 
   it("loads an embedded preview Snapshot and Artifact without network access", async () => {
-    const artifact = await buildCardArtifact("docs.access-request@0.3.0");
+    const artifact = await noticeArtifact();
     const digest = artifactSha256(artifact);
     const snapshot = buildCatalogSnapshot({
       channel: "preview",
@@ -137,13 +146,13 @@ describe("Forge Web catalog client", () => {
     };
 
     const loadedSnapshot = await loadCatalogSnapshot({ snapshot, fetch: fetcher });
-    const loadedArtifact = await loadCardArtifact("docs.access-request@0.3.0", digest, {
+    const loadedArtifact = await loadCardArtifact("example.notice@0.1.0", digest, {
       artifact,
       fetch: fetcher,
     });
 
     expect(loadedSnapshot.channel).toBe("preview");
-    expect(loadedArtifact.card.id).toBe("docs.access-request");
+    expect(loadedArtifact.card.id).toBe("example.notice");
     expect(fetchCount).toBe(0);
   });
 });
@@ -155,12 +164,12 @@ describe("Forge Web server route", () => {
   let handoff: Buffer;
 
   beforeAll(async () => {
-    const artifact = await buildCardArtifact("docs.access-request@0.3.0");
+    const artifact = await noticeArtifact();
     const digest = artifactSha256(artifact);
     const handoffZip = new JSZip();
-    handoffZip.file("docs.access-request@0.3.0/README.md", "# Backend handoff\n");
-    handoffZip.file("docs.access-request@0.3.0/manifest.json", JSON.stringify(artifact.card));
-    handoffZip.file("docs.access-request@0.3.0/contract/data.schema.json", JSON.stringify(artifact.dataContract));
+    handoffZip.file("example.notice@0.1.0/README.md", "# Backend handoff\n");
+    handoffZip.file("example.notice@0.1.0/manifest.json", JSON.stringify(artifact.card));
+    handoffZip.file("example.notice@0.1.0/contract/data.schema.json", JSON.stringify(artifact.dataContract));
     handoff = await handoffZip.generateAsync({ type: "nodebuffer" });
     const snapshot = buildCatalogSnapshot({
       channel: "release",
@@ -180,7 +189,7 @@ describe("Forge Web server route", () => {
           sha256: createHash("sha256").update(handoff).digest("hex"),
         },
         source: { repository: "example/catalog", commit: "d".repeat(40), path: "cards/docs/access-request" },
-        release: { tag: "card/docs.access-request/v0.3.0", url: "https://example.test/releases/0.3.0" },
+        release: { tag: "card/example.notice/v0.1.0", url: "https://example.test/releases/0.1.0" },
       }],
     });
     temporaryRoot = await mkdtemp(path.join(os.tmpdir(), "octo-forge-web-"));
@@ -238,7 +247,7 @@ describe("Forge Web server route", () => {
     expect(pageHtml).toContain("Forge Web fixture");
     expect(pageHtml).toContain('<base href="/forge/" />');
 
-    const nestedRoute = await fetch(`${baseUrl}/forge/cards/docs.access-request`);
+    const nestedRoute = await fetch(`${baseUrl}/forge/cards/example.notice`);
     expect(nestedRoute.status).toBe(200);
     expect(await nestedRoute.text()).toContain('<base href="/forge/" />');
 
@@ -255,36 +264,36 @@ describe("Forge Web server route", () => {
     expect(v1SnapshotResponse.status).toBe(200);
     await expect(v1SnapshotResponse.json()).resolves.toMatchObject({ revision: "c".repeat(40) });
 
-    const artifactResponse = await fetch(`${baseUrl}/forge/api/artifacts/docs.access-request%400.3.0`);
+    const artifactResponse = await fetch(`${baseUrl}/forge/api/artifacts/example.notice%400.1.0`);
     expect(artifactResponse.status).toBe(200);
     await expect(artifactResponse.json()).resolves.toMatchObject({
-      card: { id: "docs.access-request", version: "0.3.0" },
+      card: { id: "example.notice", version: "0.1.0" },
     });
 
     const v1ArtifactResponse = await fetch(
-      `${baseUrl}/api/v1/cards/docs.access-request%400.3.0/artifact`,
+      `${baseUrl}/api/v1/cards/example.notice%400.1.0/artifact`,
     );
     expect(v1ArtifactResponse.status).toBe(200);
     await expect(v1ArtifactResponse.json()).resolves.toMatchObject({
-      card: { id: "docs.access-request", version: "0.3.0" },
+      card: { id: "example.notice", version: "0.1.0" },
     });
 
     const handoffResponse = await fetch(
-      `${baseUrl}/api/v1/cards/docs.access-request%400.3.0/handoff`,
+      `${baseUrl}/api/v1/cards/example.notice%400.1.0/handoff`,
     );
     expect(handoffResponse.status).toBe(200);
     expect(handoffResponse.headers.get("content-type")).toBe("application/zip");
     expect(handoffResponse.headers.get("content-disposition")).toContain(
-      'filename="docs.access-request@0.3.0.handoff.zip"',
+      'filename="example.notice@0.1.0.handoff.zip"',
     );
     expect(Buffer.from(await handoffResponse.arrayBuffer())).toEqual(handoff);
 
     const contentsResponse = await fetch(
-      `${baseUrl}/api/v1/cards/docs.access-request%400.3.0/handoff/contents`,
+      `${baseUrl}/api/v1/cards/example.notice%400.1.0/handoff/contents`,
     );
     expect(contentsResponse.status).toBe(200);
     await expect(contentsResponse.json()).resolves.toMatchObject({
-      reference: "docs.access-request@0.3.0",
+      reference: "example.notice@0.1.0",
       files: expect.arrayContaining([
         { path: "README.md", group: "root", previewable: true },
         { path: "contract/data.schema.json", group: "contract", previewable: true },
@@ -292,7 +301,7 @@ describe("Forge Web server route", () => {
     });
 
     const handoffFileResponse = await fetch(
-      `${baseUrl}/api/v1/cards/docs.access-request%400.3.0/handoff/file?path=${encodeURIComponent("README.md")}`,
+      `${baseUrl}/api/v1/cards/example.notice%400.1.0/handoff/file?path=${encodeURIComponent("README.md")}`,
     );
     expect(handoffFileResponse.status).toBe(200);
     expect(handoffFileResponse.headers.get("content-type")).toContain("text/plain");
@@ -300,15 +309,15 @@ describe("Forge Web server route", () => {
   });
 
   it("rejects an artifact whose verified content has the wrong identity", async () => {
-    const wrongArtifact = await buildCardArtifact("ai.decision-action@0.2.0");
+    const wrongArtifact = await choiceArtifact();
     const snapshot = buildCatalogSnapshot({
       channel: "release",
       revision: "f".repeat(40),
       records: [{
         card: {
-          id: "docs.access-request",
+          id: "example.notice",
           name: "Access request",
-          version: "0.3.0",
+          version: "0.1.0",
           contractVersion: "1.0.0",
           renderProfile: wrongArtifact.profile.reference,
           defaultLocale: "zh-CN",
@@ -323,8 +332,8 @@ describe("Forge Web server route", () => {
           path: "cards/docs/access-request",
         },
         release: {
-          tag: "card/docs.access-request/v0.3.0",
-          url: "https://example.test/releases/0.3.0",
+          tag: "card/example.notice/v0.1.0",
+          url: "https://example.test/releases/0.1.0",
         },
       }],
     });
@@ -343,7 +352,7 @@ describe("Forge Web server route", () => {
     try {
       const address = identityServer.address() as AddressInfo;
       const response = await fetch(
-        `http://127.0.0.1:${address.port}/forge/api/artifacts/docs.access-request%400.3.0`,
+        `http://127.0.0.1:${address.port}/forge/api/artifacts/example.notice%400.1.0`,
       );
       expect(response.status).toBe(502);
       await expect(response.json()).resolves.toMatchObject({
@@ -357,7 +366,7 @@ describe("Forge Web server route", () => {
   });
 
   it("rejects a backend handoff whose digest does not match the Snapshot", async () => {
-    const artifact = await buildCardArtifact("docs.access-request@0.3.0");
+    const artifact = await noticeArtifact();
     const snapshot = buildCatalogSnapshot({
       channel: "release",
       revision: "h".repeat(40),
@@ -384,8 +393,8 @@ describe("Forge Web server route", () => {
           path: "cards/docs/access-request",
         },
         release: {
-          tag: "card/docs.access-request/v0.3.0",
-          url: "https://example.test/releases/0.3.0",
+          tag: "card/example.notice/v0.1.0",
+          url: "https://example.test/releases/0.1.0",
         },
       }],
     });
@@ -404,7 +413,7 @@ describe("Forge Web server route", () => {
     try {
       const address = handoffServer.address() as AddressInfo;
       const response = await fetch(
-        `http://127.0.0.1:${address.port}/api/v1/cards/docs.access-request%400.3.0/handoff`,
+        `http://127.0.0.1:${address.port}/api/v1/cards/example.notice%400.1.0/handoff`,
       );
       expect(response.status).toBe(502);
       await expect(response.json()).resolves.toMatchObject({

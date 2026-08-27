@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 2,
+  "id": "example.choice",
+  "name": "示例选择卡",
+  "version": "0.1.0",
+  "contractVersion": "1.0.0",
+  "adaptiveCardVersion": "1.5",
+  "renderProfile": "octo-chat@latest",
+  "defaultLocale": "zh-CN",
+  "dataSchema": "contract/data.schema.json",
+  "views": {
+    "default": {
+      "wireProfile": "octo/v2",
+      "template": "templates/default.template.json",
+      "samples": [
+        "samples/default.json"
+      ]
+    }
+  }
+}
