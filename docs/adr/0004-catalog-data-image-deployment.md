@@ -1,6 +1,6 @@
 # ADR 0004：使用独立 Catalog 数据镜像部署 Card 发布物
 
-- 状态：Proposed
+- 状态：Accepted
 - 日期：2026-08-27
 
 ## 背景

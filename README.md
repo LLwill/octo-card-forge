@@ -158,5 +158,6 @@ GitLab 标签流水线会完整执行 typecheck、test、build，构建 digest-p
 - [`docs/refactor-roadmap.md`](docs/refactor-roadmap.md)：分阶段重构路线
 - [`docs/forge-web-server-refactor-plan.md`](docs/forge-web-server-refactor-plan.md)：Web/Server 重构方案
 - [`docs/catalog-bundle-deployment-and-card-contribution.md`](docs/catalog-bundle-deployment-and-card-contribution.md)：Catalog 数据镜像部署与 Card 贡献流程
+- [`docs/catalog-data-image-implementation-plan.md`](docs/catalog-data-image-implementation-plan.md)：Catalog 数据镜像详细开发计划
 - [`docs/repo-free-card-authoring-implementation.md`](docs/repo-free-card-authoring-implementation.md)：Repo-free Card 开发方案
 - [`docs/render-profile-integration-rollout.md`](docs/render-profile-integration-rollout.md)：Render Profile 接入与发布

@@ -24,11 +24,12 @@
 | [`cli-skill-and-component-system.md`](./cli-skill-and-component-system.md) | CLI、Skill 和组件能力边界 |
 | [`preview-system-design.md`](./preview-system-design.md) | Preview API v1、revision 和页面接入边界 |
 
-待评审目标方案：
+已接受、待实施的目标方案：
 
 | 文档 | 用途 |
 | --- | --- |
 | [`catalog-bundle-deployment-and-card-contribution.md`](./catalog-bundle-deployment-and-card-contribution.md) | Catalog 数据镜像、ArgoCD 部署和 Card 贡献发布流程 |
+| [`catalog-data-image-implementation-plan.md`](./catalog-data-image-implementation-plan.md) | Catalog 数据镜像的 PR 拆分、代码改造、CI、测试与生产切换计划 |
 
 历史 Proposal：
 
