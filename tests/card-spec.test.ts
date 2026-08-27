@@ -66,15 +66,10 @@ async function readJson(path: string): Promise<unknown> {
 }
 
 describe("card-spec source manifest decoder", () => {
-  it("accepts every checked-in card draft and release manifest", async () => {
+  it("accepts every dedicated Card fixture manifest", async () => {
     const paths = [
-      "cards/ai.decision-action/manifest.json",
-      "cards/ai.decision-action/versions/0.2.0/manifest.json",
-      "cards/ai.reasoning-process/manifest.json",
-      "cards/ai.reasoning-process/versions/0.3.0/manifest.json",
-      "cards/ai.reasoning-process/versions/0.3.1/manifest.json",
-      "cards/docs.access-request/manifest.json",
-      "cards/docs.access-request/versions/0.3.0/manifest.json",
+      "tests/fixtures/cards/example.notice/manifest.json",
+      "tests/fixtures/cards/example.choice/manifest.json",
     ];
 
     for (const path of paths) {
@@ -141,14 +136,18 @@ describe("card-spec source manifest decoder", () => {
   });
 
   it("keeps release policy separate from structural decoding", async () => {
-    const release = decodeCardSourceManifest(await readJson("cards/docs.access-request/versions/0.3.0/manifest.json"));
+    const fixture = await readJson("tests/fixtures/cards/example.notice/manifest.json") as Record<string, unknown>;
+    const release = decodeCardSourceManifest({
+      ...fixture,
+      renderProfile: "octo-chat@1.2.0-rc.4",
+    });
     expect(release.ok).toBe(true);
     if (release.ok) {
       expect(validateCardManifestPolicy(release.value, { kind: "release" })).toEqual([]);
       expect(isPinnedRenderProfileReference(release.value.renderProfile)).toBe(true);
     }
 
-    const draft = decodeCardSourceManifest(await readJson("cards/docs.access-request/manifest.json"));
+    const draft = decodeCardSourceManifest(fixture);
     expect(draft.ok).toBe(true);
     if (draft.ok) expect(validateCardManifestPolicy(draft.value, { kind: "draft" })).toEqual([]);
   });

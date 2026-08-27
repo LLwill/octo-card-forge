@@ -1,8 +1,5 @@
 import { compileLoadedCard, loadCardRuntime } from "./core-adapter.js";
-import {
-  getCard,
-  loadCardPackage,
-} from "./registry.js";
+import { loadCardPackage } from "./registry.js";
 import type {
   CardPackage,
   CompileResult,
@@ -18,18 +15,6 @@ export async function compileCardPackage(options: {
 }): Promise<CompileResult> {
   const runtime = await loadCardRuntime(options.card, options.profile);
   return compileLoadedCard(runtime, options.view, options.data);
-}
-
-export async function compileCard(options: {
-  cardId: string;
-  view: string;
-  data: JsonObject;
-}): Promise<CompileResult> {
-  return compileCardPackage({
-    card: await getCard(options.cardId),
-    view: options.view,
-    data: options.data,
-  });
 }
 
 export async function compileSampleFromPackage(options: {
@@ -62,16 +47,6 @@ export async function compileSampleFromPackage(options: {
     };
   }
   throw new Error(`Unknown sample ${options.sample} for ${options.card.reference}`);
-}
-
-export async function compileSample(options: {
-  cardId: string;
-  sample: string;
-}): Promise<CompileResult & { data: JsonObject }> {
-  return compileSampleFromPackage({
-    card: await getCard(options.cardId),
-    sample: options.sample,
-  });
 }
 
 export async function compileCardDirectory(options: {

@@ -1,7 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { compileLoadedCard, loadCardRuntime } from "../core-adapter.js";
 import { buildPreviewRenderResponse, buildPreviewSession } from "../preview.js";
-import { getCard } from "../registry.js";
 import { loadRenderProfileForReference } from "../profile-source.js";
 import type { CardPackage, JsonObject, RenderProfileSource } from "../types.js";
 import { isJsonObject, readBody, sendJson, sendText } from "./http.js";
@@ -36,25 +35,18 @@ async function resolvePreviewCard(
     }
     return context.card;
   }
-  if (!requestedReference) {
-    throw new PreviewHttpError(
-      400,
-      "preview.card_required",
-      "cardId is required for a catalog preview session",
-    );
-  }
-  try {
-    return await getCard(requestedReference);
-  } catch {
-    throw new PreviewHttpError(404, "preview.card_not_found", "Card was not found");
-  }
+  throw new PreviewHttpError(
+    404,
+    "preview.workspace_card_unavailable",
+    "Raw card preview requires a server started with --card <dir>",
+  );
 }
 
 async function resolvePreviewProfile(
   context: ServerContext,
   requestedReference: string | undefined,
 ): Promise<RenderProfileSource> {
-  if (requestedReference) {
+  if (context.card && requestedReference) {
     const card = await resolvePreviewCard(context, requestedReference);
     return (await loadCardRuntime(card, context.profile)).profile;
   }

@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "文档转发卡片数据契约",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "documentId",
+    "title",
+    "creatorName",
+    "permissionLabel",
+    "previewText",
+    "documentUrl",
+    "linkUrl"
+  ],
+  "properties": {
+    "documentId": {
+      "type": "string",
+      "description": "文档业务唯一标识，用于提交动作",
+      "examples": [
+        "doc_20260801_demo"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "description": "文档标题",
+      "examples": [
+        "Q3 产品方案"
+      ]
+    },
+    "creatorName": {
+      "type": "string",
+      "description": "文档创建人",
+      "examples": [
+        "Ming"
+      ]
+    },
+    "forwarderName": {
+      "type": "string",
+      "description": "转发人；无转发人时可省略",
+      "examples": [
+        "Will"
+      ]
+    },
+    "permissionLabel": {
+      "type": "string",
+      "description": "当前权限展示文案",
+      "examples": [
+        "可查看"
+      ]
+    },
+    "previewText": {
+      "type": "string",
+      "description": "文档内容预览",
+      "examples": [
+        "这份文档整理了目标、范围、里程碑和待确认问题。"
+      ]
+    },
+    "updatedAt": {
+      "type": "string",
+      "description": "更新时间或补充元信息，可省略",
+      "examples": [
+        "今天 10:30"
+      ]
+    },
+    "documentUrl": {
+      "type": "string",
+      "description": "打开文档的 HTTPS 地址",
+      "examples": [
+        "https://example.com/docs/doc_20260801_demo"
+      ]
+    },
+    "linkUrl": {
+      "type": "string",
+      "description": "复制链接动作对应的 HTTPS 地址",
+      "examples": [
+        "https://example.com/docs/doc_20260801_demo"
+      ]
+    }
+  }
+}

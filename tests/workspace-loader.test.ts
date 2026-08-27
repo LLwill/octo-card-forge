@@ -3,14 +3,15 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { loadResolvedCardSource, WorkspaceLoadError } from "../packages/workspace/src/index.js";
+import { NOTICE_CARD_ROOT } from "./card-fixtures.js";
 
 describe("workspace source loader", () => {
-  it("resolves a checked-in card into a path-free source", async () => {
-    const loaded = await loadResolvedCardSource("cards/docs.access-request");
-    expect(loaded.root).toMatch(/cards[\\/]docs\.access-request$/);
+  it("resolves a fixture card into a path-free source", async () => {
+    const loaded = await loadResolvedCardSource(NOTICE_CARD_ROOT);
+    expect(loaded.root).toBe(NOTICE_CARD_ROOT);
     expect(loaded.source).toMatchObject({
       formatVersion: 1,
-      card: { id: "docs.access-request", namespace: "docs", key: "access-request" },
+      card: { id: "example.notice", namespace: "example", key: "notice" },
     });
     expect(JSON.stringify(loaded.source)).not.toContain("manifest.json");
     expect(Object.values(loaded.source.views).every((view) => view.samples.length > 0)).toBe(true);

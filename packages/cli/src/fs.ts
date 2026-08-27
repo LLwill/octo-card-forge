@@ -5,8 +5,8 @@ import { fileURLToPath } from "node:url";
 import type { JsonObject } from "./types.js";
 
 // Locate the repository root by walking up from this module until a workspace
-// marker is found. This keeps project-relative reads (render-profiles/, cards/,
-// web/, skills/) stable regardless of where the compiled runtime lives
+// marker is found. This keeps project-relative reads (render-profiles/, web/,
+// skills/) stable regardless of where the compiled runtime lives
 // (root dist/, packages/cli/dist/ or ts source), instead of assuming a fixed
 // number of directory levels above the source file.
 // Markers that identify a usable project root:

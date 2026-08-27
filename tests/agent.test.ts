@@ -3,13 +3,14 @@ import { CURRENT_RENDER_PROFILE } from "../packages/cli/src/registry.js";
 import {
   discoverUtilities,
   explainUtility,
-  lintCardsForAgent,
+  lintCardPackageForAgent,
 } from "../packages/cli/src/agent.js";
 import { mkdtemp } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { bundleRenderProfile } from "../packages/cli/src/profile.js";
 import { loadRenderProfileFromPackage } from "../packages/cli/src/profile-source.js";
+import { CHOICE_CARD_ROOT } from "./card-fixtures.js";
 
 describe("agent utility discovery", () => {
   it("groups declared utility tokens for agent lookup", async () => {
@@ -58,31 +59,18 @@ describe("agent utility discovery", () => {
 
 describe("agent lint", () => {
   it("returns an agent-readable lint report", async () => {
-    const report = await lintCardsForAgent("docs.access-request");
+    const report = await lintCardPackageForAgent(CHOICE_CARD_ROOT);
 
     expect(report.valid).toBe(true);
     expect(report.summary.cards).toBe(1);
     expect(report.summary.samples).toBeGreaterThan(0);
     expect(report.summary.errors).toBe(0);
     expect(report.cards[0]).toMatchObject({
-      reference: "docs.access-request",
-      cardId: "docs.access-request",
+      reference: "example.choice",
+      cardId: "example.choice",
       kind: "draft",
       mutable: true,
     });
     expect(report.cards[0].samples[0]).toHaveProperty("utilities");
-  });
-
-  it("keeps draft and release identities distinct when linting the catalog", async () => {
-    const report = await lintCardsForAgent();
-    const references = report.cards.map((card) => card.reference);
-
-    expect(new Set(references).size).toBe(references.length);
-    expect(references).toEqual(
-      expect.arrayContaining([
-        "ai.reasoning-process",
-        "ai.reasoning-process@0.3.1",
-      ])
-    );
   });
 });

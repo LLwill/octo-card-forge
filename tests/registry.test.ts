@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   CURRENT_RENDER_PROFILE,
-  getCard,
   getRenderProfile,
-  listCards,
+  loadCardPackage,
   resolveRenderProfileReference,
 } from "../packages/cli/src/registry.js";
+import { CHOICE_CARD_ROOT, NOTICE_CARD_ROOT } from "./card-fixtures.js";
 
 
 describe("render profile resolution", () => {
@@ -25,40 +25,21 @@ describe("render profile resolution", () => {
   });
 });
 
-describe("versioned Card Package registry", () => {
-  it("always exposes editable drafts and only locally renderable releases", async () => {
-    const cards = await listCards();
-    expect(cards.map((card) => card.reference)).toEqual([
-      "ai.decision-action",
-      "ai.decision-action@0.2.0",
-      "ai.reasoning-process",
-      "ai.reasoning-process@0.2.0",
-      "ai.reasoning-process@0.3.1",
-      "docs.access-request",
-      "docs.access-request@0.3.0",
-    ]);
-    expect(cards.find((card) => card.reference === "ai.reasoning-process")).toMatchObject({
+describe("explicit Card Package loading", () => {
+  it("loads standalone card directories without a repository registry", async () => {
+    await expect(loadCardPackage(NOTICE_CARD_ROOT)).resolves.toMatchObject({
+      reference: "example.notice",
       kind: "draft",
       mutable: true,
+      manifest: { id: "example.notice", renderProfile: "octo-chat@latest" },
     });
-    expect(cards.find((card) => card.reference === "ai.reasoning-process@0.3.1")).toMatchObject({
-      kind: "release",
-      mutable: false,
+    await expect(loadCardPackage(CHOICE_CARD_ROOT)).resolves.toMatchObject({
+      reference: "example.choice",
+      manifest: { id: "example.choice" },
     });
   });
 
-  it("loads current drafts by stable id and leaves historical releases to artifacts", async () => {
-    await expect(getCard("docs.access-request")).resolves.toMatchObject({
-      reference: "docs.access-request",
-      kind: "draft",
-      mutable: true,
-      manifest: { renderProfile: "octo-chat@latest" },
-    });
-    await expect(getCard("docs.access-request@0.3.0")).resolves.toMatchObject({
-      manifest: { version: "0.3.0" },
-    });
-    await expect(getCard("docs.access-request@0.2.0")).rejects.toThrow(
-      "historical packages are rendered from artifacts"
-    );
+  it("fails when the explicit directory does not contain a manifest", async () => {
+    await expect(loadCardPackage("tests/fixtures/cards/missing")).rejects.toThrow();
   });
 });

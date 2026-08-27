@@ -8,7 +8,6 @@ import {
   type CardArtifactV1,
 } from "@mlt-org/octo-card-spec";
 import { loadCardRuntime } from "./core-adapter.js";
-import { getCard } from "./registry.js";
 import type { CardPackage, RenderProfileSource } from "./types.js";
 
 export interface ResolvedCardArtifact {
@@ -55,8 +54,4 @@ export async function buildCardArtifactForCard(
   profileSource?: RenderProfileSource
 ): Promise<CardArtifactV1> {
   return (await resolveCardArtifactForCard(card, profileSource)).artifact;
-}
-
-export async function buildCardArtifact(cardId: string): Promise<CardArtifactV1> {
-  return buildCardArtifactForCard(await getCard(cardId));
 }

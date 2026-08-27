@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "示例通知卡数据契约",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "title",
+    "message"
+  ],
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "卡片主标题，由业务后端映射",
+      "examples": [
+        "示例通知卡"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "description": "卡片正文，由业务后端映射",
+      "examples": [
+        "这是示例通知卡的示例内容。"
+      ]
+    }
+  }
+}

@@ -44,7 +44,9 @@ printf '%s\n' "$artifact_sha256" > "$artifact_digest_file"
 rm "$artifact_result"
 
 forge_web_root="${FORGE_WEB_DIR:-$CLI_PACKAGE_ROOT/apps/forge-web/dist}"
-if [[ ! -f "$forge_web_root/index.html" || ! -f "$forge_web_root/app.js" || ! -f "$forge_web_root/styles.css" ]]; then
+if [[ ! -f "$forge_web_root/index.html" ]] \
+  || ! compgen -G "$forge_web_root/assets/*.js" >/dev/null \
+  || ! compgen -G "$forge_web_root/assets/*.css" >/dev/null; then
   echo "Prebuilt Forge Web assets were not found: $forge_web_root" >&2
   exit 1
 fi

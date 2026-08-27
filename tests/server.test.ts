@@ -7,6 +7,7 @@ import {
 } from "../packages/cli/src/registry.js";
 import { decodeComponentCatalogV1 } from "../packages/card-spec/src/index.js";
 import { createForgeServer, normalizeBasePath } from "../packages/cli/src/server.js";
+import { NOTICE_CARD_ROOT } from "./card-fixtures.js";
 
 describe("server base path", () => {
   it("normalizes valid public URL prefixes", () => {
@@ -43,31 +44,9 @@ describe("catalog HTTP API", () => {
     });
   });
 
-  it("exposes distinct draft and release package identities", async () => {
+  it("does not expose workspace Card source endpoints in published mode", async () => {
     const response = await fetch(`${baseUrl}/api/cards`);
-    const cards = await response.json() as Array<{
-      reference: string;
-      kind: "draft" | "release";
-      mutable: boolean;
-    }>;
-    const references = cards.map((card) => card.reference);
-
-    expect(response.status).toBe(200);
-    expect(new Set(references).size).toBe(references.length);
-    expect(cards).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          reference: "docs.access-request",
-          kind: "draft",
-          mutable: true,
-        }),
-        expect.objectContaining({
-          reference: "docs.access-request@0.3.0",
-          kind: "release",
-          mutable: false,
-        }),
-      ])
-    );
+    expect(response.status).toBe(404);
   });
 
   it("describes the default published runtime capabilities", async () => {
@@ -87,48 +66,17 @@ describe("catalog HTTP API", () => {
     });
   });
 
-  it("compiles a draft sample through its stable card id", async () => {
-    const response = await fetch(
-      `${baseUrl}/api/cards/docs.access-request/samples/pending`
-    );
-    const result = await response.json() as {
-      cardId: string;
-      cardVersion: string;
-      renderProfile: string;
-      payload: { type: string; version: string };
-      issues: unknown[];
-    };
-
-    expect(response.status).toBe(200);
-    expect(result).toMatchObject({
-      cardId: "docs.access-request",
-      cardVersion: "0.2.0",
-      renderProfile: CURRENT_RENDER_PROFILE,
-      payload: { type: "AdaptiveCard", version: "1.5" },
-      issues: [],
-    });
-  });
-
-  it("returns 422 with contract issues for invalid render data", async () => {
+  it("does not compile repository Card source in published mode", async () => {
     const response = await fetch(`${baseUrl}/api/render`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        cardId: "docs.access-request",
-        view: "pending",
-        data: { state: "pending" },
+        cardId: "example.notice",
+        view: "default",
+        data: {},
       }),
     });
-    const result = await response.json() as {
-      valid: boolean;
-      issues: Array<{ code: string }>;
-    };
-
-    expect(response.status).toBe(422);
-    expect(result.valid).toBe(false);
-    expect(result.issues).toEqual(
-      expect.arrayContaining([expect.objectContaining({ code: "contract.required" })])
-    );
+    expect(response.status).toBe(404);
   });
 
   it("serves the current Profile CSS for an unbound catalog session", async () => {
@@ -206,7 +154,7 @@ describe("Preview API v1", () => {
   let baseUrl: string;
 
   beforeAll(async () => {
-    server = await createForgeServer({ cardRoot: "cards/docs.access-request" });
+    server = await createForgeServer({ cardRoot: NOTICE_CARD_ROOT });
     await new Promise<void>((resolve, reject) => {
       server.once("error", reject);
       server.listen(0, "127.0.0.1", resolve);
@@ -234,12 +182,12 @@ describe("Preview API v1", () => {
     expect(sessionResponse.status).toBe(200);
     expect(session).toMatchObject({
       schemaVersion: 1,
-      card: { id: "docs.access-request", reference: "docs.access-request", mutable: true },
+      card: { id: "example.notice", reference: "example.notice", mutable: true },
       renderProfile: { reference: CURRENT_RENDER_PROFILE },
     });
     expect(session.revision).toMatch(/^sha256:[a-f0-9]{64}$/);
     expect(session.views).toEqual(
-      expect.arrayContaining([expect.objectContaining({ name: "pending", samples: ["pending"] })])
+      expect.arrayContaining([expect.objectContaining({ name: "default", samples: ["default"] })])
     );
     expect(JSON.stringify(session)).not.toContain(process.cwd());
 
@@ -281,25 +229,12 @@ describe("Preview API v1", () => {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        cardId: "docs.access-request",
+        cardId: "example.notice",
         revision: session.revision,
-        view: "pending",
+        view: "default",
         data: {
-          requestId: "DOC-REQ-024",
-          state: "pending",
-          document: {
-            title: "2026 Q3 OKR",
-            url: "https://example.com/documents/2026-q3-okr",
-            sourceName: "Q3 产品规划",
-          },
-          requester: {
-            name: "张三",
-            avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Zhang%20San",
-          },
-          permission: { label: "协作权限", roleLabel: "协作者" },
-          requestReason: "希望加入协作，以补充 KR3 数据。",
-          requestedAtDisplay: "2026-07-16 11:00",
-          messageTimeDisplay: "11:03",
+          title: "通知",
+          message: "内容",
         },
       }),
     });
@@ -329,10 +264,10 @@ describe("Preview API v1", () => {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        cardId: "docs.access-request",
+        cardId: "example.notice",
         revision: session.revision,
-        view: "pending",
-        data: { state: "pending" },
+        view: "default",
+        data: {},
       }),
     });
     const invalid = await invalidResponse.json() as {
@@ -349,9 +284,9 @@ describe("Preview API v1", () => {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        cardId: "docs.access-request",
+        cardId: "example.notice",
         revision: "sha256:0000000000000000000000000000000000000000000000000000000000000000",
-        view: "pending",
+        view: "default",
         data: {},
       }),
     });

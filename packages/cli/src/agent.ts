@@ -1,6 +1,6 @@
 import path from "node:path";
 import { compileSampleFromPackage } from "./compiler.js";
-import { loadCardPackage, listCards, resolveRenderProfileReference } from "./registry.js";
+import { loadCardPackage, resolveRenderProfileReference } from "./registry.js";
 import { loadRenderProfileForReference } from "./profile-source.js";
 import type {
   JsonObject,
@@ -374,21 +374,6 @@ async function lintCardPackages(
 
   report.summary.tokens = [...tokens].sort();
   return report;
-}
-
-export async function lintCardsForAgent(cardId?: string): Promise<AgentLintReport> {
-  const availableCards = await listCards();
-  const cards = cardId
-    ? availableCards.filter((card) => card.reference === cardId)
-    : availableCards;
-  if (cardId && cards.length === 0) {
-    throw new Error(
-      `Unknown card reference: ${cardId} (expected one of ${availableCards
-        .map((card) => card.reference)
-        .join(", ")})`
-    );
-  }
-  return lintCardPackages(cards);
 }
 
 export async function lintCardPackageForAgent(

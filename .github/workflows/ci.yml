@@ -221,7 +221,7 @@ jobs:
         id: card-check
         uses: ./actions/card-check
         with:
-          card-path: cards/docs.access-request
+          card-path: tests/fixtures/cards/example.notice
           cli-version: "0.2.4"
           forge-web-dir: apps/forge-web/dist
           upload-artifact: "false"
@@ -231,7 +231,7 @@ jobs:
         id: card-release
         uses: ./actions/card-release
         with:
-          card-path: cards/docs.access-request/versions/0.3.0
+          card-path: tests/fixtures/cards/example.notice/versions/0.1.0
           cli-version: "0.2.4"
           publish: "false"
           output-dir: .release/action-smoke/release
@@ -240,7 +240,7 @@ jobs:
         id: card-release-repeat
         uses: ./actions/card-release
         with:
-          card-path: cards/docs.access-request/versions/0.3.0
+          card-path: tests/fixtures/cards/example.notice/versions/0.1.0
           cli-version: "0.2.4"
           publish: "false"
           output-dir: .release/action-smoke/release-repeat
@@ -272,6 +272,6 @@ jobs:
           test "$(cat "${RELEASE_ARTIFACT%.json}.sha256")" = "$RELEASE_SHA256"
           test "$RELEASE_SHA256" = "$REPEAT_RELEASE_SHA256"
           test "$HANDOFF_SHA256" = "$REPEAT_HANDOFF_SHA256"
-          test "$RELEASE_TAG" = "card/docs.access-request/v0.3.0"
+          test "$RELEASE_TAG" = "card/example.notice/v0.1.0"
           actual_handoff_sha="$(sha256sum "$HANDOFF_FILE" | cut -d' ' -f1)"
           test "$actual_handoff_sha" = "$HANDOFF_SHA256"

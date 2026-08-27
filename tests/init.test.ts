@@ -2,7 +2,7 @@ import { cp, mkdtemp, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { checkCardPackage, checkCards } from "../packages/cli/src/check.js";
+import { checkCardPackage } from "../packages/cli/src/check.js";
 import { resolveInProject } from "../packages/cli/src/fs.js";
 import { initCard, listInitPresets } from "../packages/cli/src/init.js";
 
@@ -51,8 +51,7 @@ describe("initCard", () => {
       },
     });
 
-    process.env.OCTO_CARD_FORGE_ROOT = root;
-    await expect(checkCards("docs.share-notification")).resolves.toMatchObject({
+    await expect(checkCardPackage(result.root)).resolves.toMatchObject({
       valid: true,
     });
   });

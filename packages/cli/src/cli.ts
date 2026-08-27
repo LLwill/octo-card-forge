@@ -5,20 +5,15 @@ import {
   discoverUtilities,
   explainUtility,
   lintCardPackageForAgent,
-  lintCardsForAgent,
 } from "./agent.js";
-import { checkCardPackage, checkCards } from "./check.js";
+import { checkCardPackage } from "./check.js";
 import {
-  compileCard,
   compileCardDirectory,
-  compileSample,
   compileSampleFromDirectory,
 } from "./compiler.js";
 import { readJson } from "./fs.js";
 import {
-  buildHandoffPackage,
   buildHandoffPackageForCard,
-  writeHandoffPackage,
   writeHandoffPackageForCard,
 } from "./handoff.js";
 import { initCard, listInitPresets } from "./init.js";
@@ -27,10 +22,7 @@ import {
   packRenderProfile,
   validateRenderProfile,
 } from "./profile.js";
-import {
-  buildCardArtifact,
-  buildCardArtifactForCard,
-} from "./artifact.js";
+import { buildCardArtifactForCard } from "./artifact.js";
 import { verifyCardArtifact, artifactSha256 } from "@mlt-org/octo-card-artifact";
 import {
   buildCatalogSnapshot,
@@ -44,7 +36,7 @@ import {
   loadRenderProfileFromPackage,
   loadRenderProfileForReference,
 } from "./profile-source.js";
-import { getCard, listCards, loadCardPackage } from "./registry.js";
+import { loadCardPackage } from "./registry.js";
 import type { JsonObject, WireProfile } from "./types.js";
 import type { RenderProfileSource } from "./types.js";
 import { validateCompiledCard } from "./validate.js";
@@ -109,28 +101,22 @@ function usage(): void {
   console.log(`octo-card commands:
   init <card-id> --name <name> [--out <dir>] [--preset blank|bot-token|docs-forward] [--view default] [--wire-profile octo/v1|octo/v2] [--render-profile octo-chat@latest] [--format json]
   presets [--format json]
-  list [--format json]
   discover [query] [--profile octo-chat@latest] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
   explain utility <token> [--profile octo-chat@latest] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
-  lint [card-id] [--card <dir>] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
+  lint --card <dir> [--profile-dir <dir> | --profile-package <pkg>] [--format json]
   validate --input <card.json> [--wire-profile octo/v1|octo/v2] [--profile octo-chat@latest] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
-  contract <card-id> [--format json]
-  inspect <card-id> [--card <dir>] [--profile-dir <dir> | --profile-package <pkg>] [--sample <name>] [--format json]
+  contract --card <dir> [--profile-dir <dir> | --profile-package <pkg>] [--format json]
+  inspect --card <dir> [--profile-dir <dir> | --profile-package <pkg>] [--sample <name>] [--format json]
   verify --card <dir> [--release] [--sample <name>] [--emit-dir <dir>] [--handoff <dir>] [--format json]
-  handoff <card-id> [--output handoff] [--format json]
   handoff --card <dir> [--profile-dir <dir> | --profile-package <pkg>] [--output handoff] [--format json]
-  handoff <card-id> --output -  # print the aggregate JSON to stdout
   handoff --card <dir> --output -  # print the aggregate JSON to stdout
-  render <card-id> --sample <name>
-  render <card-id> --view <view> --data <file>
   render --card <dir> [--profile-dir <dir> | --profile-package <pkg>] --sample <name>
   render --card <dir> [--profile-dir <dir> | --profile-package <pkg>] --view <view> --data <file>
-  emit <card-id|--card dir> --sample <name>  # alias for render
-  check [card-id] [--card <dir>] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
+  emit --card <dir> --sample <name>  # alias for render
+  check --card <dir> [--profile-dir <dir> | --profile-package <pkg>] [--format json]
   profile validate <profile@version>
   profile bundle <profile@version> [--output .release]
   profile pack <profile@version> [--output .release]
-  artifact build <card-id> [--out <file>] [--format json]
   artifact build --card <dir> [--out <file>] [--profile-dir <dir> | --profile-package <pkg>] [--format json]
   artifact verify <file> [--sha256 <hash>] [--format json]
   snapshot build --input <records.json> --revision <revision> [--channel release|preview] [--out catalog-snapshot.v1.json] [--format json]
@@ -138,7 +124,7 @@ function usage(): void {
   agent init [--target generic] [--workspace <dir>] [--profile octo-chat@version] [--format json]
   agent doctor [--workspace <dir>] [--format json]
   agent upgrade --check [--workspace <dir>] [--format json]
-  dev [card-id] [--card <dir>] [--profile-dir <dir> | --profile-package <pkg>] [--host 127.0.0.1] [--port 4318]`);
+  dev --card <dir> [--profile-dir <dir> | --profile-package <pkg>] [--host 127.0.0.1] [--port 4318]`);
 }
 
 function positional(index: number): string | undefined {
@@ -207,7 +193,7 @@ function printExplainText(report: Awaited<ReturnType<typeof explainUtility>>): v
   console.log(`Example:\n${JSON.stringify(report.cardExample, null, 2)}`);
 }
 
-function printLintText(report: Awaited<ReturnType<typeof lintCardsForAgent>>): void {
+function printLintText(report: Awaited<ReturnType<typeof lintCardPackageForAgent>>): void {
   console.log(
     `${report.valid ? "✓" : "✗"} ${report.summary.cards} cards · ${report.summary.samples} samples · ${report.summary.errors} errors · ${report.summary.warnings} warnings`
   );
@@ -307,37 +293,6 @@ try {
         console.log(`${preset.id}\t${preset.wireProfile}\t${preset.description}`);
       }
     }
-  } else if (command === "list") {
-    const cards = await listCards();
-    if (flag("--format") === "json") {
-      console.log(
-        JSON.stringify(
-          {
-            cards: cards.map(({ reference, kind, mutable, manifest }) => ({
-              reference,
-              kind,
-              mutable,
-              id: manifest.id,
-              name: manifest.name,
-              version: manifest.version,
-              contractVersion: manifest.contractVersion,
-              renderProfile: manifest.renderProfile,
-            })),
-          },
-          null,
-          2
-        )
-      );
-    } else {
-      console.log(
-        cards
-          .map(
-            ({ reference, kind, mutable, manifest }) =>
-              `${manifest.id}\t${manifest.version}\tcontract ${manifest.contractVersion}\t${manifest.name}\t${reference}\t${kind}\t${mutable ? "mutable" : "immutable"}`
-          )
-          .join("\n")
-      );
-    }
   } else if (command === "discover") {
     const query = positional(0);
     const profileSource = await loadExplicitProfileSource();
@@ -368,11 +323,9 @@ try {
     }
   } else if (command === "lint") {
     const cardRoot = flag("--card");
+    if (!cardRoot) throw new Error("lint requires --card <dir>");
     const profileSource = await explicitProfileForCardCommand(cardRoot);
-    const cardId = cardRoot ? undefined : positional(0);
-    const report = cardRoot
-      ? await lintCardPackageForAgent(cardRoot, profileSource)
-      : await lintCardsForAgent(cardId);
+    const report = await lintCardPackageForAgent(cardRoot, profileSource);
     if (flag("--format") === "json") {
       console.log(JSON.stringify(report, null, 2));
     } else {
@@ -422,14 +375,20 @@ try {
     }
     if (!report.valid) process.exitCode = 1;
   } else if (command === "contract") {
-    const cardId = args[0];
-    if (!cardId) throw new Error("card-id is required");
-    const card = await getCard(cardId);
+    const cardRoot = flag("--card");
+    if (!cardRoot) throw new Error("contract requires --card <dir>");
+    const profileSource = await explicitProfileForCardCommand(cardRoot);
+    const card = await loadCardPackage(cardRoot);
     const reports = [];
     for (const [view, definition] of Object.entries(card.manifest.views)) {
       for (const samplePath of definition.samples) {
         const sample = path.basename(samplePath, path.extname(samplePath));
-        const result = await compileSample({ cardId, sample });
+        const result = await compileSampleFromDirectory({
+          cardRoot,
+          sample,
+          view,
+          profile: profileSource,
+        });
         reports.push({
           sample,
           view,
@@ -451,19 +410,16 @@ try {
     );
   } else if (command === "inspect") {
     const cardRoot = flag("--card");
+    if (!cardRoot) throw new Error("inspect requires --card <dir>");
     const profileSource = await explicitProfileForCardCommand(cardRoot);
-    const cardId = cardRoot ? undefined : positional(0);
-    if (!cardRoot && !cardId) throw new Error("card-id or --card is required");
     const sample = flag("--sample");
     if (sample) {
-      const result = cardRoot
-        ? await compileSampleFromDirectory({
-            cardRoot,
-            sample,
-            view: flag("--view"),
-            profile: profileSource,
-          })
-        : await compileSample({ cardId: cardId!, sample });
+      const result = await compileSampleFromDirectory({
+        cardRoot,
+        sample,
+        view: flag("--view"),
+        profile: profileSource,
+      });
       if (result.issues.some((issue) => issue.severity === "error")) {
         throw new Error(`Cannot inspect invalid sample ${sample}`);
       }
@@ -482,19 +438,17 @@ try {
         )
       );
     } else {
-      const card = cardRoot ? await loadCardPackage(cardRoot) : await getCard(cardId!);
+      const card = await loadCardPackage(cardRoot);
       const samples = [];
       for (const [view, definition] of Object.entries(card.manifest.views)) {
         for (const samplePath of definition.samples) {
           const sampleName = path.basename(samplePath, path.extname(samplePath));
-          const result = cardRoot
-            ? await compileSampleFromDirectory({
-                cardRoot,
-                sample: sampleName,
-                view,
-                profile: profileSource,
-              })
-            : await compileSample({ cardId: cardId!, sample: sampleName });
+          const result = await compileSampleFromDirectory({
+            cardRoot,
+            sample: sampleName,
+            view,
+            profile: profileSource,
+          });
           samples.push({
             sample: sampleName,
             view,
@@ -542,63 +496,40 @@ try {
     if (!report.valid) process.exitCode = 1;
   } else if (command === "handoff") {
     const cardRoot = flag("--card");
+    if (!cardRoot) throw new Error("handoff requires --card <dir>");
     const output = flag("--output") ?? DEFAULT_HANDOFF_OUTPUT;
-    if (cardRoot) {
-      const profileSource = await explicitProfileForCardCommand(cardRoot);
-      const card = await loadCardPackage(cardRoot);
-      if (output === "-") {
-        console.log(JSON.stringify(await buildHandoffPackageForCard(card, profileSource), null, 2));
-      } else {
-        const result = await writeHandoffPackageForCard(card, output, profileSource);
-        if (flag("--format") === "json") {
-          console.log(JSON.stringify({ cardId: card.manifest.id, ...result }, null, 2));
-        } else {
-          console.log(`Created backend handoff package: ${result.filePath}`);
-        }
-      }
+    const profileSource = await explicitProfileForCardCommand(cardRoot);
+    const card = await loadCardPackage(cardRoot);
+    if (output === "-") {
+      console.log(JSON.stringify(await buildHandoffPackageForCard(card, profileSource), null, 2));
     } else {
-      const cardId = args[0];
-      if (!cardId) throw new Error("card-id or --card is required");
-      if (output === "-") {
-        console.log(JSON.stringify(await buildHandoffPackage(cardId), null, 2));
+      const result = await writeHandoffPackageForCard(card, output, profileSource);
+      if (flag("--format") === "json") {
+        console.log(JSON.stringify({ cardId: card.manifest.id, ...result }, null, 2));
       } else {
-        const result = await writeHandoffPackage(cardId, output);
-        if (flag("--format") === "json") {
-          console.log(JSON.stringify({ cardId, ...result }, null, 2));
-        } else {
-          console.log(`Created backend handoff package: ${result.filePath}`);
-        }
+        console.log(`Created backend handoff package: ${result.filePath}`);
       }
     }
   } else if (command === "render" || command === "emit") {
     const cardRoot = flag("--card");
+    if (!cardRoot) throw new Error(`${command} requires --card <dir>`);
     const profileSource = await explicitProfileForCardCommand(cardRoot);
-    const cardId = cardRoot ? undefined : positional(0);
-    if (!cardRoot && !cardId) throw new Error("card-id or --card is required");
     const sample = flag("--sample");
     const dataPath = flag("--data");
     if (!sample && !dataPath) throw new Error("--data is required without --sample");
     const result = sample
-      ? cardRoot
-        ? await compileSampleFromDirectory({
-            cardRoot,
-            sample,
-            view: flag("--view"),
-            profile: profileSource,
-          })
-        : await compileSample({ cardId: cardId!, sample })
-      : cardRoot
-        ? await compileCardDirectory({
-            cardRoot,
-            view: flag("--view") ?? "pending",
-            data: await readJson<JsonObject>(path.resolve(dataPath!)),
-            profile: profileSource,
-          })
-        : await compileCard({
-            cardId: cardId!,
-            view: flag("--view") ?? "pending",
-            data: await readJson<JsonObject>(path.resolve(dataPath!)),
-          });
+      ? await compileSampleFromDirectory({
+          cardRoot,
+          sample,
+          view: flag("--view"),
+          profile: profileSource,
+        })
+      : await compileCardDirectory({
+          cardRoot,
+          view: flag("--view") ?? "default",
+          data: await readJson<JsonObject>(path.resolve(dataPath!)),
+          profile: profileSource,
+        });
     if (result.issues.some((issue) => issue.severity === "error")) {
       console.error(JSON.stringify(result.issues, null, 2));
       process.exitCode = 1;
@@ -607,11 +538,9 @@ try {
     }
   } else if (command === "check") {
     const cardRoot = flag("--card");
+    if (!cardRoot) throw new Error("check requires --card <dir>");
     const profileSource = await explicitProfileForCardCommand(cardRoot);
-    const cardId = cardRoot ? undefined : positional(0);
-    const report = cardRoot
-      ? await checkCardPackage(cardRoot, profileSource)
-      : await checkCards(cardId);
+    const report = await checkCardPackage(cardRoot, profileSource);
     if (flag("--format") === "json") {
       console.log(JSON.stringify(report, null, 2));
     } else {
@@ -701,12 +630,12 @@ try {
     if (action === "build") {
       const outFile = flag("--out");
       const cardRoot = flag("--card");
-      const profileSource = cardRoot ? await explicitProfileForCardCommand(cardRoot) : undefined;
-      const cardId = cardRoot ? undefined : args[1];
-      if (!cardRoot && !cardId) throw new Error("card-id or --card is required");
-      const artifact = cardRoot
-        ? await buildCardArtifactForCard(await loadCardPackage(cardRoot), profileSource)
-        : await buildCardArtifact(cardId!);
+      if (!cardRoot) throw new Error("artifact build requires --card <dir>");
+      const profileSource = await explicitProfileForCardCommand(cardRoot);
+      const artifact = await buildCardArtifactForCard(
+        await loadCardPackage(cardRoot),
+        profileSource,
+      );
       if (outFile) {
         const outPath = path.resolve(outFile);
         await mkdir(path.dirname(outPath), { recursive: true });
@@ -748,6 +677,7 @@ try {
     const port = Number(flag("--port") ?? "4318");
     const host = flag("--host") ?? "127.0.0.1";
     const cardRoot = flag("--card");
+    if (!cardRoot) throw new Error("dev requires --card <dir>");
     const profileSource = await explicitProfileForCardCommand(cardRoot);
     if (!deps.startServer) {
       throw new Error("dev server is not available in this runtime");

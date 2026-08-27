@@ -8,9 +8,9 @@ import {
 import { loadResolvedCardSource } from "../packages/workspace/src/index.js";
 import { compileCardPackage, compileSampleFromPackage } from "../packages/cli/src/compiler.js";
 import { inspectCard as inspectCardFacade } from "../packages/cli/src/inspect.js";
-import { listCards } from "../packages/cli/src/registry.js";
-import { getCurrentRenderProfile } from "../packages/cli/src/registry.js";
+import { getCurrentRenderProfile, loadCardPackage } from "../packages/cli/src/registry.js";
 import { validateCompiledCard as validateCompiledCardFacade } from "../packages/cli/src/validate.js";
+import { CARD_FIXTURE_ROOTS, NOTICE_CARD_ROOT } from "./card-fixtures.js";
 
 async function resolveSource(cardRoot: string) {
   const [loaded, profile] = await Promise.all([
@@ -30,9 +30,9 @@ describe("compiler facade/Core parity", () => {
     expect(inspectCardFacade).toBe(inspectCardCore);
   });
 
-  it("keeps every current draft sample byte-equivalent", async () => {
-    const drafts = (await listCards()).filter((card) => card.kind === "draft");
-    for (const card of drafts) {
+  it("keeps every dedicated fixture sample byte-equivalent", async () => {
+    for (const cardRoot of CARD_FIXTURE_ROOTS) {
+      const card = await loadCardPackage(cardRoot);
       const resolved = await resolveSource(card.root);
       for (const [viewName, view] of Object.entries(card.manifest.views)) {
         for (const samplePath of view.samples) {
@@ -53,13 +53,10 @@ describe("compiler facade/Core parity", () => {
   });
 
   it("keeps invalid data contract diagnostics equivalent", async () => {
-    const card = (await listCards()).find(
-      (candidate) => candidate.kind === "draft" && candidate.manifest.id === "docs.access-request"
-    );
-    expect(card).toBeDefined();
-    const resolved = await resolveSource(card!.root);
-    const view = Object.keys(card!.manifest.views)[0];
-    const facade = await compileCardPackage({ card: card!, view, data: {} });
+    const card = await loadCardPackage(NOTICE_CARD_ROOT);
+    const resolved = await resolveSource(card.root);
+    const view = Object.keys(card.manifest.views)[0];
+    const facade = await compileCardPackage({ card, view, data: {} });
     const core = compileCardSource({
       source: resolved.source,
       view,
@@ -73,13 +70,12 @@ describe("compiler facade/Core parity", () => {
   });
 
   it("keeps unknown view failures equivalent", async () => {
-    const card = (await listCards()).find((candidate) => candidate.kind === "draft");
-    expect(card).toBeDefined();
-    const resolved = await resolveSource(card!.root);
-    const message = `Unknown view missing for ${card!.reference}`;
+    const card = await loadCardPackage(NOTICE_CARD_ROOT);
+    const resolved = await resolveSource(card.root);
+    const message = `Unknown view missing for ${card.reference}`;
 
     await expect(
-      compileCardPackage({ card: card!, view: "missing", data: {} })
+      compileCardPackage({ card, view: "missing", data: {} })
     ).rejects.toThrow(message);
     expect(() =>
       compileCardSource({
