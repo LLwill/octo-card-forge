@@ -111,6 +111,18 @@ catalog:
 
 该文件是“生产当前运行什么”的唯一事实来源。Tag、`latest` 或分支名不得进入生产 Deployment。
 
+正式 Catalog 镜像沿用 Forge 当前 TCR 和 `dmwork` 命名空间：
+
+```text
+tbj7-xtiao-tcr1.tencentcloudcr.com/dmwork/octo-card-catalog@sha256:<catalog-digest>
+```
+
+Forge 镜像继续使用：
+
+```text
+tbj7-xtiao-tcr1.tencentcloudcr.com/dmwork/octo-card-forge@sha256:<forge-digest>
+```
+
 ## 5. Catalog 数据镜像契约
 
 ### 5.1 目录结构
@@ -152,8 +164,16 @@ catalog:
   "formatVersion": 1,
   "catalogRevision": "<full-git-sha>",
   "snapshotSha256": "<sha256>",
-  "artifactFormatVersions": [1],
-  "compatibleForge": ">=0.2.4 <0.3.0",
+  "requires": {
+    "catalogSnapshot": 1,
+    "cardArtifact": [1],
+    "handoffLayout": 1,
+    "profileBundle": 1,
+    "features": ["handoff-index-v1", "local-profile-assets-v1"]
+  },
+  "builtWith": {
+    "forgeCli": "0.2.4"
+  },
   "cards": 3,
   "versions": 6
 }
@@ -213,11 +233,11 @@ strategy:
 
 发布顺序：
 
-1. Catalog CI 推送新数据镜像并获得 digest。
+1. Catalog GitLab CI 推送新数据镜像并获得 digest。
 2. Catalog CI 向 `deploy-files` 创建只修改 Catalog digest 的 MR。
 3. MR 校验 Forge/Catalog 兼容范围和镜像可拉取性。
 4. MR 获批并合并。
-5. 当前人工 `argocd_sync` 任务同步 Deployment；未来可在变更治理成熟后启用 Auto Sync。
+5. 保持当前人工 `argocd_sync` 任务同步 Deployment，不在第一阶段改变该审批边界。
 6. Kubernetes 创建新 ReplicaSet。
 7. 新 Pod 的 `initContainer` 准备 Catalog 数据。
 8. Forge 启动并验证 `release.json`、Snapshot 摘要和兼容版本。
@@ -382,12 +402,57 @@ Forge 始终只读取同一种 Catalog bundle，因此不需要再次重构部�
 
 ### 9.1 兼容检查
 
-Catalog bundle 必须声明：
+兼容性不使用手工维护的 `compatibleForge: ">=x <y"` 作为部署门禁。应用版本号可以帮助定位问题，
+但不能准确表达一个 Forge 是否真正支持某种 Catalog 数据格式。
 
-- Snapshot format version；
-- Artifact format versions；
-- Render Profile 精确版本；
-- Forge 兼容范围。
+Forge 仓库维护 `compatibility/forge-runtime.v1.json`：
+
+```json
+{
+  "schemaVersion": 1,
+  "supports": {
+    "catalogSnapshot": [1],
+    "cardArtifact": [1],
+    "handoffLayout": [1],
+    "profileBundle": [1],
+    "features": ["handoff-index-v1", "local-profile-assets-v1"]
+  }
+}
+```
+
+该文件由 Forge 维护者在实现新的读取能力时修改。Forge 镜像构建时将 `package.json` 版本、Git SHA
+和该能力文件组合成 `/app/forge-runtime.json`。
+
+Catalog 不手工维护兼容范围。Catalog CI 根据实际生成的数据，在 `/catalog/release.json` 中声明：
+
+- 使用的 Snapshot format version；
+- 包含的 Artifact format versions；
+- Handoff layout version；
+- Profile bundle version；
+- 数据依赖的 feature identifiers；
+- 生成数据所用 Forge CLI 的精确版本，仅用于审计。
+
+部署 MR 校验规则是：Catalog 的每项 `requires` 必须包含在 Forge 的 `supports` 中。检查通过才允许合并。
+Forge 启动时再次执行相同检查；不兼容时 `/readyz` 失败，Pod 不接收流量。
+
+例如：
+
+```text
+Catalog requires cardArtifact 1
+Forge supports cardArtifact [1, 2]
+结果：兼容
+
+Catalog requires handoff-index-v2
+Forge supports handoff-index-v1
+结果：不兼容，禁止部署
+```
+
+因此兼容信息分别由两个文件承担：
+
+| 文件 | 维护方 | 含义 |
+| --- | --- | --- |
+| `octo-card-forge/compatibility/forge-runtime.v1.json` | Forge | 运行时能够读取什么 |
+| Catalog 镜像 `/catalog/release.json` | Catalog CI 自动生成 | 当前数据要求什么 |
 
 `deploy-files` MR 在合并前使用目标 Forge 镜像和目标 Catalog 镜像运行组合 Smoke Test。
 
@@ -503,12 +568,15 @@ Forge Runtime API 至少暴露：
 - 可以仅通过恢复 Catalog digest 完成回滚；
 - Card 作者可以从 PR Preview 到生产发布追踪完整证据链。
 
-## 15. 待评审事项
+## 15. 已确认实施参数
 
-实施前只需确认以下环境参数，不改变总体架构：
+| 项目 | 决策 |
+| --- | --- |
+| Catalog Registry | `tbj7-xtiao-tcr1.tencentcloudcr.com/dmwork/octo-card-catalog` |
+| Catalog 镜像构建 | 由 GitLab CI 完成并推送现有 TCR |
+| 部署 MR 审批 | 第一阶段复用 `deploy-files` 默认审批规则，不新增专属审批角色 |
+| ArgoCD | 保持当前人工 `argocd_sync`，第一阶段不改 Auto Sync |
+| 兼容性 | Forge 能力清单与 Catalog 自动生成的要求清单做集合匹配，不维护人工 SemVer 范围 |
 
-1. Catalog 数据镜像的正式 Registry 路径；
-2. Catalog 发布由 GitHub 推送到现有 TCR，还是由 GitLab 镜像构建任务完成；
-3. `deploy-files` Catalog digest MR 的审批人；
-4. 第一阶段是否保留人工 `argocd_sync`；
-5. Forge/Catalog 兼容范围由哪个版本文件维护。
+Catalog GitLab 项目的仓库路径、Runner Tag 和镜像推送凭证沿用现有内部基础设施配置，在实施 Phase 1 时
+落入 Catalog 的 `.gitlab-ci.yml`，不写入 Catalog bundle 或 Forge 镜像。
