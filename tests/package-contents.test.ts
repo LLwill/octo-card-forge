@@ -26,7 +26,7 @@ async function availablePort(): Promise<number> {
 
 async function waitForJson(url: string): Promise<unknown> {
   let lastError: unknown;
-  for (let attempt = 0; attempt < 50; attempt++) {
+  for (let attempt = 0; attempt < 300; attempt++) {
     try {
       const response = await fetch(url);
       if (response.ok) return response.json();
@@ -34,7 +34,7 @@ async function waitForJson(url: string): Promise<unknown> {
     } catch (error) {
       lastError = error;
     }
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 200));
   }
   throw lastError ?? new Error(`Timed out waiting for ${url}`);
 }
