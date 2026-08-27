@@ -23,6 +23,10 @@ describe("GitHub Delivery Actions", () => {
     expect(checkRun).toContain("embed-preview.mjs");
     expect(checkRun).toContain("pull_request?.head?.sha");
     expect(checkRun).toContain("pull_request?.head?.repo?.full_name");
+    expect(checkRun).toContain('"$forge_web_root/assets/*.js"');
+    expect(checkRun).toContain('"$forge_web_root/assets/*.css"');
+    expect(checkRun).not.toContain('"$forge_web_root/app.js"');
+    expect(checkRun).not.toContain('"$forge_web_root/styles.css"');
     expect(releaseAction).toContain("github-token:");
     expect(releaseAction).toContain("inputs.publish == 'true'");
   });
