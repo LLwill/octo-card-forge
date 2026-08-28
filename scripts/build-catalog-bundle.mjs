@@ -47,6 +47,23 @@ const allowedOrigins = new Set(
 );
 
 const downloadOptions = { allowedOrigins, ...catalogDownloadOptions() };
+const catalogResourceRoot = process.env.CATALOG_RESOURCE_ROOT
+  ? await realpath(path.resolve(process.env.CATALOG_RESOURCE_ROOT))
+  : undefined;
+
+async function readVersionResource(location, expectedSha256, maximumBytes, label) {
+  if (!catalogResourceRoot) return readLocation(location, maximumBytes, downloadOptions);
+  if (!/^[a-f0-9]{64}$/.test(expectedSha256)) throw new Error(`${label} has an invalid SHA-256 digest`);
+  const target = path.join(catalogResourceRoot, expectedSha256);
+  const info = await lstat(target);
+  if (!info.isFile() || info.isSymbolicLink()) throw new Error(`${label} is not a regular transfer resource`);
+  if (info.size > maximumBytes) throw new Error(`${label} exceeds ${maximumBytes} bytes`);
+  const actual = await realpath(target);
+  if (!actual.startsWith(`${catalogResourceRoot}${path.sep}`)) throw new Error(`${label} escapes the transfer resource root`);
+  const bytes = await readFile(actual);
+  if (digest(bytes) !== expectedSha256) throw new Error(`${label} transfer resource digest mismatch`);
+  return bytes;
+}
 
 async function verifyHandoffArchive(reference, bytes) {
   const zip = await JSZip.loadAsync(bytes);
@@ -139,7 +156,12 @@ await writeBundleFile(outputRoot, "catalog-snapshot.v1.json", canonicalCatalogSn
 
 const profiles = new Map();
 for (const version of snapshot.cards.flatMap((card) => card.versions)) {
-  const artifactBytes = await readLocation(version.artifact.url, 5 * 1024 * 1024, downloadOptions);
+  const artifactBytes = await readVersionResource(
+    version.artifact.url,
+    version.artifact.sha256,
+    5 * 1024 * 1024,
+    `Artifact for ${version.reference}`,
+  );
   const artifact = parseCardArtifact(artifactBytes);
   const canonicalArtifact = Buffer.from(canonicalCardArtifactBytes(artifact));
   if (digest(canonicalArtifact) !== version.artifact.sha256) throw new Error(`Artifact digest mismatch for ${version.reference}`);
@@ -152,7 +174,12 @@ for (const version of snapshot.cards.flatMap((card) => card.versions)) {
   );
   profiles.set(artifact.profile.reference, artifact.profile);
   if (version.handoff) {
-    const handoff = await readLocation(version.handoff.url, 10 * 1024 * 1024, downloadOptions);
+    const handoff = await readVersionResource(
+      version.handoff.url,
+      version.handoff.sha256,
+      10 * 1024 * 1024,
+      `Handoff for ${version.reference}`,
+    );
     if (digest(handoff) !== version.handoff.sha256) throw new Error(`Handoff digest mismatch for ${version.reference}`);
     const handoffFiles = await verifyHandoffArchive(version.reference, handoff);
     await writeBundleFile(

@@ -41,6 +41,22 @@ describe("GitLab deployment pipeline", () => {
     expect(catalogDockerfile).toContain("octo.card-catalog.base-image-digest");
   });
 
+  it("builds Catalog images from a verified same-project transfer package", async () => {
+    const ci = await readFile(".gitlab-ci.yml", "utf8");
+    const catalog = await readFile("scripts/ci/build-catalog-image.sh", "utf8");
+    const builder = await readFile("scripts/build-catalog-bundle.mjs", "utf8");
+
+    expect(ci).toContain('$CI_PIPELINE_SOURCE == "trigger" && $PIPELINE_MODE == "bootstrap"');
+    expect(catalog).toContain("CATALOG_TRANSFER_SHA256 is required");
+    expect(catalog).toContain("/projects/${CI_PROJECT_ID}/packages/generic/catalog-transfer/${CATALOG_REVISION}/catalog-transfer.tgz");
+    expect(catalog).toContain('JOB-TOKEN: ${job_token}');
+    expect(catalog).toContain("sha256sum --check");
+    expect(catalog).toContain("CATALOG_RESOURCE_ROOT=/tmp/catalog-transfer/input/resources");
+    expect(catalog).not.toContain("github.com/LLwill/octo-card-catalog");
+    expect(builder).toContain("CATALOG_RESOURCE_ROOT");
+    expect(builder).toContain("transfer resource digest mismatch");
+  });
+
   it("allows the first bootstrap to complete before an external URL exists", async () => {
     const ci = await readFile(".gitlab-ci.yml", "utf8");
 

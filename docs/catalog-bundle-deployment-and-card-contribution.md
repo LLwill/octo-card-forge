@@ -238,8 +238,10 @@ strategy:
 
 发布顺序：
 
-1. Catalog GitHub Workflow 将完整 Catalog commit SHA 发送给 Forge GitLab 的受保护 Pipeline Trigger。
-2. Forge GitLab CI 拉取该精确 SHA，构建 Catalog bundle 和数据镜像，并推送 TCR。
+1. Catalog GitHub Workflow 下载并校验 Snapshot 引用的 Artifact/Handoff，将输入包上传到 Forge GitLab
+   Generic Package Registry，再把完整 Catalog commit SHA 和输入包 SHA-256 发送给受保护 Pipeline Trigger。
+2. Forge GitLab CI 使用同项目 `CI_JOB_TOKEN` 下载并校验该输入包，构建 Catalog bundle 和数据镜像，
+   并推送 TCR；GitLab Runner 不访问 GitHub。
 3. Forge GitLab CI 向 `deploy-files` 创建只修改 Catalog digest 的 MR。
 4. MR 校验 Forge/Catalog 兼容范围和镜像可拉取性。
 5. MR 获批并合并。
@@ -250,32 +252,34 @@ strategy:
 10. `/readyz` 成功后，新 Pod 才接收流量。
 11. 旧 Pod 在新 Pod 就绪后退出。
 
-Forge GitLab Pipeline 只从 Trigger 接收 Catalog commit。Catalog 数据镜像默认复用 Runner 已有的
-`GIT_IMAGE`，并在构建时解析为不可变 digest；`CATALOG_DATA_BASE_IMAGE` 仅用于覆盖默认镜像。
-Builder 则从 `deploy-files` 当前生产清单读取，避免每次 Forge 发布后手工更新变量：
+Forge GitLab Pipeline 从 Trigger 接收 Catalog commit 和 transfer 包 SHA-256。Catalog 数据镜像默认复用
+Runner 已有的 `GIT_IMAGE`，并在构建时解析为不可变 digest；`CATALOG_DATA_BASE_IMAGE` 仅用于覆盖默认
+镜像。Builder 则从 `deploy-files` 当前生产清单读取，避免每次 Forge 发布后手工更新变量：
 
 ```text
 PIPELINE_MODE=catalog
 CATALOG_REVISION=<full 40-character commit SHA>
+CATALOG_TRANSFER_SHA256=<catalog-transfer.tgz SHA-256>
 ```
 
-Pipeline 只能读取固定的 Catalog 仓库，并确认目标 SHA 来自受保护 `main` 或正式 Snapshot Release。
-构建由固定 digest 的 Forge Builder 镜像执行。Git 凭证不得通过 Docker build argument、镜像 layer
+Transfer 包使用 Catalog revision 作为 Generic Package 版本，只包含 Snapshot 及按 SHA-256 命名的
+Artifact/Handoff 原始字节。GitHub 上传后重新下载校验，GitLab 构建前再次使用 Trigger 传入的 SHA-256
+校验。构建由固定 digest 的 Forge Builder 镜像执行。凭证不得通过 Docker build argument、镜像 layer
 或 bundle 文件传递。镜像 Label 和 `release.json` 记录 Catalog SHA、Builder digest 与 Forge SHA，
 Catalog 数据镜像 Label 还会记录实际使用的基础镜像 digest。
 
-首次上线双镜像清单时，在 Forge GitLab `main` 手动运行一次 Bootstrap Pipeline：
+首次上线双镜像清单时，在 Catalog GitHub `catalog-card-release` Workflow 手动选择 Bootstrap：
 
 ```text
 PIPELINE_MODE=bootstrap
-CATALOG_REVISION=<existing Catalog Snapshot Release commit SHA>
 ```
 
-Bootstrap 使用同一提交先构建 Forge 镜像，再立即把该镜像作为 Builder 构建 Catalog 数据镜像，最后
-用两个 digest 创建一个 `deploy-files` MR。它不需要 `FORGE_BUILDER_IMAGE`，也不会自动执行 ArgoCD
-同步。清单存在后，后续 Forge 发布从 `deploy-files` 继承当前 Catalog 值，Catalog 发布从同一清单读取
-当前 Forge digest。Registry 清理策略不得删除生产清单、回滚窗口或未合并部署 MR 引用的任何
-Forge/Catalog digest。
+GitHub Workflow 自动生成并上传当前 revision 的 transfer 包，同时传递 `CATALOG_REVISION` 和
+`CATALOG_TRANSFER_SHA256`。Bootstrap 使用同一 Forge 提交先构建 Forge 镜像，再立即把该镜像作为
+Builder 构建 Catalog 数据镜像，最后用两个 digest 创建一个 `deploy-files` MR。它不需要
+`FORGE_BUILDER_IMAGE`，也不会自动执行 ArgoCD 同步。清单存在后，后续 Forge 发布从 `deploy-files`
+继承当前 Catalog 值，Catalog 发布从同一清单读取当前 Forge digest。Registry 清理策略不得删除生产
+清单、回滚窗口或未合并部署 MR 引用的任何 Forge/Catalog digest，也不得删除对应 transfer revision。
 
 `/healthz` 只表示进程存活；`/readyz` 必须表示本地 Catalog 已加载并可消费。
 
@@ -370,9 +374,10 @@ PR 页面只表达“候选变更”，不会产生正式 Card Release，也不�
 3. 创建不可变 Card GitHub Release；
 4. 生成 Artifact、Handoff 和 checksum；
 5. 汇总所有正式 Card Release；
-6. 使用完整 Catalog commit SHA 触发 Forge GitLab Catalog Pipeline；
-7. Forge GitLab 生成 Catalog Snapshot、数据镜像和镜像 digest；
-8. Forge GitLab 创建生产 Catalog digest 更新 MR。
+6. 下载并校验 Snapshot 引用的 Artifact/Handoff，发布不可变 transfer 包；
+7. 使用完整 Catalog commit SHA 和 transfer 包 SHA-256 触发 Forge GitLab Catalog Pipeline；
+8. Forge GitLab 从同项目 Package Registry 读取输入，生成数据镜像和镜像 digest；
+9. Forge GitLab 创建生产 Catalog digest 更新 MR。
 
 生产部署继续保留人工批准。Card Release 成功不等于已经进入生产。
 
@@ -571,6 +576,7 @@ Forge Runtime API 至少暴露：
 - 定义 `release.json` 和 bundle 目录；
 - Forge 增加可接收精确 Catalog SHA 的 bundle 构建命令；
 - 确定性和安全限制测试；
+- Catalog GitHub Workflow 发布带 SHA-256 的不可变 transfer 输入包；
 - Forge GitLab CI 构建并推送 Catalog 数据镜像；
 - Catalog GitHub Workflow 在正式 Release 完成后触发 Forge GitLab Pipeline。
 
@@ -618,6 +624,6 @@ Forge Runtime API 至少暴露：
 | ArgoCD | 保持当前人工 `argocd_sync`，第一阶段不改 Auto Sync |
 | 兼容性 | Forge 能力清单与 Catalog 自动生成的要求清单做集合匹配，不维护人工 SemVer 范围 |
 
-Forge GitLab 复用当前 Runner、TCR 登录凭证和 `deploy-files` 写入能力。Catalog GitHub 只保存最小权限的
-Pipeline Trigger 凭证；Catalog Repository 的读取凭证只存在于 Forge GitLab CI，不写入 Docker layer、
-Catalog bundle 或 Forge 镜像。
+Forge GitLab 复用当前 Runner、TCR 登录凭证和 `deploy-files` 写入能力。Catalog GitHub 保存 Package
+Registry 写入用 Deploy Token 和最小权限的 Pipeline Trigger 凭证；GitLab 构建使用同项目自动签发的
+`CI_JOB_TOKEN` 读取 transfer 包。任何凭证都不写入 Docker layer、Catalog bundle 或 Forge 镜像。

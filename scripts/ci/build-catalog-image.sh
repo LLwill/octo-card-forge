@@ -6,15 +6,23 @@ OUTPUT_ENV=${1:-catalog-package.env}
 
 : "${CATALOG_IMAGE:?CATALOG_IMAGE is required}"
 : "${CATALOG_REVISION:?CATALOG_REVISION is required}"
+: "${CATALOG_TRANSFER_SHA256:?CATALOG_TRANSFER_SHA256 is required}"
 : "${FORGE_BUILDER_IMAGE:?FORGE_BUILDER_IMAGE is required}"
 : "${GIT_IMAGE:?GIT_IMAGE is required}"
 : "${CURL_IMAGE:?CURL_IMAGE is required}"
+: "${CI_API_V4_URL:?CI_API_V4_URL is required}"
+: "${CI_PROJECT_ID:?CI_PROJECT_ID is required}"
+: "${CI_JOB_TOKEN:?CI_JOB_TOKEN is required}"
 : "${CI_PIPELINE_ID:?CI_PIPELINE_ID is required}"
 
 CATALOG_DATA_BASE_IMAGE=${CATALOG_DATA_BASE_IMAGE:-$GIT_IMAGE}
 
 printf '%s' "$CATALOG_REVISION" | grep -Eq '^[0-9a-f]{40}$' || {
   echo "CATALOG_REVISION must be a lowercase 40-character SHA"
+  exit 1
+}
+printf '%s' "$CATALOG_TRANSFER_SHA256" | grep -Eq '^[0-9a-f]{64}$' || {
+  echo "CATALOG_TRANSFER_SHA256 must be a lowercase SHA-256 digest"
   exit 1
 }
 printf '%s' "$FORGE_BUILDER_IMAGE" | grep -Eq '^.+@sha256:[0-9a-f]{64}$' || {
@@ -43,24 +51,48 @@ printf '%s' "$FORGE_BUILDER_REVISION" | grep -Eq '^[0-9a-f]{40}$' || {
   exit 1
 }
 
-SNAPSHOT_URL="https://github.com/LLwill/octo-card-catalog/releases/download/catalog-snapshot/${CATALOG_REVISION}/catalog-snapshot.v1.json"
+TRANSFER_PACKAGE_URL="${CI_API_V4_URL%/}/projects/${CI_PROJECT_ID}/packages/generic/catalog-transfer/${CATALOG_REVISION}/catalog-transfer.tgz"
 BUILDER_CONTAINER="catalog-builder-${CI_PIPELINE_ID}"
 SMOKE_CONTAINER="catalog-smoke-${CI_PIPELINE_ID}"
 SMOKE_NETWORK="catalog-smoke-${CI_PIPELINE_ID}"
 SMOKE_VOLUME="catalog-smoke-${CI_PIPELINE_ID}"
+TRANSFER_VOLUME="catalog-transfer-${CI_PIPELINE_ID}"
 
 cleanup() {
   docker rm -f "$BUILDER_CONTAINER" "$SMOKE_CONTAINER" >/dev/null 2>&1 || true
   docker network rm "$SMOKE_NETWORK" >/dev/null 2>&1 || true
   docker volume rm "$SMOKE_VOLUME" >/dev/null 2>&1 || true
+  docker volume rm "$TRANSFER_VOLUME" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
+docker volume create "$TRANSFER_VOLUME" >/dev/null
+printf '%s\n' "$CI_JOB_TOKEN" | docker run --rm -i --entrypoint sh \
+  -e TRANSFER_PACKAGE_URL="$TRANSFER_PACKAGE_URL" \
+  -e CATALOG_TRANSFER_SHA256="$CATALOG_TRANSFER_SHA256" \
+  -v "$TRANSFER_VOLUME:/transfer" \
+  "$CURL_IMAGE" -c '
+    set -eu
+    IFS= read -r job_token
+    curl --location --fail --show-error --silent \
+      --header "JOB-TOKEN: ${job_token}" \
+      --output /transfer/catalog-transfer.tgz \
+      "$TRANSFER_PACKAGE_URL"
+    printf "%s  %s\n" "$CATALOG_TRANSFER_SHA256" /transfer/catalog-transfer.tgz | sha256sum --check -
+    mkdir -p /transfer/input
+    tar -xzf /transfer/catalog-transfer.tgz -C /transfer/input
+    test -f /transfer/input/catalog-snapshot.v1.json
+    test -f /transfer/input/transfer-manifest.json
+    test -d /transfer/input/resources
+  '
+
 docker create --name "$BUILDER_CONTAINER" \
-  -e CATALOG_SNAPSHOT="$SNAPSHOT_URL" \
+  -e CATALOG_SNAPSHOT=/tmp/catalog-transfer/input/catalog-snapshot.v1.json \
+  -e CATALOG_RESOURCE_ROOT=/tmp/catalog-transfer/input/resources \
   -e CATALOG_REVISION="$CATALOG_REVISION" \
   -e FORGE_REVISION="$FORGE_BUILDER_REVISION" \
   -e BUILDER_IMAGE_DIGEST="$BUILDER_IMAGE_DIGEST" \
+  -v "$TRANSFER_VOLUME:/tmp/catalog-transfer:ro" \
   "$FORGE_BUILDER_IMAGE" \
   node dist/catalog-bundle.js --output /tmp/catalog
 docker start -a "$BUILDER_CONTAINER"
