@@ -12,6 +12,7 @@ RUN npm config set registry "${NPM_REGISTRY}" && npm install -g "pnpm@${PNPM_VER
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY apps ./apps
+COPY compatibility ./compatibility
 COPY packages ./packages
 COPY render-profiles ./render-profiles
 COPY scripts ./scripts
