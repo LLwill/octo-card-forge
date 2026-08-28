@@ -116,6 +116,7 @@ describe("CLI package contents", () => {
 
   it("builds the production image from the deploy artifact", async () => {
     const dockerfile = await readFile("Dockerfile.ci", "utf8");
+    expect(dockerfile).toContain("COPY compatibility ./compatibility");
     expect(dockerfile).toContain("pnpm package:deploy /release");
     expect(dockerfile).not.toContain("COPY --chown=octo:octo cards ./cards");
   });
