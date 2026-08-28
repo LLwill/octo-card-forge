@@ -19,6 +19,7 @@ import {
   sendJson,
   sendText,
 } from "./http.js";
+import { handleHealthApi } from "./health.js";
 import type { ServerContext } from "./types.js";
 
 export async function handleLegacyApi(
@@ -28,19 +29,7 @@ export async function handleLegacyApi(
   context: ServerContext,
   basePath: string,
 ): Promise<boolean> {
-  if (req.method === "GET" && url.pathname === "/healthz") {
-    sendJson(res, 200, { status: "ok" });
-    return true;
-  }
-
-  if (req.method === "GET" && url.pathname === "/readyz") {
-    const ready = context.mode !== "published" || context.publishedCatalog?.ready === true;
-    sendJson(res, ready ? 200 : 503, {
-      status: ready ? "ready" : "not_ready",
-      ...(ready || !context.publishedCatalog?.error ? {} : { message: context.publishedCatalog.error }),
-    });
-    return true;
-  }
+  if (handleHealthApi(req, res, url, context)) return true;
 
   if (req.method === "GET" && url.pathname === "/api/cards") {
     if (!context.card) return false;

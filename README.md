@@ -149,7 +149,7 @@ Render Profile、Skill manifest 和生产依赖锁文件，不包含业务 Card 
 
 - `HOST`：默认 `0.0.0.0`
 - `PORT`：默认 `4318`
-- `BASE_PATH`：可选反向代理前缀
+- `BASE_PATH`：可选反向代理前缀；配置后根路径与前缀路径仍同时提供 `/healthz`、`/readyz`
 - `CATALOG_ROOT`：生产 Catalog Bundle 的只读挂载目录
 - `CATALOG_IMAGE_DIGEST`：当前 Catalog 数据镜像摘要，用于运行诊断
 - `CATALOG_REVISION`：部署清单声明的 Catalog 完整 Git SHA；必须与 Bundle 一致
@@ -180,6 +180,10 @@ Snapshot Release 的完整 `CATALOG_REVISION`。Bootstrap 会连续构建 Forge 
 两个 digest 创建同一个 `deploy-files` MR。首次部署完成后，Catalog 发布自动传递 revision，Forge
 发布自动继承生产 Catalog digest，不再需要手工维护 Builder 镜像变量。Registry 必须保留所有仍可能
 用于生产或回滚的 Forge/Catalog digest。
+
+部署清单中的 `BASE_PATH` 由流水线渲染。已有环境会自动继承 `deploy-files` 当前清单里的值；仅创建
+全新环境且需要非根路径时，才配置可选变量 `DEPLOY_BASE_PATH`。Kubernetes 探针固定访问根路径，
+不与外部 Ingress 路径耦合。
 
 ## 文档
 

@@ -2,11 +2,13 @@
 # GitLab CI renders this file, pushes it to deploy-files, and ArgoCD syncs it.
 #
 # Placeholders:
-#   {{REPO_URL}}      image repository without tag or digest
+#   {{REPO_URL}}              image repository without tag or digest
 #   {{IMAGE_DIGEST}}          immutable Forge image digest
+#   {{CATALOG_REPO_URL}}      Catalog image repository without tag or digest
 #   {{CATALOG_IMAGE_DIGEST}}  immutable Catalog data image digest
 #   {{CATALOG_REVISION}}      Catalog source commit
 #   {{FORGE_REVISION}}        Forge source commit
+#   {{BASE_PATH}}             optional public URL prefix, empty for root
 #   {{BRANCH}}                environment name (currently always "prod")
 #
 # Stateless HTTP service: reads an immutable Catalog bundle prepared by the
@@ -94,6 +96,8 @@ spec:
               value: "0.0.0.0"
             - name: PORT
               value: "4318"
+            - name: BASE_PATH
+              value: "{{BASE_PATH}}"
             - name: CATALOG_ROOT
               value: "/app/catalog"
             - name: CATALOG_IMAGE_DIGEST
@@ -159,4 +163,4 @@ spec:
   ports:
     - name: http
       port: 4318
-      targetPort: http
+      targetPort: 4318
