@@ -250,18 +250,19 @@ strategy:
 10. `/readyz` 成功后，新 Pod 才接收流量。
 11. 旧 Pod 在新 Pod 就绪后退出。
 
-Forge GitLab Pipeline 只从 Trigger 接收 Catalog commit。基础镜像由 Forge GitLab 的受保护配置
-固定，Builder 则从 `deploy-files` 当前生产清单读取，避免每次 Forge 发布后手工更新变量：
+Forge GitLab Pipeline 只从 Trigger 接收 Catalog commit。Catalog 数据镜像默认复用 Runner 已有的
+`GIT_IMAGE`，并在构建时解析为不可变 digest；`CATALOG_DATA_BASE_IMAGE` 仅用于覆盖默认镜像。
+Builder 则从 `deploy-files` 当前生产清单读取，避免每次 Forge 发布后手工更新变量：
 
 ```text
 PIPELINE_MODE=catalog
 CATALOG_REVISION=<full 40-character commit SHA>
-CATALOG_DATA_BASE_IMAGE=<base-image>@sha256:<digest>
 ```
 
 Pipeline 只能读取固定的 Catalog 仓库，并确认目标 SHA 来自受保护 `main` 或正式 Snapshot Release。
 构建由固定 digest 的 Forge Builder 镜像执行。Git 凭证不得通过 Docker build argument、镜像 layer
-或 bundle 文件传递。镜像 Label 和 `release.json` 同时记录 Catalog SHA、Builder digest 与 Forge SHA。
+或 bundle 文件传递。镜像 Label 和 `release.json` 记录 Catalog SHA、Builder digest 与 Forge SHA，
+Catalog 数据镜像 Label 还会记录实际使用的基础镜像 digest。
 
 首次上线双镜像清单时，在 Forge GitLab `main` 手动运行一次 Bootstrap Pipeline：
 

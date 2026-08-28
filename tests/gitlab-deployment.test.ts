@@ -26,12 +26,28 @@ describe("GitLab deployment pipeline", () => {
   it("keeps image construction digest-pinned and reusable", async () => {
     const forge = await readFile("scripts/ci/build-forge-image.sh", "utf8");
     const catalog = await readFile("scripts/ci/build-catalog-image.sh", "utf8");
+    const catalogDockerfile = await readFile("Dockerfile.catalog", "utf8");
 
     expect(forge).toContain('echo "IMAGE_DIGEST=$IMAGE_DIGEST"');
     expect(forge).toContain("^sha256:[0-9a-f]{64}$");
     expect(catalog).toContain("FORGE_BUILDER_IMAGE must be pinned by digest");
-    expect(catalog).toContain("CATALOG_DATA_BASE_IMAGE must be pinned by digest");
+    expect(catalog).toContain('CATALOG_DATA_BASE_IMAGE=${CATALOG_DATA_BASE_IMAGE:-$GIT_IMAGE}');
+    expect(catalog).toContain('docker pull "$CATALOG_DATA_BASE_IMAGE"');
+    expect(catalog).toContain("CATALOG_DATA_BASE_IMAGE_RESOLVED");
+    expect(catalog).toContain("CATALOG_DATA_BASE_IMAGE must provide sh, cp, and chown");
+    expect(catalog).toContain('--entrypoint sh');
     expect(catalog).toContain("org.opencontainers.image.revision");
+    expect(catalogDockerfile).toContain("ENTRYPOINT []");
+    expect(catalogDockerfile).toContain("octo.card-catalog.base-image-digest");
+  });
+
+  it("allows the first bootstrap to complete before an external URL exists", async () => {
+    const ci = await readFile(".gitlab-ci.yml", "utf8");
+
+    expect(ci).toContain('if [ -z "${PROD_URL:-}" ]; then');
+    expect(ci).toContain('if [ "${PIPELINE_MODE:-}" = "bootstrap" ]; then');
+    expect(ci).toContain("Skipping external smoke test during bootstrap");
+    expect(ci).toContain("PROD_URL is required for release smoke testing");
   });
 
   it("renders a portable base path without coupling probes to ingress routing", async () => {

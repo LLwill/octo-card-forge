@@ -7,9 +7,11 @@ OUTPUT_ENV=${1:-catalog-package.env}
 : "${CATALOG_IMAGE:?CATALOG_IMAGE is required}"
 : "${CATALOG_REVISION:?CATALOG_REVISION is required}"
 : "${FORGE_BUILDER_IMAGE:?FORGE_BUILDER_IMAGE is required}"
-: "${CATALOG_DATA_BASE_IMAGE:?CATALOG_DATA_BASE_IMAGE is required}"
+: "${GIT_IMAGE:?GIT_IMAGE is required}"
 : "${CURL_IMAGE:?CURL_IMAGE is required}"
 : "${CI_PIPELINE_ID:?CI_PIPELINE_ID is required}"
+
+CATALOG_DATA_BASE_IMAGE=${CATALOG_DATA_BASE_IMAGE:-$GIT_IMAGE}
 
 printf '%s' "$CATALOG_REVISION" | grep -Eq '^[0-9a-f]{40}$' || {
   echo "CATALOG_REVISION must be a lowercase 40-character SHA"
@@ -19,8 +21,17 @@ printf '%s' "$FORGE_BUILDER_IMAGE" | grep -Eq '^.+@sha256:[0-9a-f]{64}$' || {
   echo "FORGE_BUILDER_IMAGE must be pinned by digest"
   exit 1
 }
-printf '%s' "$CATALOG_DATA_BASE_IMAGE" | grep -Eq '^.+@sha256:[0-9a-f]{64}$' || {
-  echo "CATALOG_DATA_BASE_IMAGE must be pinned by digest"
+
+docker pull "$CATALOG_DATA_BASE_IMAGE"
+CATALOG_DATA_BASE_IMAGE_RESOLVED=$(docker image inspect "$CATALOG_DATA_BASE_IMAGE" --format '{{index .RepoDigests 0}}' 2>/dev/null || true)
+printf '%s' "$CATALOG_DATA_BASE_IMAGE_RESOLVED" | grep -Eq '^.+@sha256:[0-9a-f]{64}$' || {
+  echo "Unable to resolve CATALOG_DATA_BASE_IMAGE to an immutable digest"
+  exit 1
+}
+CATALOG_DATA_BASE_IMAGE_DIGEST=${CATALOG_DATA_BASE_IMAGE_RESOLVED##*@}
+docker run --rm --entrypoint sh "$CATALOG_DATA_BASE_IMAGE_RESOLVED" -c \
+  'command -v cp >/dev/null && command -v chown >/dev/null' || {
+  echo "CATALOG_DATA_BASE_IMAGE must provide sh, cp, and chown"
   exit 1
 }
 
@@ -62,7 +73,8 @@ BUILDER_SUFFIX=$(printf '%s' "$BUILDER_IMAGE_DIGEST" | cut -d: -f2 | cut -c1-12)
 PUSH_CATALOG_IMAGE="${CATALOG_IMAGE}:${CATALOG_REVISION}-${BUILDER_SUFFIX}"
 docker build \
   -t "$PUSH_CATALOG_IMAGE" \
-  --build-arg CATALOG_DATA_BASE_IMAGE="$CATALOG_DATA_BASE_IMAGE" \
+  --build-arg CATALOG_DATA_BASE_IMAGE="$CATALOG_DATA_BASE_IMAGE_RESOLVED" \
+  --build-arg CATALOG_DATA_BASE_IMAGE_DIGEST="$CATALOG_DATA_BASE_IMAGE_DIGEST" \
   --build-arg CATALOG_REVISION="$CATALOG_REVISION" \
   --build-arg FORGE_REVISION="$FORGE_BUILDER_REVISION" \
   --build-arg BUILDER_IMAGE_DIGEST="$BUILDER_IMAGE_DIGEST" \
@@ -70,7 +82,7 @@ docker build \
 
 docker network create "$SMOKE_NETWORK"
 docker volume create "$SMOKE_VOLUME"
-docker run --rm --user 0 -v "$SMOKE_VOLUME:/catalog-data" "$CATALOG_DATA_BASE_IMAGE" sh -c 'chown 10001:10001 /catalog-data'
+docker run --rm --user 0 --entrypoint sh -v "$SMOKE_VOLUME:/catalog-data" "$CATALOG_DATA_BASE_IMAGE_RESOLVED" -c 'chown 10001:10001 /catalog-data'
 docker run --rm -v "$SMOKE_VOLUME:/catalog-data" "$PUSH_CATALOG_IMAGE"
 docker run -d --name "$SMOKE_CONTAINER" --network "$SMOKE_NETWORK" \
   -e CATALOG_ROOT=/app/catalog \
@@ -95,6 +107,7 @@ printf '%s' "$CATALOG_IMAGE_DIGEST" | grep -Eq '^sha256:[0-9a-f]{64}$' || {
   echo "CATALOG_IMAGE_DIGEST=$CATALOG_IMAGE_DIGEST"
   echo "CATALOG_REVISION=$CATALOG_REVISION"
   echo "FORGE_BUILDER_REVISION=$FORGE_BUILDER_REVISION"
+  echo "CATALOG_DATA_BASE_IMAGE_DIGEST=$CATALOG_DATA_BASE_IMAGE_DIGEST"
 } | tee "$OUTPUT_ENV"
 
 echo "packaged $PUSH_CATALOG_IMAGE @ $CATALOG_IMAGE_DIGEST"

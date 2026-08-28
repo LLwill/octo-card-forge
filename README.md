@@ -174,8 +174,9 @@ Forge 标签流水线构建应用镜像；Catalog Trigger Pipeline 从 `deploy-f
 镜像 digest，并用它构建 Catalog 数据镜像。两条流水线都通过部署 MR 更新 `deploy-files`，等待
 MR 合并和人工 ArgoCD 同步，并在部署后检查 `/readyz` 与 `/api/v1/runtime`。
 
-GitLab 只需长期配置受保护变量 `CATALOG_DATA_BASE_IMAGE`，并使用 `@sha256:` 固定。首次切换到
-双镜像部署时，在 GitLab `main` 手动运行 Pipeline，传入 `PIPELINE_MODE=bootstrap` 和一个已有
+Catalog 数据镜像默认复用 GitLab Runner 已在使用的 `GIT_IMAGE`。流水线会自动解析并记录实际
+digest；如需使用专用基础镜像，可通过 `CATALOG_DATA_BASE_IMAGE` 传入普通 tag 或固定 digest。
+首次切换到双镜像部署时，在 GitLab `main` 手动运行 Pipeline，传入 `PIPELINE_MODE=bootstrap` 和一个已有
 Snapshot Release 的完整 `CATALOG_REVISION`。Bootstrap 会连续构建 Forge 与 Catalog 镜像，并用
 两个 digest 创建同一个 `deploy-files` MR。首次部署完成后，Catalog 发布自动传递 revision，Forge
 发布自动继承生产 Catalog digest，不再需要手工维护 Builder 镜像变量。Registry 必须保留所有仍可能
@@ -184,6 +185,9 @@ Snapshot Release 的完整 `CATALOG_REVISION`。Bootstrap 会连续构建 Forge 
 部署清单中的 `BASE_PATH` 由流水线渲染。已有环境会自动继承 `deploy-files` 当前清单里的值；仅创建
 全新环境且需要非根路径时，才配置可选变量 `DEPLOY_BASE_PATH`。Kubernetes 探针固定访问根路径，
 不与外部 Ingress 路径耦合。
+
+`PROD_URL` 只用于部署后的外部 Smoke Test。首次 Bootstrap 尚未配置外部入口时会跳过该检查；正式
+发布和后续 Catalog 更新仍要求配置它，以验证 DNS、Ingress、Service 和应用 API 的完整访问链路。
 
 ## 文档
 
