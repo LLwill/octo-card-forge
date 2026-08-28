@@ -250,13 +250,12 @@ strategy:
 10. `/readyz` 成功后，新 Pod 才接收流量。
 11. 旧 Pod 在新 Pod 就绪后退出。
 
-Forge GitLab Pipeline 只从 Trigger 接收 Catalog commit；仓库地址以及 Builder、基础镜像由
-Forge GitLab 的受保护配置固定：
+Forge GitLab Pipeline 只从 Trigger 接收 Catalog commit。基础镜像由 Forge GitLab 的受保护配置
+固定，Builder 则从 `deploy-files` 当前生产清单读取，避免每次 Forge 发布后手工更新变量：
 
 ```text
 PIPELINE_MODE=catalog
 CATALOG_REVISION=<full 40-character commit SHA>
-FORGE_BUILDER_IMAGE=<forge-builder>@sha256:<digest>
 CATALOG_DATA_BASE_IMAGE=<base-image>@sha256:<digest>
 ```
 
@@ -264,10 +263,18 @@ Pipeline 只能读取固定的 Catalog 仓库，并确认目标 SHA 来自受保
 构建由固定 digest 的 Forge Builder 镜像执行。Git 凭证不得通过 Docker build argument、镜像 layer
 或 bundle 文件传递。镜像 Label 和 `release.json` 同时记录 Catalog SHA、Builder digest 与 Forge SHA。
 
-首次上线双镜像清单时，Forge 标签流水线还需要一次 bootstrap `CATALOG_IMAGE_DIGEST` 和
-`CATALOG_REVISION`。清单存在后，后续 Forge 发布必须从 `deploy-files` 继承当前 Catalog 值，避免
-应用升级把 Catalog 回退到某个静态 CI 变量。Registry 清理策略不得删除生产清单、回滚窗口或未合并
-部署 MR 引用的任何 Forge/Catalog digest。
+首次上线双镜像清单时，在 Forge GitLab `main` 手动运行一次 Bootstrap Pipeline：
+
+```text
+PIPELINE_MODE=bootstrap
+CATALOG_REVISION=<existing Catalog Snapshot Release commit SHA>
+```
+
+Bootstrap 使用同一提交先构建 Forge 镜像，再立即把该镜像作为 Builder 构建 Catalog 数据镜像，最后
+用两个 digest 创建一个 `deploy-files` MR。它不需要 `FORGE_BUILDER_IMAGE`，也不会自动执行 ArgoCD
+同步。清单存在后，后续 Forge 发布从 `deploy-files` 继承当前 Catalog 值，Catalog 发布从同一清单读取
+当前 Forge digest。Registry 清理策略不得删除生产清单、回滚窗口或未合并部署 MR 引用的任何
+Forge/Catalog digest。
 
 `/healthz` 只表示进程存活；`/readyz` 必须表示本地 Catalog 已加载并可消费。
 

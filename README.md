@@ -170,14 +170,16 @@ pnpm catalog:bundle -- \
 构建过程会下载并校验 Artifact、Handoff 和固定版本的 Profile 资源，输出
 `release.json`、`bundle-manifest.json` 及逐文件 SHA-256。
 
-Forge 标签流水线构建应用镜像；Catalog Trigger Pipeline 使用固定 digest 的 Forge Builder
-构建 Catalog 数据镜像。两条流水线都通过部署 MR 更新 `deploy-files`，等待 MR 合并和人工
-ArgoCD 同步，并在部署后检查 `/readyz` 与 `/api/v1/runtime`。
+Forge 标签流水线构建应用镜像；Catalog Trigger Pipeline 从 `deploy-files` 读取当前生产 Forge
+镜像 digest，并用它构建 Catalog 数据镜像。两条流水线都通过部署 MR 更新 `deploy-files`，等待
+MR 合并和人工 ArgoCD 同步，并在部署后检查 `/readyz` 与 `/api/v1/runtime`。
 
-GitLab 需要配置受保护变量 `FORGE_BUILDER_IMAGE` 和 `CATALOG_DATA_BASE_IMAGE`，两者都必须
-使用 `@sha256:` 固定。首次切换到双镜像部署时还要提供一次 bootstrap
-`CATALOG_IMAGE_DIGEST` 与 `CATALOG_REVISION`；后续 Forge 发布会从 `deploy-files` 保留当前
-Catalog 版本。Registry 必须保留所有仍可能用于生产或回滚的 Forge/Catalog digest。
+GitLab 只需长期配置受保护变量 `CATALOG_DATA_BASE_IMAGE`，并使用 `@sha256:` 固定。首次切换到
+双镜像部署时，在 GitLab `main` 手动运行 Pipeline，传入 `PIPELINE_MODE=bootstrap` 和一个已有
+Snapshot Release 的完整 `CATALOG_REVISION`。Bootstrap 会连续构建 Forge 与 Catalog 镜像，并用
+两个 digest 创建同一个 `deploy-files` MR。首次部署完成后，Catalog 发布自动传递 revision，Forge
+发布自动继承生产 Catalog digest，不再需要手工维护 Builder 镜像变量。Registry 必须保留所有仍可能
+用于生产或回滚的 Forge/Catalog digest。
 
 ## 文档
 
