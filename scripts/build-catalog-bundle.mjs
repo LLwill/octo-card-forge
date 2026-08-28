@@ -13,6 +13,7 @@ import {
   parseCardArtifact,
   parseCatalogSnapshot,
 } from "@mlt-org/octo-card-catalog-snapshot";
+import { catalogDownloadOptions, readLocation } from "./lib/read-location.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const packageJson = JSON.parse(await readFile(path.join(repositoryRoot, "package.json"), "utf8"));
@@ -45,36 +46,7 @@ const allowedOrigins = new Set(
     .filter(Boolean),
 );
 
-function assertAllowedUrl(location) {
-  const url = new URL(location);
-  if (!allowedOrigins.has(url.origin)) throw new Error(`Resource origin is not allowed: ${url.origin}`);
-  return url;
-}
-
-async function readLocation(location, maximumBytes) {
-  if (/^https:\/\//.test(location)) {
-    assertAllowedUrl(location);
-    const response = await fetch(location, { redirect: "follow", signal: AbortSignal.timeout(15_000) });
-    if (!response.ok) throw new Error(`Download failed (${response.status}): ${location}`);
-    assertAllowedUrl(response.url);
-    const contentLength = Number(response.headers.get("content-length") ?? "0");
-    if (contentLength > maximumBytes) throw new Error(`Resource exceeds size limit: ${location}`);
-    if (!response.body) return Buffer.alloc(0);
-    const chunks = [];
-    let total = 0;
-    for await (const chunk of response.body) {
-      const bytes = Buffer.from(chunk);
-      total += bytes.byteLength;
-      if (total > maximumBytes) throw new Error(`Resource exceeds size limit: ${location}`);
-      chunks.push(bytes);
-    }
-    return Buffer.concat(chunks);
-  }
-  if (/^[a-z]+:/i.test(location)) throw new Error(`Unsupported resource URL: ${location}`);
-  const bytes = await readFile(path.resolve(location));
-  if (bytes.byteLength > maximumBytes) throw new Error(`Resource exceeds size limit: ${location}`);
-  return bytes;
-}
+const downloadOptions = { allowedOrigins, ...catalogDownloadOptions() };
 
 async function verifyHandoffArchive(reference, bytes) {
   const zip = await JSZip.loadAsync(bytes);
@@ -155,7 +127,7 @@ if (!/^sha256:[a-f0-9]{64}$/.test(builderImageDigest)) throw new Error("Builder 
 await rm(outputRoot, { recursive: true, force: true });
 await mkdir(outputRoot, { recursive: true });
 
-const snapshot = parseCatalogSnapshot(await readLocation(snapshotLocation, 2 * 1024 * 1024));
+const snapshot = parseCatalogSnapshot(await readLocation(snapshotLocation, 2 * 1024 * 1024, downloadOptions));
 if (snapshot.revision !== catalogRevision) {
   throw new Error(`Snapshot revision ${snapshot.revision} does not match ${catalogRevision}`);
 }
@@ -167,7 +139,7 @@ await writeBundleFile(outputRoot, "catalog-snapshot.v1.json", canonicalCatalogSn
 
 const profiles = new Map();
 for (const version of snapshot.cards.flatMap((card) => card.versions)) {
-  const artifactBytes = await readLocation(version.artifact.url, 5 * 1024 * 1024);
+  const artifactBytes = await readLocation(version.artifact.url, 5 * 1024 * 1024, downloadOptions);
   const artifact = parseCardArtifact(artifactBytes);
   const canonicalArtifact = Buffer.from(canonicalCardArtifactBytes(artifact));
   if (digest(canonicalArtifact) !== version.artifact.sha256) throw new Error(`Artifact digest mismatch for ${version.reference}`);
@@ -180,7 +152,7 @@ for (const version of snapshot.cards.flatMap((card) => card.versions)) {
   );
   profiles.set(artifact.profile.reference, artifact.profile);
   if (version.handoff) {
-    const handoff = await readLocation(version.handoff.url, 10 * 1024 * 1024);
+    const handoff = await readLocation(version.handoff.url, 10 * 1024 * 1024, downloadOptions);
     if (digest(handoff) !== version.handoff.sha256) throw new Error(`Handoff digest mismatch for ${version.reference}`);
     const handoffFiles = await verifyHandoffArchive(version.reference, handoff);
     await writeBundleFile(
