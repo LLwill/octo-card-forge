@@ -182,6 +182,9 @@ describe("CLI package contents", () => {
       });
       try {
         await expect(
+          waitForJson(`http://127.0.0.1:${port}/healthz`)
+        ).resolves.toEqual({ status: "ok" });
+        await expect(
           waitForJson(`http://127.0.0.1:${port}/phase1/healthz`)
         ).resolves.toEqual({ status: "ok" });
         await expect(

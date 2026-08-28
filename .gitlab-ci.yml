@@ -207,6 +207,15 @@ sync_code:
             if ($1 == "value:") { gsub(/"/, "", $2); print $2; exit }
           }
         ' "$CURRENT_MANIFEST")
+        if grep -Eq '^[[:space:]]*- name: BASE_PATH[[:space:]]*$' "$CURRENT_MANIFEST"; then
+          CURRENT_BASE_PATH_CONFIGURED=true
+          CURRENT_BASE_PATH=$(awk '
+            $1 == "-" && $2 == "name:" && $3 == "BASE_PATH" {
+              getline
+              if ($1 == "value:") { gsub(/"/, "", $2); print $2; exit }
+            }
+          ' "$CURRENT_MANIFEST")
+        fi
       fi
       if [ "${PIPELINE_MODE:-}" = "bootstrap" ]; then
         CATALOG_IMAGE_DIGEST="${CATALOG_IMAGE_DIGEST:-}"
@@ -217,6 +226,22 @@ sync_code:
       fi
       printf '%s' "$CATALOG_IMAGE_DIGEST" | grep -Eq '^sha256:[0-9a-f]{64}$' || { echo "Error: a current or bootstrap CATALOG_IMAGE_DIGEST is required"; exit 1; }
       printf '%s' "$CATALOG_REVISION" | grep -Eq '^[0-9a-f]{40}$' || { echo "Error: a current or bootstrap CATALOG_REVISION is required"; exit 1; }
+
+      if [ "${CURRENT_BASE_PATH_CONFIGURED:-false}" = "true" ]; then
+        BASE_PATH="${CURRENT_BASE_PATH:-}"
+      else
+        BASE_PATH="${DEPLOY_BASE_PATH:-}"
+      fi
+      if [ -z "$BASE_PATH" ] || [ "$BASE_PATH" = "/" ]; then
+        BASE_PATH=""
+      else
+        case "$BASE_PATH" in
+          /*) ;;
+          *) BASE_PATH="/$BASE_PATH" ;;
+        esac
+        while [ "${BASE_PATH%/}" != "$BASE_PATH" ]; do BASE_PATH="${BASE_PATH%/}"; done
+        printf '%s' "$BASE_PATH" | grep -Eq '^/([A-Za-z0-9._~-]+/)*[A-Za-z0-9._~-]+$' || { echo "Error: BASE_PATH must be a URL path prefix"; exit 1; }
+      fi
 
       if [ ! -f manifests/deploy.yaml ]; then
         echo "Error: manifests/deploy.yaml not found"
@@ -235,6 +260,7 @@ sync_code:
       sed -i "s|{{CATALOG_IMAGE_DIGEST}}|${CATALOG_IMAGE_DIGEST}|g" manifests/deploy.yaml
       sed -i "s|{{CATALOG_REVISION}}|${CATALOG_REVISION}|g" manifests/deploy.yaml
       sed -i "s|{{FORGE_REVISION}}|${CI_COMMIT_SHA}|g" manifests/deploy.yaml
+      sed -i "s|{{BASE_PATH}}|${BASE_PATH}|g" manifests/deploy.yaml
 
       if grep -q "{{" manifests/deploy.yaml; then
         echo "Error: unresolved placeholder remains after render"

@@ -21,6 +21,7 @@ import {
 } from "./server/published-catalog.js";
 import { handleRuntimeApi } from "./server/runtime.js";
 import { handlePreviewApi } from "./server/preview.js";
+import { handleHealthApi } from "./server/health.js";
 import { handleLegacyApi } from "./server/legacy-api.js";
 import { handleStaticAsset } from "./server/static-assets.js";
 import { handleV1Api } from "./server/v1-api.js";
@@ -83,6 +84,7 @@ async function prepareForgeServer(options: ForgeServerOptions = {}): Promise<{
     );
     try {
       const url = new URL(req.url ?? "/", `http://${req.headers.host ?? host}`);
+      if (handleHealthApi(req, res, url, context)) return;
       if (basePath && url.pathname === basePath) {
         res.writeHead(308, { location: `${basePath}/${url.search}` });
         res.end();

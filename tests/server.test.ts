@@ -22,6 +22,40 @@ describe("server base path", () => {
       expect(() => normalizeBasePath(value)).toThrow("Invalid BASE_PATH");
     }
   });
+
+  it("keeps health probes at the root while preserving prefixed health routes", async () => {
+    const server = await createForgeServer({
+      basePath: "/phase1",
+      cardRoot: NOTICE_CARD_ROOT,
+    });
+    await new Promise<void>((resolve, reject) => {
+      server.once("error", reject);
+      server.listen(0, "127.0.0.1", resolve);
+    });
+
+    try {
+      const address = server.address() as AddressInfo;
+      const baseUrl = `http://127.0.0.1:${address.port}`;
+
+      for (const pathname of ["/healthz", "/phase1/healthz"]) {
+        const response = await fetch(`${baseUrl}${pathname}`);
+        expect(response.status).toBe(200);
+        await expect(response.json()).resolves.toEqual({ status: "ok" });
+      }
+      for (const pathname of ["/readyz", "/phase1/readyz"]) {
+        const response = await fetch(`${baseUrl}${pathname}`);
+        expect(response.status).toBe(200);
+        await expect(response.json()).resolves.toEqual({ status: "ready" });
+      }
+
+      expect((await fetch(`${baseUrl}/api/v1/runtime`)).status).toBe(404);
+      expect((await fetch(`${baseUrl}/phase1/api/v1/runtime`)).status).toBe(200);
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => error ? reject(error) : resolve());
+      });
+    }
+  });
 });
 
 describe("catalog HTTP API", () => {
