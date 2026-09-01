@@ -148,7 +148,14 @@ describe("local Catalog bundle runtime", () => {
     expect(artifact.card.id).toBe("example.notice");
     const stylesheet = await fetch(`${baseUrl}/forge/api/profiles/octo-chat%401.2.0-rc.4/styles.css`);
     expect(stylesheet.status).toBe(200);
+    expect(stylesheet.headers.get("access-control-allow-origin")).toBe("*");
     await expect(stylesheet.text()).resolves.toContain("octo-card-profile");
+    const hostConfig = await fetch(`${baseUrl}/forge/api/profiles/octo-chat%401.2.0-rc.4/host-config.json`, {
+      headers: { origin: "null" },
+    });
+    expect(hostConfig.status).toBe(200);
+    expect(hostConfig.headers.get("access-control-allow-origin")).toBe("*");
+    await expect(hostConfig.json()).resolves.toEqual({});
     const contents = await (await fetch(`${baseUrl}/api/v1/cards/${encodeURIComponent(bundle.reference)}/handoff/contents`)).json() as { files: Array<{ path: string }> };
     expect(contents.files).toEqual([{ path: "README.md", group: "root", previewable: true }]);
     await expect((await fetch(`${baseUrl}/api/v1/cards/${encodeURIComponent(bundle.reference)}/handoff/file?path=README.md`)).text()).resolves.toBe("# Local handoff\n");
