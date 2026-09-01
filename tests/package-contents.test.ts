@@ -118,6 +118,9 @@ describe("CLI package contents", () => {
     const dockerfile = await readFile("Dockerfile.ci", "utf8");
     expect(dockerfile).toContain("COPY compatibility ./compatibility");
     expect(dockerfile).toContain("pnpm package:deploy /release");
+    expect(dockerfile).toContain("addgroup -S -g 10001 octo");
+    expect(dockerfile).toContain("USER 10001:10001");
+    expect(dockerfile).not.toContain("USER octo");
     expect(dockerfile).not.toContain("COPY --chown=octo:octo cards ./cards");
   });
 
