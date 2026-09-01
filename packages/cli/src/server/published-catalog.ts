@@ -274,6 +274,9 @@ export async function handlePublishedCatalogApi(
           : resourcePath.endsWith(".js")
             ? "text/javascript; charset=utf-8"
             : "application/octet-stream";
+      // Preview documents run in a sandboxed srcdoc iframe with an opaque
+      // origin, so public immutable Profile assets must allow cross-origin GETs.
+      res.setHeader("access-control-allow-origin", "*");
       sendBuffer(res, 200, contentType, buffer);
       return true;
     }
