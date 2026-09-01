@@ -48,7 +48,7 @@ LABEL org.opencontainers.image.title="octo-card-forge" \
       org.opencontainers.image.version="${GIT_TAG}" \
       org.opencontainers.image.created="${BUILD_DATE}"
 
-RUN addgroup -S octo \
+RUN addgroup -S -g 10001 octo \
   && adduser -S -u 10001 -G octo octo
 
 WORKDIR /app
@@ -58,6 +58,6 @@ ENV TZ=Asia/Shanghai
 COPY --from=prod-deps --chown=octo:octo /app/node_modules ./node_modules
 COPY --from=builder --chown=octo:octo /runtime ./
 
-USER octo
+USER 10001:10001
 EXPOSE 4318
 CMD ["node", "scripts/start-service.mjs"]

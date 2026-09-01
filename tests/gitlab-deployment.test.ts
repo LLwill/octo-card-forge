@@ -73,6 +73,8 @@ describe("GitLab deployment pipeline", () => {
 
     expect(manifest).toContain("name: BASE_PATH");
     expect(manifest).toContain('value: "{{BASE_PATH}}"');
+    expect(manifest).toContain("runAsUser: 10001");
+    expect(manifest).toContain("runAsGroup: 10001");
     expect(manifest).toContain("path: /readyz");
     expect(manifest).toContain("path: /healthz");
     expect(manifest).toContain("targetPort: 4318");
