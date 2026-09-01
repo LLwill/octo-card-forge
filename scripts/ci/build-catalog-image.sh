@@ -78,7 +78,7 @@ printf '%s\n' "$CI_JOB_TOKEN" | docker run --rm -i --entrypoint sh \
       --header "JOB-TOKEN: ${job_token}" \
       --output /transfer/catalog-transfer.tgz \
       "$TRANSFER_PACKAGE_URL"
-    printf "%s  %s\n" "$CATALOG_TRANSFER_SHA256" /transfer/catalog-transfer.tgz | sha256sum --check -
+    printf "%s  %s\n" "$CATALOG_TRANSFER_SHA256" /transfer/catalog-transfer.tgz | sha256sum -c -
     mkdir -p /transfer/input
     tar -xzf /transfer/catalog-transfer.tgz -C /transfer/input
     test -f /transfer/input/catalog-snapshot.v1.json

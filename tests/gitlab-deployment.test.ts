@@ -50,7 +50,8 @@ describe("GitLab deployment pipeline", () => {
     expect(catalog).toContain("CATALOG_TRANSFER_SHA256 is required");
     expect(catalog).toContain("/projects/${CI_PROJECT_ID}/packages/generic/catalog-transfer/${CATALOG_REVISION}/catalog-transfer.tgz");
     expect(catalog).toContain('JOB-TOKEN: ${job_token}');
-    expect(catalog).toContain("sha256sum --check");
+    expect(catalog).toContain("sha256sum -c -");
+    expect(catalog).not.toContain("sha256sum --check");
     expect(catalog).toContain("CATALOG_RESOURCE_ROOT=/tmp/catalog-transfer/input/resources");
     expect(catalog).not.toContain("github.com/LLwill/octo-card-catalog");
     expect(builder).toContain("CATALOG_RESOURCE_ROOT");
