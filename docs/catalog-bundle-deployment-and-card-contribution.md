@@ -242,15 +242,13 @@ strategy:
    Generic Package Registry，再把完整 Catalog commit SHA 和输入包 SHA-256 发送给受保护 Pipeline Trigger。
 2. Forge GitLab CI 使用同项目 `CI_JOB_TOKEN` 下载并校验该输入包，构建 Catalog bundle 和数据镜像，
    并推送 TCR；GitLab Runner 不访问 GitHub。
-3. Forge GitLab CI 向 `deploy-files` 创建只修改 Catalog digest 的 MR。
-4. MR 校验 Forge/Catalog 兼容范围和镜像可拉取性。
-5. MR 获批并合并。
-6. 保持当前人工 `argocd_sync` 任务同步 Deployment，不在第一阶段改变该审批边界。
-7. Kubernetes 创建新 ReplicaSet。
-8. 新 Pod 的 `initContainer` 准备 Catalog 数据。
-9. Forge 启动并验证 `release.json`、Snapshot 摘要和兼容版本。
-10. `/readyz` 成功后，新 Pod 才接收流量。
-11. 旧 Pod 在新 Pod 就绪后退出。
+3. Forge GitLab CI 校验构建结果后，直接更新 `deploy-files` 的生产分支。
+4. 人工执行 `argocd_sync`，作为唯一的生产上线审批边界。
+5. Kubernetes 创建新 ReplicaSet。
+6. 新 Pod 的 `initContainer` 准备 Catalog 数据。
+7. Forge 启动并验证 `release.json`、Snapshot 摘要和兼容版本。
+8. `/readyz` 成功后，新 Pod 才接收流量。
+9. 旧 Pod 在新 Pod 就绪后退出。
 
 Forge GitLab Pipeline 从 Trigger 接收 Catalog commit 和 transfer 包 SHA-256。Catalog 数据镜像默认复用
 Runner 已有的 `GIT_IMAGE`，并在构建时解析为不可变 digest；`CATALOG_DATA_BASE_IMAGE` 仅用于覆盖默认
@@ -276,10 +274,10 @@ PIPELINE_MODE=bootstrap
 
 GitHub Workflow 自动生成并上传当前 revision 的 transfer 包，同时传递 `CATALOG_REVISION` 和
 `CATALOG_TRANSFER_SHA256`。Bootstrap 使用同一 Forge 提交先构建 Forge 镜像，再立即把该镜像作为
-Builder 构建 Catalog 数据镜像，最后用两个 digest 创建一个 `deploy-files` MR。它不需要
+Builder 构建 Catalog 数据镜像，最后用两个 digest 直接更新 `deploy-files` 生产分支。它不需要
 `FORGE_BUILDER_IMAGE`，也不会自动执行 ArgoCD 同步。清单存在后，后续 Forge 发布从 `deploy-files`
 继承当前 Catalog 值，Catalog 发布从同一清单读取当前 Forge digest。Registry 清理策略不得删除生产
-清单、回滚窗口或未合并部署 MR 引用的任何 Forge/Catalog digest，也不得删除对应 transfer revision。
+清单或回滚窗口引用的任何 Forge/Catalog digest，也不得删除对应 transfer revision。
 
 `/healthz` 只表示进程存活；`/readyz` 必须表示本地 Catalog 已加载并可消费。
 
@@ -471,8 +469,9 @@ Catalog 不手工维护兼容范围。Catalog CI 根据实际生成的数据，�
 - 数据依赖的 feature identifiers；
 - 生成数据所用 Forge CLI 的精确版本，仅用于审计。
 
-部署 MR 校验规则是：Catalog 的每项 `requires` 必须包含在 Forge 的 `supports` 中。检查通过才允许合并。
-Forge 启动时再次执行相同检查；不兼容时 `/readyz` 失败，Pod 不接收流量。
+Catalog 数据镜像构建时使用当前生产 Forge 镜像执行组合 Smoke Test：Catalog 的每项
+`requires` 必须包含在 Forge 的 `supports` 中。Forge 启动时再次执行相同检查；
+不兼容时 `/readyz` 失败，Pod 不接收流量。
 
 例如：
 
@@ -493,7 +492,8 @@ Forge supports handoff-index-v1
 | `octo-card-forge/compatibility/forge-runtime.v1.json` | Forge | 运行时能够读取什么 |
 | Catalog 镜像 `/catalog/release.json` | Catalog CI 自动生成 | 当前数据要求什么 |
 
-`deploy-files` MR 在合并前使用目标 Forge 镜像和目标 Catalog 镜像运行组合 Smoke Test。
+Catalog Pipeline 在更新 `deploy-files` 生产分支前，使用目标 Catalog 镜像和当前生产
+Forge 镜像运行组合 Smoke Test。
 
 ### 9.2 破坏性升级
 
@@ -563,8 +563,8 @@ Forge Runtime API 至少暴露：
 | --- | --- |
 | Card PR Check 失败 | 禁止合并，不创建 Release |
 | Card Release 失败 | 保留已发布不可变资产，Catalog bundle 不升级 |
-| Catalog 数据镜像构建失败 | 不创建部署 MR |
-| Forge/Catalog 兼容检查失败 | 禁止合并部署 MR |
+| Catalog 数据镜像构建失败 | 不更新 `deploy-files` 生产分支 |
+| Forge/Catalog 兼容检查失败 | 不更新生产分支，或新 Pod 保持未就绪 |
 | initContainer 失败 | 新 Pod 不启动，旧 Pod 继续服务 |
 | `/readyz` 失败 | 新 Pod 不接流量 |
 | Smoke Test 失败 | 回滚 Catalog digest，并保留失败证据 |
@@ -609,7 +609,7 @@ Forge Runtime API 至少暴露：
 - Card 更新只构建 Catalog 镜像，不构建 Forge 镜像；
 - 生产 Pod 不访问 Card Git 仓库、GitHub Release 或 npm CDN；
 - 新 Pod 在 Catalog 校验完成前不接流量；
-- Forge/Catalog 任一组合不兼容时部署 MR 无法合并；
+- Forge/Catalog 任一组合不兼容时新 Pod 不会就绪或接收流量；
 - 同一 Card 版本无法覆盖发布；
 - 可以仅通过恢复 Catalog digest 完成回滚；
 - Card 作者可以从 PR Preview 到生产发布追踪完整证据链。
@@ -620,7 +620,7 @@ Forge Runtime API 至少暴露：
 | --- | --- |
 | Catalog Registry | `tbj7-xtiao-tcr1.tencentcloudcr.com/dmwork/octo-card-catalog` |
 | Catalog 镜像构建 | 由 Forge 项目的 GitLab CI 完成并推送现有 TCR |
-| 部署 MR 审批 | 第一阶段复用 `deploy-files` 默认审批规则，不新增专属审批角色 |
+| 部署分支更新 | Forge GitLab CI 直接更新 `deploy-files` 生产分支 |
 | ArgoCD | 保持当前人工 `argocd_sync`，第一阶段不改 Auto Sync |
 | 兼容性 | Forge 能力清单与 Catalog 自动生成的要求清单做集合匹配，不维护人工 SemVer 范围 |
 

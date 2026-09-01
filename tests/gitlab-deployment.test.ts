@@ -83,4 +83,17 @@ describe("GitLab deployment pipeline", () => {
     expect(ci).toContain("BASE_PATH must be a URL path prefix");
     expect(ci).toContain('sed -i "s|{{BASE_PATH}}|${BASE_PATH}|g" manifests/deploy.yaml');
   });
+
+  it("updates the production GitOps branch before the manual ArgoCD gate", async () => {
+    const ci = await readFile(".gitlab-ci.yml", "utf8");
+    const argocdJob = ci.slice(ci.indexOf("argocd_sync:"), ci.indexOf("smoke_prod:"));
+
+    expect(ci.match(/git push "\$DEPLOY_REPO_URL" "HEAD:\$TARGET_BRANCH"/g)).toHaveLength(2);
+    expect(ci).not.toContain("merge_request.create");
+    expect(ci).not.toContain('SOURCE_BRANCH="deploy/');
+    expect(argocdJob).toContain("when: manual");
+    expect(argocdJob).toContain("image: $CURL_IMAGE");
+    expect(argocdJob).not.toContain("git clone");
+    expect(argocdJob).not.toContain("CODE_TOKEN");
+  });
 });

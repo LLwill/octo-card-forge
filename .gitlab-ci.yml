@@ -5,7 +5,7 @@
 #
 # Git tags release Forge, Catalog triggers release Catalog, and a manual
 # PIPELINE_MODE=bootstrap run creates the first dual-image deployment. ArgoCD
-# sync remains manual after the generated deploy-files MR is reviewed.
+# sync remains the manual production deployment gate after deploy-files is updated.
 workflow:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
@@ -178,7 +178,6 @@ sync_code:
       fi
 
       TARGET_BRANCH="$APP_NAME-prod"
-      SOURCE_BRANCH="deploy/${APP_NAME}-${CI_JOB_ID}"
       DEPLOY_DIR="deploy-repo"
       DEPLOY_REPO_URL="https://__token__:${CODE_TOKEN}@${DEPLOY_FILES_REPO}"
       RELEASE_REF="${CI_COMMIT_TAG:-bootstrap-${CI_COMMIT_SHORT_SHA}}"
@@ -278,14 +277,8 @@ sync_code:
         exit 0
       fi
 
-      git checkout -b "$SOURCE_BRANCH"
       git commit -m "Update octo-card-forge prod to ${RELEASE_REF} (@${IMAGE_DIGEST})"
-      git push \
-        -o merge_request.create \
-        -o merge_request.target="$TARGET_BRANCH" \
-        -o merge_request.remove_source_branch \
-        -o merge_request.title="Deploy octo-card-forge ${RELEASE_REF}" \
-        "$DEPLOY_REPO_URL" "HEAD:$SOURCE_BRANCH"
+      git push "$DEPLOY_REPO_URL" "HEAD:$TARGET_BRANCH"
 
 sync_catalog:
   stage: sync
@@ -304,11 +297,9 @@ sync_catalog:
       test -n "$CATALOG_IMAGE_DIGEST"
       test -n "$CATALOG_REVISION"
       TARGET_BRANCH="$APP_NAME-prod"
-      SOURCE_BRANCH="deploy/${APP_NAME}-catalog-${CI_JOB_ID}"
       DEPLOY_REPO_URL="https://__token__:${CODE_TOKEN}@${DEPLOY_FILES_REPO}"
       git clone -b "$TARGET_BRANCH" --depth 1 --single-branch "$DEPLOY_REPO_URL" deploy-repo
       cd deploy-repo
-      git checkout -b "$SOURCE_BRANCH"
       grep -q "image: \"${CATALOG_IMAGE}@sha256:" manifests/deploy.yaml || { echo "Catalog image is not present in the deployed manifest"; exit 1; }
       grep -q "name: CATALOG_IMAGE_DIGEST" manifests/deploy.yaml || { echo "Catalog digest metadata is not present in the deployed manifest"; exit 1; }
       grep -q "name: CATALOG_REVISION" manifests/deploy.yaml || { echo "Catalog revision metadata is not present in the deployed manifest"; exit 1; }
@@ -318,12 +309,7 @@ sync_catalog:
       git add manifests/deploy.yaml
       if git diff --cached --quiet; then echo "Catalog digest is already deployed"; exit 0; fi
       git commit -m "Update octo-card-catalog to ${CATALOG_REVISION} (@${CATALOG_IMAGE_DIGEST})"
-      git push \
-        -o merge_request.create \
-        -o merge_request.target="$TARGET_BRANCH" \
-        -o merge_request.remove_source_branch \
-        -o merge_request.title="Deploy octo-card-catalog ${CATALOG_REVISION}" \
-        "$DEPLOY_REPO_URL" "HEAD:$SOURCE_BRANCH"
+      git push "$DEPLOY_REPO_URL" "HEAD:$TARGET_BRANCH"
 
 argocd_sync:
   stage: deploy
@@ -334,7 +320,7 @@ argocd_sync:
     - if: '$CI_PIPELINE_SOURCE == "web" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $PIPELINE_MODE == "bootstrap"'
   tags:
     - tke-deepmining-runner
-  image: $GIT_IMAGE
+  image: $CURL_IMAGE
   variables:
     GIT_STRATEGY: none
   when: manual
@@ -343,11 +329,6 @@ argocd_sync:
     - |
       set -e
       test -n "$ARGOCD_TOKEN"
-      apk add --no-cache curl >/dev/null
-      DEPLOY_REPO_URL="https://__token__:${CODE_TOKEN}@${DEPLOY_FILES_REPO}"
-      git clone -b "$APP_NAME-prod" --depth 1 --single-branch "$DEPLOY_REPO_URL" deployed
-      if [ -n "$IMAGE_DIGEST" ]; then grep -Fq "image: \"${CONTAINER_IMAGE}@${IMAGE_DIGEST}\"" deployed/manifests/deploy.yaml; fi
-      if [ -n "$CATALOG_IMAGE_DIGEST" ]; then grep -Fq "image: \"${CATALOG_IMAGE}@${CATALOG_IMAGE_DIGEST}\"" deployed/manifests/deploy.yaml; fi
       curl --fail --show-error --silent \
         -X POST "http://$ARGOCD_SERVER/api/v1/applications/$ARGOCD_APP/sync" \
         -H "Authorization: Bearer $ARGOCD_TOKEN" \
